@@ -144,6 +144,11 @@ Tres sitios, a propósito separados:
 |---|---|
 | Código (este repo) | `Ironmistyfox/bb-today`, **privado** |
 | Instaladores y `latest.yml` | Releases de `Ironmistyfox/bb-today-descargas`, **público**, sin código |
+
+Cada release lleva el instalador dos veces: `BB-Today-Setup.exe` (el que
+baja el actualizador, según `latest.yml`) y `BB-Today-Instalador.exe`, una
+copia idéntica que es la que enlaza la página. El contador de descargas de la
+página suma sólo la copia, para no contar las actualizaciones automáticas.
 | Página web | https://bb-today.pages.dev (Cloudflare Pages, carpeta `sitio/`) |
 
 La app se actualiza sola leyendo `latest.yml` del último release público

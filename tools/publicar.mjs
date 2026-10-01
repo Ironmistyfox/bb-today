@@ -47,6 +47,12 @@ sh('npx', ['electron-builder', '--win', '--publish', 'never', `-c.directories.ou
 const archivos = ['BB-Today-Setup.exe', 'BB-Today-Setup.exe.blockmap', 'latest.yml'].map((a) => path.join(salida, a));
 for (const a of archivos) if (!fs.existsSync(a)) throw new Error(`Falta ${a}`);
 
+// Copia sólo para la página: su contador de descargas no debe sumar las
+// actualizaciones automáticas, que bajan BB-Today-Setup.exe.
+const paraLaPagina = path.join(salida, 'BB-Today-Instalador.exe');
+fs.copyFileSync(archivos[0], paraLaPagina);
+archivos.push(paraLaPagina);
+
 const notasArchivo = path.join(salida, 'notas.md');
 fs.writeFileSync(notasArchivo, `${notas}\n\n**Instalar:** https://bb-today.pages.dev\n`);
 sh('gh', ['release', 'create', etiqueta, ...archivos, '-R', REPO_DESCARGAS, '--title', `BB Today ${version}`, '--notes-file', notasArchivo, '--latest']);
