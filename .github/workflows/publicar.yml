@@ -24,6 +24,11 @@ on:
 permissions:
   contents: write
 
+# Una sola ejecución a la vez por etiqueta.
+concurrency:
+  group: publicar-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -171,5 +176,11 @@ jobs:
         run: |
           ls -la archivos/*
           version=${GITHUB_REF_NAME#v}
-          gh release create "$GITHUB_REF_NAME" archivos/windows/* archivos/mac/* \
-            --title "BB Today $version" --notes-file notas.md --latest
+          # GitHub a veces lanza dos ejecuciones para la misma etiqueta: si el
+          # release ya existe, se suben los archivos encima en vez de fallar.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" archivos/windows/* archivos/mac/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" archivos/windows/* archivos/mac/* \
+              --title "BB Today $version" --notes-file notas.md --latest
+          fi
