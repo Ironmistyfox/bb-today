@@ -26,7 +26,7 @@ if (leer('git', ['status', '--porcelain'])) salir('Hay cambios sin commitear.');
 correr('git', ['fetch', '--quiet', 'origin']);
 if (leer('git', ['rev-parse', 'HEAD']) !== leer('git', ['rev-parse', '@{u}'])) salir('La rama no está igual que en GitHub: haz push (o pull) antes.');
 if (leer('git', ['tag', '-l', etiqueta])) salir(`La etiqueta ${etiqueta} ya existe: sube la versión en package.json.`);
-correr('node', ['tools/notas-version.mjs', version, process.platform === 'win32' ? 'NUL' : '/dev/null']);
+leer('node', ['tools/notas-version.mjs', version]); // falla si el CHANGELOG no tiene la versión
 
 correr('git', ['tag', etiqueta]);
 correr('git', ['push', 'origin', etiqueta]);
