@@ -387,7 +387,9 @@
     w.addEventListener('mouseover', (e) => { const it = e.target.closest('.item'); if (it) mostrar(it); });
     w.addEventListener('click', (e) => { const it = e.target.closest('.item'); if (it) mostrar(it); });
     // Al cargar ya se ve una, para que se entienda sin tocar nada.
-    requestAnimationFrame(() => mostrar(w.querySelector('.item')));
+    // (setTimeout y no requestAnimationFrame: éste no corre si la pestaña
+    // abre en segundo plano.)
+    setTimeout(() => mostrar(w.querySelector('.item')), 0);
   })();
 </script>
 <script>
