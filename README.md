@@ -45,7 +45,7 @@ BB_CAPTURA=ruta.png BB_CAPTURA_TAREA="título de una tarea" BB_CAPTURA_CONFIG=1 
 
 Variables extra: `BB_CAPTURA_TEMA` y `BB_CAPTURA_DIAS` prueban un estilo o un
 rango de días sin guardarlo; `BB_CAPTURA_SIN_RED=1` usa la última lista
-guardada; `BB_PRUEBA_SLIDER=1` comprueba que mover la opacidad no cambia el
+guardada; `BB_CAPTURA_QUITAR=1` pulsa la ✕ de la primera tarea antes de capturar; `BB_PRUEBA_SLIDER=1` comprueba que mover la opacidad no cambia el
 ancho del widget; `BB_PRUEBA_HOVER=1` recorre la vista previa con un ratón
 simulado (aparecer, cambiar de tarea, entrar en la tarjeta, salir de golpe) y
 dice cuánto tardó en verse. Con `APPDATA` apuntando a una carpeta temporal, nada de esto

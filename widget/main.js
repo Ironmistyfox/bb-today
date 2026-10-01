@@ -83,7 +83,7 @@ let ventana = null;
 let vistaPrevia = null;
 let bandeja = null;
 // sesion: 'lista' | 'falta' (nunca ha entrado) | 'caducada' | 'entrando'
-let estado = { datos: null, error: null, cargando: false, sesion: 'falta', escuela: null, prefs: preferencias.leer(), actualizacion: actualizaciones.estadoActualizacion() };
+let estado = { datos: null, error: null, cargando: false, sesion: 'falta', escuela: null, prefs: preferencias.leer(), descartadas: preferencias.descartadas(), actualizacion: actualizaciones.estadoActualizacion() };
 let reintento = null;
 
 function leerJson(archivo) {
@@ -463,6 +463,7 @@ function datosConfiguracion() {
     version: app.getVersion(),
     actualizacion: estado.actualizacion,
     pagina: actualizaciones.PAGINA,
+    descartadas: estado.descartadas,
   };
 }
 
@@ -540,6 +541,17 @@ ipcMain.handle('config:salir-cuenta', async () => {
   return datosConfiguracion();
 });
 ipcMain.handle('config:entrar', () => entrar());
+// La ✕ de cada tarea: la quita de la lista (se puede deshacer o devolver
+// desde Configuración).
+ipcMain.handle('tareas:descartar', (_e, tarea) => {
+  if (!tarea?.id) return;
+  cerrarVistaPrevia();
+  publicar({ descartadas: preferencias.descartar(tarea) });
+});
+ipcMain.handle('tareas:restaurar', (_e, id) => {
+  publicar({ descartadas: preferencias.restaurar(id) });
+  return datosConfiguracion();
+});
 ipcMain.handle('actualizacion:instalar', () => actualizaciones.instalarAhora());
 ipcMain.handle('actualizacion:buscar', () => actualizaciones.buscar());
 // Sólo la página de BB Today se abre en el navegador desde aquí.
@@ -863,6 +875,11 @@ app.whenReady().then(() => {
     // <ruta>-vista.png.
     // BB_CAPTURA_SIN_RED=1: usa la última lista guardada, sin consultar Blackboard.
     (process.env.BB_CAPTURA_SIN_RED ? Promise.resolve() : actualizar()).then(() => setTimeout(async () => {
+      // BB_CAPTURA_QUITAR=1: pulsa la ✕ de la primera tarea antes de capturar.
+      if (process.env.BB_CAPTURA_QUITAR) {
+        await ventana.webContents.executeJavaScript(`document.querySelector('.lista .item [data-quitar]')?.click()`);
+        await new Promise((ok) => setTimeout(ok, 600));
+      }
       const imagen = await ventana.webContents.capturePage();
       fs.writeFileSync(process.env.BB_CAPTURA, imagen.toPNG());
       if (process.env.BB_CAPTURA_CONFIG) {

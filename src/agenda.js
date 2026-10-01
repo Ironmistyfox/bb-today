@@ -139,6 +139,9 @@ async function agendaCurso(m, usuarioId) {
       // Ultra marca aquí si el profesor impide entregar después de la fecha.
       tardia: /asmt-/.test(handler) && c.contentHandler?.isLateAttemptCreationDisallowed !== true,
       instrucciones: htmlATexto(c.contentHandler?.instructions || c.body).texto || undefined,
+      // Cuándo la publicó el profesor: con ella se ocultan solas las tareas
+      // sin fecha que ya son viejas.
+      creada: c.created || undefined,
       relacionados: c.relacionados?.length ? c.relacionados : undefined,
       enlace: /asmt-/.test(handler)
         ? `${base}/ultra/courses/${id}/assessment/${c.id}/overview?courseId=${id}`

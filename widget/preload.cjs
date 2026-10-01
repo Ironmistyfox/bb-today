@@ -38,6 +38,10 @@ contextBridge.exposeInMainWorld('agenda', {
     instalar: () => ipcRenderer.invoke('actualizacion:instalar'),
     buscar: () => ipcRenderer.invoke('actualizacion:buscar'),
   },
+  tareas: {
+    descartar: (tarea) => ipcRenderer.invoke('tareas:descartar', tarea),
+    restaurar: (id) => ipcRenderer.invoke('tareas:restaurar', id),
+  },
   web: (ruta) => ipcRenderer.invoke('abrir:web', ruta),
   alCambiar: (fn) => ipcRenderer.on('agenda:estado', (_e, estado) => fn(estado)),
 });

@@ -75,6 +75,14 @@
   .segmentos button.activo { background: var(--fondo-a); color: var(--texto); box-shadow: 0 1px 2px rgb(0 0 0 / .15); }
 
   .materias { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+  .quitadas { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+  .quitada { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--linea); }
+  .quitada:first-child { border-top: 0; }
+  .quitada .texto { min-width: 0; flex: 1; }
+  .quitada .texto b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .quitada .texto span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .boton.chico { padding: 4px 10px; font-size: 12px; }
+  .todas { margin-top: 8px; align-self: flex-start; }
   .materia { display: flex; align-items: center; gap: 10px; padding: 6px 2px; cursor: pointer; }
   .materia input { width: 16px; height: 16px; accent-color: var(--acento); cursor: pointer; }
   .vacio { color: var(--tenue); font-size: 12px; }
@@ -125,9 +133,27 @@
       <div class="texto"><b>Tareas sin fecha de entrega</b><span>Las que no tienen fecha y aún no entregas, al final de la lista</span></div>
       <label class="interruptor"><input type="checkbox" id="sinFecha"><i></i></label>
     </div>
+    <div class="opcion" id="fila-sin-fecha-dias">
+      <div class="texto"><b>Quitar solas las sin fecha viejas</b><span>Según cuándo las publicó el profesor</span></div>
+      <select id="sinFechaDias">
+        <option value="7">De más de 1 semana</option>
+        <option value="14">De más de 2 semanas</option>
+        <option value="30">De más de 1 mes</option>
+        <option value="60">De más de 2 meses</option>
+        <option value="0">Nunca</option>
+      </select>
+    </div>
     <div class="opcion columna">
       <div class="texto"><b>Materias</b><span>Desmarca las que no quieras ver</span></div>
       <div class="materias" id="materias"></div>
+    </div>
+  </div>
+
+  <h2>Tareas quitadas</h2>
+  <div class="grupo">
+    <div class="opcion columna">
+      <div class="texto"><b>Las que quitaste con la ✕</b><span>No vuelven a salir hasta que las devuelvas</span></div>
+      <div class="quitadas" id="quitadas"></div>
     </div>
   </div>
 
@@ -256,11 +282,18 @@ function pintar() {
   document.documentElement.dataset.tema = temaSistema();
 
   $('sub').textContent = `BB Today ${datos.version}`;
-  for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin']) $(id).value = String(p[id]);
+  for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin', 'sinFechaDias']) $(id).value = String(p[id] ?? 14);
   for (const id of ['soloTardias', 'sinFecha', 'vistaPrevia', 'avisos']) $(id).checked = p[id] !== false;
   $('alIniciar').checked = !!datos.alIniciar;
   $('fila-aviso').style.display = p.avisos ? '' : 'none';
   $('soloTardias').disabled = p.diasAtras === 0;
+  $('fila-sin-fecha-dias').style.display = p.sinFecha === false ? 'none' : '';
+
+  const quitadas = datos.descartadas || [];
+  $('quitadas').innerHTML = quitadas.length
+    ? quitadas.map((t) => `<div class="quitada"><div class="texto"><b>${esc(t.titulo)}</b><span>${esc(t.curso || '')}</span></div><button class="boton chico" data-restaurar="${esc(t.id)}">Devolver</button></div>`).join('')
+      + (quitadas.length > 1 ? '<button class="boton chico todas" data-restaurar="">Devolver todas</button>' : '')
+    : '<div class="vacio">No has quitado ninguna.</div>';
   $('opacidad').value = p.opacidad;
   $('opacidad-valor').textContent = `${p.opacidad} %`;
   for (const b of $('tamano').querySelectorAll('button')) b.classList.toggle('activo', Number(b.dataset.valor) === p.tamano);
@@ -312,7 +345,7 @@ async function guardar(cambios) {
   pintar();
 }
 
-for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin']) {
+for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin', 'sinFechaDias']) {
   $(id).addEventListener('change', () => guardar({ [id]: Number($(id).value) }));
 }
 for (const id of ['soloTardias', 'sinFecha', 'vistaPrevia', 'avisos']) {
@@ -337,6 +370,12 @@ $('materias').addEventListener('change', async () => {
 });
 $('alIniciar').addEventListener('change', async () => { datos = await api.inicio($('alIniciar').checked); pintar(); });
 $('esquina').addEventListener('click', () => api.esquina());
+$('quitadas').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-restaurar]');
+  if (!b) return;
+  datos = await window.agenda.tareas.restaurar(b.dataset.restaurar || null);
+  pintar();
+});
 $('ver-privacidad').addEventListener('click', () => window.agenda.web('/privacidad'));
 
 api.alCambiar((nuevos) => { datos = nuevos; pintar(); });

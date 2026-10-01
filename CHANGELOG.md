@@ -1,5 +1,15 @@
 # Cambios
 
+## 1.0.3 · 2026-10-01
+
+- El botón de actualizar vuelve a estar siempre a la vista en el widget.
+- Al pasar el ratón por una tarea aparece una ✕ para quitarla de la lista,
+  con «Deshacer» unos segundos. Las quitadas se devuelven desde
+  Configuración → Tareas quitadas.
+- Las tareas sin fecha de entrega que el profesor publicó hace más de 2
+  semanas se quitan solas. Se ajusta en Configuración (1 semana a 2 meses, o
+  nunca).
+
 ## 1.0.2 · 2026-10-01
 
 - La vista previa al pasar el ratón ya no se queda abierta: se cierra en

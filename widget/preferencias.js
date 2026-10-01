@@ -12,6 +12,7 @@ export const PREDETERMINADAS = {
   diasAtras: 7, // vencidas de hasta N días atrás; 0 = no mostrarlas
   soloTardias: true, // de las vencidas, sólo las que aceptan entrega tardía
   sinFecha: true, // tareas pendientes sin fecha de entrega, al final
+  sinFechaDias: 14, // y se ocultan solas las publicadas hace más de N días (0 = nunca)
   tema: 'medianoche', // medianoche | marca | claro | papel | vidrio | sistema
   opacidad: 92, // % de opacidad del fondo
   tamano: 1, // zoom: 0.9 compacto, 1 normal, 1.15 grande
@@ -29,6 +30,7 @@ const PERMITIDOS = {
   tamano: [0.9, 1, 1.15],
   avisoHoras: [1, 2, 3, 6, 12],
   intervaloMin: [30, 60, 120],
+  sinFechaDias: [7, 14, 30, 60, 0],
 };
 
 function leerAjustes() {
@@ -71,4 +73,26 @@ export function ocultas() {
 export function guardarOcultas(lista) {
   const ajustes = leerAjustes();
   fs.writeFileSync(ARCHIVO, JSON.stringify({ ...ajustes, ocultar: [...new Set(lista.filter(Boolean))] }, null, 2));
+}
+
+// Tareas que la persona quitó de la lista con la ✕. Se guarda lo justo para
+// poder enseñarlas en Configuración y devolverlas.
+export function descartadas() {
+  return leerAjustes().descartadas || [];
+}
+
+export function descartar({ id, titulo, curso }) {
+  const ajustes = leerAjustes();
+  const lista = (ajustes.descartadas || []).filter((t) => t.id !== id);
+  lista.unshift({ id, titulo, curso, cuando: new Date().toISOString() });
+  fs.writeFileSync(ARCHIVO, JSON.stringify({ ...ajustes, descartadas: lista }, null, 2));
+  return lista;
+}
+
+// Sin id, devuelve todas.
+export function restaurar(id) {
+  const ajustes = leerAjustes();
+  const lista = id ? (ajustes.descartadas || []).filter((t) => t.id !== id) : [];
+  fs.writeFileSync(ARCHIVO, JSON.stringify({ ...ajustes, descartadas: lista }, null, 2));
+  return lista;
 }
