@@ -43,13 +43,13 @@
   nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
   .marca { display: flex; align-items: center; gap: 10px; color: var(--texto); text-decoration: none; font: 700 18px "Plus Jakarta Sans", sans-serif; }
   .marca img { width: 34px; height: 34px; border-radius: 9px; }
-  nav .enlaces { display: flex; gap: 22px; font-size: 14px; }
+  nav .enlaces { display: flex; align-items: center; gap: 22px; font-size: 14px; }
+  nav .enlaces .github { display: grid; place-items: center; }
   nav .enlaces a { color: var(--suave); text-decoration: none; }
   nav .enlaces a:hover { color: var(--texto); }
 
-  .portada { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; padding: 48px 0 72px; }
-  .etiqueta { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--turquesa); background: rgb(31 224 196 / .08); border: 1px solid rgb(31 224 196 / .25); padding: 4px 12px; border-radius: 999px; }
-  h1 { font-size: clamp(36px, 5.4vw, 58px); line-height: 1.05; margin: 18px 0 18px; font-weight: 800; }
+  .portada { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 48px; align-items: center; padding: 48px 0 72px; }
+  h1 { font-size: clamp(38px, 5.6vw, 62px); line-height: 1.04; margin: 0 0 20px; font-weight: 800; }
   h1 em { font-style: normal; background: linear-gradient(90deg, var(--turquesa), var(--celeste)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .lema { color: var(--suave); font-size: 18px; max-width: 34ch; margin: 0 0 28px; }
   .acciones { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
@@ -64,18 +64,90 @@
   .secundario { color: var(--suave); text-decoration: none; font-size: 15px; padding: 12px 6px; }
   .secundario:hover { color: var(--texto); }
 
-  /* El widget y su vista previa, lado a lado como en el escritorio. */
-  .escena { display: flex; align-items: flex-start; gap: 14px; }
-  .escena img { display: block; border-radius: 16px; filter: drop-shadow(0 30px 50px rgb(0 0 0 / .45)); min-width: 0; }
-  .escena .flotante { width: 44%; margin-top: 64px; height: auto; }
-  .escena .principal { width: 56%; height: auto; }
+  /* ---- Réplica del widget ----
+     Mismo diseño que la app (tema Medianoche), con tareas de ejemplo
+     fechadas respecto a hoy. Pasar el ratón por una tarea abre su vista
+     previa al lado, como en el escritorio. */
+  .demo { position: relative; display: flex; justify-content: flex-end; align-items: flex-start; min-height: 470px; }
+  .w, .vp {
+    --texto-w: #f3f2ee; --suave-w: #b0ada6; --tenue-w: #75736d; --borde-w: rgb(255 255 255 / .08);
+    --hover-w: rgb(255 255 255 / .055); --neutro-w: rgb(255 255 255 / .07); --mal-w: #f07a6f; --pronto-w: #e7b04f; --bien-w: #5cc98d;
+    font-family: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif; color: var(--texto-w); -webkit-font-smoothing: antialiased;
+  }
+  .w {
+    position: relative; z-index: 2; width: 300px; flex: none; font-size: 12.5px; line-height: 1.35;
+    background: linear-gradient(180deg, rgb(35 35 39 / .94), rgb(22 22 26 / .95));
+    border: 1px solid var(--borde-w); border-radius: 14px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .06), 0 30px 60px rgb(0 0 0 / .45), 0 6px 16px rgb(0 0 0 / .3);
+    user-select: none; overflow: hidden;
+  }
+  .w header { display: flex; align-items: center; gap: 7px; padding: 10px 12px 8px 13px; }
+  .w h3 { margin: 0; font: 600 13.5px/1 "Segoe UI Variable Display", "Segoe UI", Inter, system-ui, sans-serif; letter-spacing: -.005em; }
+  .w .cuenta { font-size: 11px; font-weight: 700; line-height: 18px; height: 18px; min-width: 18px; padding: 0 6px; border-radius: 9px; text-align: center; background: color-mix(in srgb, var(--mal-w) 20%, transparent); color: var(--mal-w); }
+  .w .fecha { color: var(--tenue-w); font-size: 11px; margin-left: auto; }
+  .w .lista { padding: 0 5px 6px; }
+  .w .sep { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave-w); padding: 9px 9px 3px; }
+  .w .sep::after { content: ''; flex: 1; height: 1px; background: var(--borde-w); }
+  .w .sep.mal { color: var(--mal-w); }
+  .w .item { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; gap: 9px; align-items: center; padding: 7px 8px 7px 9px; border-radius: 9px; cursor: default; transition: background .12s; }
+  .w .item:hover, .w .item.activa { background: var(--hover-w); }
+  .w .punto { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent); }
+  .w .titulo { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .w .meta { font-size: 11px; color: var(--tenue-w); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+  .w .meta svg { display: inline-block; vertical-align: -1px; margin-left: 4px; opacity: .8; }
+  .w .pastilla { font-size: 11px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; padding: 2px 7px; border-radius: 999px; background: var(--neutro-w); color: var(--suave-w); }
+  .w .pastilla.mal { background: color-mix(in srgb, var(--mal-w) 16%, transparent); color: var(--mal-w); }
+  .w .pastilla.pronto { background: color-mix(in srgb, var(--pronto-w) 16%, transparent); color: var(--pronto-w); }
+
+  .vp {
+    position: absolute; z-index: 3; right: 314px; width: 264px; font-size: 12px; line-height: 1.45;
+    background: rgb(28 28 31 / .98); border: 1px solid rgb(255 255 255 / .1); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 18px 40px rgb(0 0 0 / .5), 0 2px 6px rgb(0 0 0 / .3);
+    opacity: 0; transform: translateX(6px); transition: opacity .16s ease-out, transform .16s ease-out, top .16s ease-out; pointer-events: none;
+  }
+  .vp.visible { opacity: 1; transform: none; }
+  .vp .franja { height: 3px; }
+  .vp .cuerpo { padding: 11px 13px 12px; }
+  .vp .curso { font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+  .vp h4 { margin: 3px 0 7px; font: 600 14px/1.25 "Segoe UI Variable Display", "Segoe UI", Inter, system-ui, sans-serif; }
+  .vp .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .vp .chip { font-size: 10.5px; font-weight: 600; border-radius: 999px; padding: 2px 8px; }
+  .vp .chip.mal { color: var(--mal-w); background: color-mix(in srgb, var(--mal-w) 14%, transparent); }
+  .vp .chip.pronto { color: var(--pronto-w); background: color-mix(in srgb, var(--pronto-w) 14%, transparent); }
+  .vp .chip.bien { color: var(--bien-w); background: color-mix(in srgb, var(--bien-w) 13%, transparent); }
+  .vp .seccion { font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--tenue-w); margin: 10px 0 5px; }
+  .vp .instr { color: var(--suave-w); }
+  .vp .archivo { border-radius: 9px; background: rgb(255 255 255 / .045); overflow: hidden; }
+  .vp .muestra { border-bottom: 1px solid rgb(255 255 255 / .07); }
+  .vp .hoja { background: #fff; color: #222; height: 96px; padding: 10px 14px; overflow: hidden; font-family: "Times New Roman", Georgia, serif; }
+  .vp .hoja b { display: block; text-align: center; font-size: 11px; letter-spacing: .02em; margin-bottom: 8px; }
+  .vp .hoja i { display: block; height: 4px; border-radius: 2px; background: #c9c9c9; margin: 6px 0; }
+  .vp .zip { padding: 7px 10px; font: 10.5px/1.6 "Cascadia Mono", Consolas, monospace; color: var(--suave-w); background: rgb(0 0 0 / .28); }
+  .vp .zip span { color: var(--tenue-w); }
+  .vp .texto { padding: 7px 10px; color: var(--suave-w); font-size: 11px; white-space: pre-line; background: rgb(0 0 0 / .28); }
+  .vp .fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 9px; }
+  .vp .tipo { font-size: 9px; font-weight: 700; letter-spacing: .04em; padding: 2px 5px; border-radius: 4px; color: #fff; }
+  .vp .nombre { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vp .peso { font-size: 10px; color: var(--tenue-w); }
+  .vp .bajar { color: var(--tenue-w); }
+  .vp .pie { border-top: 1px solid rgb(255 255 255 / .07); padding: 8px 13px; display: flex; justify-content: flex-end; }
+  .vp .abrir { font-size: 11px; font-weight: 600; background: rgb(255 255 255 / .06); border-radius: 7px; padding: 4px 9px; }
+  .pista { position: absolute; right: 0; bottom: 0; width: 300px; text-align: center; color: var(--tenue); font-size: 12.5px; }
+
+  @media (max-width: 1120px) {
+    .w, .pista { width: 280px; }
+    .vp { right: 292px; width: 240px; }
+  }
   @media (max-width: 960px) {
-    .portada { grid-template-columns: minmax(0, 1fr); padding-top: 24px; gap: 36px; }
-    .escena { max-width: 620px; }
+    .portada { grid-template-columns: minmax(0, 1fr); padding-top: 24px; gap: 40px; }
+    .demo { justify-content: center; flex-direction: column; align-items: center; gap: 12px; min-height: 0; }
+    .w { order: 1; }
+    .vp { position: static; width: 300px; transform: none; display: none; order: 2; }
+    .vp.visible { display: block; }
+    .pista { position: static; order: 3; }
   }
   @media (max-width: 640px) {
-    nav .enlaces a:not(:last-child) { display: none; }
-    .escena .flotante { margin-top: 40px; }
+    nav .enlaces a:not(:nth-last-child(-n+2)) { display: none; }
+    .w, .vp, .pista { width: 100%; max-width: 340px; }
   }
 
   section { padding: 64px 0; }
@@ -118,13 +190,12 @@
 <div class="contenedor">
   <nav>
     <a class="marca" href="./"><img src="img/icono-192.png" alt="">BB Today</a>
-    <div class="enlaces"><a href="#que-hace">Qué hace</a><a href="#instalar">Instalar</a><a href="#preguntas">Preguntas</a><a href="privacidad.html">Privacidad</a></div>
+    <div class="enlaces"><a href="#que-hace">Qué hace</a><a href="#instalar">Instalar</a><a href="#preguntas">Preguntas</a><a href="privacidad.html">Privacidad</a><a class="github" href="https://github.com/Ironmistyfox" target="_blank" rel="noopener" aria-label="GitHub de Ironmistyfox" title="GitHub"><svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a></div>
   </nav>
 
   <header class="portada">
     <div>
-      <span class="etiqueta">Para Windows 10 y 11 · gratis</span>
-      <h1>Lo que vence hoy en Blackboard, <em>en tu escritorio</em>.</h1>
+      <h1>Todas tus tareas <em>a solo un clic</em>.</h1>
       <p class="lema">Un widget que se queda al fondo de tu pantalla, se actualiza solo y te enseña las instrucciones y los archivos de cada tarea sin abrir el navegador.</p>
       <div class="acciones">
         <a class="descargar" id="descargar" href="https://github.com/Ironmistyfox/bb-today-descargas/releases/latest/download/BB-Today-Setup.exe">
@@ -135,9 +206,10 @@
       </div>
       <p class="detalle-descarga" id="version">Versión 1.0.0 · ~100 MB · se actualiza sola</p>
     </div>
-    <div class="escena">
-      <img class="flotante" src="img/vista-previa.png" alt="La vista previa de una tarea con sus instrucciones y la primera página de los PDF.">
-      <img class="principal" src="img/widget.png" alt="El widget de BB Today mostrando las tareas de hoy, de mañana y las vencidas que aún aceptan entrega.">
+    <div class="demo" id="demo" aria-label="Ejemplo del widget de BB Today con tareas de muestra">
+      <div class="vp" id="vp" aria-hidden="true"></div>
+      <div class="w" id="w"></div>
+      <div class="pista">Pasa el ratón por una tarea</div>
     </div>
   </header>
 </div>
@@ -225,6 +297,99 @@
   </div>
 </footer>
 
+<script>
+  // ---- Réplica del widget con tareas de ejemplo ----
+  (() => {
+    const H = 3_600_000, DIA = 24 * H;
+    const ahora = Date.now();
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const finDeHoy = hoy.getTime() + DIA - 60_000;
+    // Siempre parecen "de hoy": una vence en un par de horas, otra en la noche.
+    const pronto = Math.min(ahora + 2.4 * H, finDeHoy);
+    const noche = Math.max(finDeHoy, ahora + 5 * H);
+    const fmtHora = new Intl.DateTimeFormat('es-MX', { hour: 'numeric', minute: '2-digit' });
+    const fmtHoy = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
+    const CLIP = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10.5 4.5 5.6 9.4a1.5 1.5 0 0 0 2.1 2.1l5-5a3 3 0 0 0-4.2-4.2l-5 5a4.5 4.5 0 0 0 6.4 6.4l4.4-4.4"/></svg>';
+    const BAJAR = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7.5 8 11l3.5-3.5M3 13.5h10"/></svg>';
+
+    const tareas = [
+      { titulo: 'Tarea 3.2 · Integrales dobles', curso: 'Cálculo en Varias Variables', color: '#7d9cf0', cuando: pronto,
+        instr: 'Del archivo «Ejercicios 3.2» resuelve los problemas 2, 7, 11 y 15. Sube un solo PDF con tu procedimiento.',
+        archivos: [{ tipo: 'pdf', nombre: 'Ejercicios 3.2.pdf', peso: '214 KB', hoja: 'EJERCICIOS 3.2 (INTEGRALES DOBLES)' }] },
+      { titulo: 'Práctica 6: árboles AVL', curso: 'Estructuras de Datos II', color: '#4cc9a0', cuando: noche,
+        instr: 'Implementa la inserción y las cuatro rotaciones de un árbol AVL. No uses la STL.',
+        archivos: [{ tipo: 'zip', nombre: 'practica-6.zip', peso: '3 KB', lista: ['practica-6/avl.h', 'practica-6/avl.cpp', 'practica-6/main.cpp'] }] },
+      { titulo: 'Ensayo: dilemas éticos de la IA', curso: 'Ética', color: '#b48cf2', cuando: hoy.getTime() + 2 * DIA - 60_000, manana: true,
+        instr: 'Entre 800 y 1 000 palabras. Cita al menos a dos autores vistos en clase.',
+        archivos: [{ tipo: 'docx', nombre: 'Rúbrica del ensayo.docx', peso: '18 KB', texto: 'Rúbrica del ensayo\nArgumentación · 40 %\nUso de fuentes · 30 %…' }] },
+      { titulo: 'Lectura 4: liderazgo situacional', curso: 'Liderazgo y Comunicación', color: '#f08a5d', cuando: hoy.getTime() - 2 * DIA + 23.98 * H, vencida: true,
+        instr: 'Responde las cinco preguntas al final de la lectura.',
+        archivos: [{ tipo: 'pdf', nombre: 'Lectura 4.pdf', peso: '1.2 MB', hoja: 'LIDERAZGO SITUACIONAL' }] },
+    ];
+
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    function pastilla(t) {
+      if (t.vencida) return ['hace 2 d', ''];
+      const ms = t.cuando - ahora;
+      if (t.manana) return [fmtHora.format(t.cuando), ''];
+      if (ms < 6 * H) return [`${Math.max(1, Math.floor(ms / H))} h`, 'mal'];
+      return [fmtHora.format(t.cuando), 'pronto'];
+    }
+    const fila = (t, i) => {
+      const [txt, clase] = pastilla(t);
+      return `<div class="item" data-i="${i}"><i class="punto" style="background:${t.color};color:${t.color}"></i>
+        <div style="min-width:0"><div class="titulo">${esc(t.titulo)}</div><div class="meta">${esc(t.curso)}${CLIP}</div></div>
+        <span class="pastilla ${clase}">${txt}</span></div>`;
+    };
+    const w = document.getElementById('w');
+    w.innerHTML = `<header><h3>Pendientes</h3><span class="cuenta">${tareas.length}</span><span class="fecha">${fmtHoy.format(new Date())}</span></header>
+      <div class="lista">
+        <div class="sep">Hoy</div>${fila(tareas[0], 0)}${fila(tareas[1], 1)}
+        <div class="sep">Mañana</div>${fila(tareas[2], 2)}
+        <div class="sep mal">Vencidas · aceptan tardía</div>${fila(tareas[3], 3)}
+      </div>`;
+
+    const TIPOS = { pdf: ['PDF', '#d9473b'], zip: ['ZIP', '#6b6760'], docx: ['DOCX', '#2f6fd6'] };
+    function vista(t) {
+      let chips;
+      if (t.vencida) chips = '<span class="chip mal">Venció hace 2 días</span><span class="chip bien">Acepta entrega tardía</span>';
+      else {
+        const h = Math.max(1, Math.floor((t.cuando - ahora) / H));
+        chips = `<span class="chip ${h < 3 ? 'mal' : 'pronto'}">${t.manana ? 'Mañana' : 'Hoy'} · ${fmtHora.format(t.cuando)} · faltan ${h} h</span>`;
+      }
+      const archivos = t.archivos.map((a) => {
+        const [et, color] = TIPOS[a.tipo];
+        let muestra = '';
+        if (a.hoja) muestra = `<div class="hoja"><b>${esc(a.hoja)}</b><i style="width:92%"></i><i style="width:84%"></i><i style="width:88%"></i><i style="width:60%"></i><i style="width:80%"></i></div>`;
+        if (a.lista) muestra = `<div class="zip">${a.lista.map((n) => { const p = n.split('/'); const b = p.pop(); return `<div><span>${esc(p.join('/'))}/</span>${esc(b)}</div>`; }).join('')}</div>`;
+        if (a.texto) muestra = `<div class="texto">${esc(a.texto)}</div>`;
+        return `<div class="archivo"><div class="muestra">${muestra}</div><div class="fila"><span class="tipo" style="background:${color}">${et}</span>
+          <div style="min-width:0"><div class="nombre">${esc(a.nombre)}</div><div class="peso">${a.peso}</div></div><span class="bajar">${BAJAR}</span></div></div>`;
+      }).join('');
+      return `<div class="franja" style="background:${t.color}"></div><div class="cuerpo">
+        <div class="curso" style="color:${t.color}">${esc(t.curso)}</div><h4>${esc(t.titulo)}</h4><div class="chips">${chips}</div>
+        <div class="seccion">Instrucciones</div><div class="instr">${esc(t.instr)}</div>
+        <div class="seccion">Archivos · ${t.archivos.length}</div>${archivos}</div>
+        <div class="pie"><span class="abrir">Abrir en Blackboard ↗</span></div>`;
+    }
+
+    const vp = document.getElementById('vp');
+    const demo = document.getElementById('demo');
+    function mostrar(item) {
+      w.querySelectorAll('.item.activa').forEach((x) => x.classList.remove('activa'));
+      item.classList.add('activa');
+      vp.innerHTML = vista(tareas[Number(item.dataset.i)]);
+      // A la altura de la fila, sin salirse de la escena.
+      const y = item.getBoundingClientRect().top - demo.getBoundingClientRect().top - 10;
+      vp.style.top = `${Math.max(0, Math.min(y, demo.offsetHeight - vp.offsetHeight))}px`;
+      vp.classList.add('visible');
+    }
+    w.addEventListener('mouseover', (e) => { const it = e.target.closest('.item'); if (it) mostrar(it); });
+    w.addEventListener('click', (e) => { const it = e.target.closest('.item'); if (it) mostrar(it); });
+    // Al cargar ya se ve una, para que se entienda sin tocar nada.
+    requestAnimationFrame(() => mostrar(w.querySelector('.item')));
+  })();
+</script>
 <script>
   // La versión y el tamaño reales, del último release; si GitHub no
   // responde, se queda el texto de arriba.
