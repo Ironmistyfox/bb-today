@@ -456,20 +456,6 @@ function iconoBandeja() {
   return nativeImage.createFromPath(ICONO);
 }
 
-// Acceso directo en el menú Inicio, con el icono, para abrirlo a mano.
-function accesoDirecto() {
-  if (app.isPackaged) return;
-  const destino = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs', `${NOMBRE}.lnk`);
-  shell.writeShortcutLink(destino, fs.existsSync(destino) ? 'update' : 'create', {
-    target: process.execPath,
-    args: `"${app.getAppPath()}"`,
-    icon: ICONO,
-    iconIndex: 0,
-    appUserModelId: 'blackboard-agenda',
-    description: 'Tus pendientes de Blackboard en el escritorio',
-  });
-}
-
 // En desarrollo el ejecutable es electron.exe y hay que pasarle la carpeta.
 function opcionesInicio() {
   return app.isPackaged ? {} : { path: process.execPath, args: [app.getAppPath()] };
@@ -609,9 +595,12 @@ app.whenReady().then(() => {
 
   // La primera vez se registra para abrirse con Windows; después manda lo
   // que el usuario marque en la bandeja.
-  const marca = path.join(DIR_DATOS, app.isPackaged ? 'inicio-instalado' : 'inicio-configurado');
-  // (Las capturas de prueba no tocan el arranque de Windows.)
-  if (!fs.existsSync(marca) && !process.env.BB_CAPTURA) {
+  // Sólo la versión instalada se registra para abrirse con Windows (el acceso
+  // directo del menú Inicio lo crea el instalador). La de desarrollo
+  // (electron .) y las pruebas no tocan nada del sistema: lo hacían, y
+  // dejaron el acceso directo y el arranque apuntando a electron.exe.
+  const marca = path.join(DIR_DATOS, 'inicio-instalado');
+  if (app.isPackaged && !fs.existsSync(marca) && !process.env.BB_CAPTURA) {
     app.setLoginItemSettings({ openAtLogin: true, ...opcionesInicio() });
     // La versión instalada reemplaza a la de desarrollo: que no arranquen
     // las dos con Windows.
@@ -619,10 +608,6 @@ app.whenReady().then(() => {
     fs.mkdirSync(DIR_DATOS, { recursive: true });
     fs.writeFileSync(marca, new Date().toISOString());
   }
-
-  try {
-    accesoDirecto();
-  } catch {}
 
   crearVentana();
   crearVistaPrevia();
