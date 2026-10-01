@@ -135,3 +135,38 @@ Variables opcionales: `BB_URL` (sustituye la URL guardada) y `BB_DESCARGAS`
 - Revisa la política de uso aceptable de tu universidad. Automatizar el acceso
   con tu propia sesión suele estar permitido para uso personal, pero depende de
   cada institución.
+
+## Publicar una versión
+
+Tres sitios, a propósito separados:
+
+| Qué | Dónde |
+|---|---|
+| Código (este repo) | `Ironmistyfox/bb-today`, **privado** |
+| Instaladores y `latest.yml` | Releases de `Ironmistyfox/bb-today-descargas`, **público**, sin código |
+| Página web | https://bb-today.pages.dev (Cloudflare Pages, carpeta `sitio/`) |
+
+La app se actualiza sola leyendo `latest.yml` del último release público
+(`widget/actualizaciones.js`): descarga en segundo plano, instala cuando la
+computadora lleva 2 min sin usarse o está bloqueada, y si algo falla avisa con
+un enlace a la página. Las actualizaciones bajan sólo los bloques que
+cambiaron (`.blockmap`).
+
+1. Sube `version` en `package.json` y añade su sección a `CHANGELOG.md`.
+2. Commit y push.
+3. `npm run publicar` — exige árbol limpio, compila en
+   `%LOCALAPPDATA%\bb-today-build` (fuera de OneDrive: bloquea archivos a media
+   compilación), crea el release con los tres archivos y etiqueta el commit.
+   No uses `electron-builder --publish`: crea el release dos veces y lo deja
+   sin `latest.yml`.
+4. Si cambió la página: `npm run desplegar-sitio`. Nunca `wrangler` desde la
+   raíz del repo (ver el comentario del script).
+
+### Firma
+
+El instalador **no está firmado**: no hay certificado de firma de código en
+esta máquina, y Windows SmartScreen muestra «Windows protegió tu PC» la
+primera vez (la página explica cómo seguir). Para quitarlo hace falta un
+certificado de pago; cuando lo haya, electron-builder lo usa con
+`CSC_LINK`/`CSC_KEY_PASSWORD` (o la configuración de Azure Trusted Signing en
+`build.win`).

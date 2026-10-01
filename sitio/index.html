@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BB Today · Tus pendientes de Blackboard en el escritorio</title>
+<meta name="description" content="Un widget para Windows que te muestra lo que vence hoy en Blackboard, con las instrucciones y los archivos de cada tarea a un vistazo.">
+<link rel="icon" href="favicon.png">
+<meta property="og:title" content="BB Today">
+<meta property="og:description" content="Tus pendientes de Blackboard, en el escritorio de Windows.">
+<meta property="og:image" content="img/icono-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --azul-noche: #06102e;
+    --azul: #0b1a44;
+    --azul-2: #13286a;
+    --turquesa: #1fe0c4;
+    --celeste: #1aa7e0;
+    --texto: #eef2ff;
+    --suave: #aab6d8;
+    --tenue: #7383ad;
+    --borde: rgb(140 170 255 / .14);
+    --tarjeta: rgb(255 255 255 / .04);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: radial-gradient(1200px 600px at 75% -10%, rgb(31 224 196 / .14), transparent 60%),
+                radial-gradient(900px 500px at 0% 10%, rgb(26 167 224 / .12), transparent 60%),
+                var(--azul-noche);
+    color: var(--texto);
+    font: 16px/1.6 Inter, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--turquesa); }
+  .contenedor { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  h1, h2, h3 { font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif; letter-spacing: -.02em; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+  .marca { display: flex; align-items: center; gap: 10px; color: var(--texto); text-decoration: none; font: 700 18px "Plus Jakarta Sans", sans-serif; }
+  .marca img { width: 34px; height: 34px; border-radius: 9px; }
+  nav .enlaces { display: flex; gap: 22px; font-size: 14px; }
+  nav .enlaces a { color: var(--suave); text-decoration: none; }
+  nav .enlaces a:hover { color: var(--texto); }
+
+  .portada { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; padding: 48px 0 72px; }
+  .etiqueta { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--turquesa); background: rgb(31 224 196 / .08); border: 1px solid rgb(31 224 196 / .25); padding: 4px 12px; border-radius: 999px; }
+  h1 { font-size: clamp(36px, 5.4vw, 58px); line-height: 1.05; margin: 18px 0 18px; font-weight: 800; }
+  h1 em { font-style: normal; background: linear-gradient(90deg, var(--turquesa), var(--celeste)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lema { color: var(--suave); font-size: 18px; max-width: 34ch; margin: 0 0 28px; }
+  .acciones { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .descargar {
+    display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #04122e; font: 700 16px "Plus Jakarta Sans", sans-serif;
+    background: linear-gradient(90deg, var(--turquesa), var(--celeste)); padding: 14px 22px; border-radius: 12px;
+    box-shadow: 0 10px 30px rgb(26 167 224 / .3); transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .descargar:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgb(26 167 224 / .4); }
+  .descargar svg { width: 18px; height: 18px; }
+  .detalle-descarga { color: var(--tenue); font-size: 13px; }
+  .secundario { color: var(--suave); text-decoration: none; font-size: 15px; padding: 12px 6px; }
+  .secundario:hover { color: var(--texto); }
+
+  /* El widget y su vista previa, lado a lado como en el escritorio. */
+  .escena { display: flex; align-items: flex-start; gap: 14px; }
+  .escena img { display: block; border-radius: 16px; filter: drop-shadow(0 30px 50px rgb(0 0 0 / .45)); min-width: 0; }
+  .escena .flotante { width: 44%; margin-top: 64px; height: auto; }
+  .escena .principal { width: 56%; height: auto; }
+  @media (max-width: 960px) {
+    .portada { grid-template-columns: minmax(0, 1fr); padding-top: 24px; gap: 36px; }
+    .escena { max-width: 620px; }
+  }
+  @media (max-width: 640px) {
+    nav .enlaces a:not(:last-child) { display: none; }
+    .escena .flotante { margin-top: 40px; }
+  }
+
+  section { padding: 64px 0; }
+  .titulo-seccion { text-align: center; margin-bottom: 40px; }
+  .titulo-seccion h2 { font-size: clamp(26px, 3.6vw, 36px); margin: 0 0 10px; }
+  .titulo-seccion p { color: var(--suave); margin: 0 auto; max-width: 56ch; }
+  .rejilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 880px) { .rejilla { grid-template-columns: 1fr; } }
+  .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 16px; padding: 22px; }
+  .tarjeta .icono { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: rgb(31 224 196 / .1); color: var(--turquesa); margin-bottom: 14px; }
+  .tarjeta .icono svg { width: 20px; height: 20px; }
+  .tarjeta h3 { margin: 0 0 6px; font-size: 18px; }
+  .tarjeta p { margin: 0; color: var(--suave); font-size: 15px; }
+
+  .pasos { counter-reset: paso; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 880px) { .pasos { grid-template-columns: 1fr; } }
+  .paso { position: relative; padding: 22px 22px 22px 66px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 16px; }
+  .paso::before { counter-increment: paso; content: counter(paso); position: absolute; left: 20px; top: 20px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font: 700 15px "Plus Jakarta Sans", sans-serif; color: #04122e; background: linear-gradient(135deg, var(--turquesa), var(--celeste)); }
+  .paso h3 { margin: 0 0 6px; font-size: 17px; }
+  .paso p { margin: 0; color: var(--suave); font-size: 15px; }
+  .aviso { margin-top: 16px; background: rgb(255 199 107 / .06); border: 1px solid rgb(255 199 107 / .25); color: #ffd99a; border-radius: 14px; padding: 16px 18px; font-size: 15px; }
+  .aviso b { color: #ffe6bd; }
+
+  .preguntas { max-width: 760px; margin: 0 auto; }
+  details { border-bottom: 1px solid var(--borde); padding: 16px 4px; }
+  summary { cursor: pointer; font: 600 17px "Plus Jakarta Sans", sans-serif; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: '+'; color: var(--turquesa); font-size: 22px; line-height: 1; }
+  details[open] summary::after { content: '–'; }
+  details p { color: var(--suave); margin: 10px 0 0; }
+
+  .cierre { text-align: center; padding: 72px 0; }
+  .cierre h2 { font-size: clamp(26px, 3.6vw, 38px); margin: 0 0 22px; }
+  footer { border-top: 1px solid var(--borde); padding: 26px 0 40px; color: var(--tenue); font-size: 13px; }
+  footer .contenedor { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+  footer a { color: var(--suave); }
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <nav>
+    <a class="marca" href="./"><img src="img/icono-192.png" alt="">BB Today</a>
+    <div class="enlaces"><a href="#que-hace">Qué hace</a><a href="#instalar">Instalar</a><a href="#preguntas">Preguntas</a><a href="privacidad.html">Privacidad</a></div>
+  </nav>
+
+  <header class="portada">
+    <div>
+      <span class="etiqueta">Para Windows 10 y 11 · gratis</span>
+      <h1>Lo que vence hoy en Blackboard, <em>en tu escritorio</em>.</h1>
+      <p class="lema">Un widget que se queda al fondo de tu pantalla, se actualiza solo y te enseña las instrucciones y los archivos de cada tarea sin abrir el navegador.</p>
+      <div class="acciones">
+        <a class="descargar" id="descargar" href="https://github.com/Ironmistyfox/bb-today-descargas/releases/latest/download/BB-Today-Setup.exe">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
+          Descargar para Windows
+        </a>
+        <a class="secundario" href="#instalar">Cómo se instala →</a>
+      </div>
+      <p class="detalle-descarga" id="version">Versión 1.0.0 · ~100 MB · se actualiza sola</p>
+    </div>
+    <div class="escena">
+      <img class="flotante" src="img/vista-previa.png" alt="La vista previa de una tarea con sus instrucciones y la primera página de los PDF.">
+      <img class="principal" src="img/widget.png" alt="El widget de BB Today mostrando las tareas de hoy, de mañana y las vencidas que aún aceptan entrega.">
+    </div>
+  </header>
+</div>
+
+<section id="que-hace">
+  <div class="contenedor">
+    <div class="titulo-seccion">
+      <h2>Todo lo que importa, nada más</h2>
+      <p>BB Today revisa tus cursos por ti, carpeta por carpeta, y te deja sólo lo que tienes que entregar.</p>
+    </div>
+    <div class="rejilla">
+      <div class="tarjeta">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Lo de hoy, primero</h3>
+        <p>Lo que vence hoy con su hora, y si quieres, lo de los próximos días. Lo que ya entregaste desaparece.</p>
+      </div>
+      <div class="tarjeta">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h6l2 2h10v10H3z"/><path d="M12 13h5"/></svg></div>
+        <h3>Encuentra lo escondido</h3>
+        <p>Revisa todo el contenido de cada curso, también las tareas metidas en subcarpetas que se pasan por alto.</p>
+      </div>
+      <div class="tarjeta">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 12h8M8 16h5"/></svg></div>
+        <h3>Vista previa al pasar el ratón</h3>
+        <p>Instrucciones, primera página de los PDF, fotos y lo que trae cada .zip. Un clic y el archivo se abre.</p>
+      </div>
+      <div class="tarjeta">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div>
+        <h3>Vencidas que aún cuentan</h3>
+        <p>Si se te pasó algo, te lo muestra sólo si tu profesor todavía acepta entregas tardías.</p>
+      </div>
+      <div class="tarjeta">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+        <h3>Avisos antes de que venza</h3>
+        <p>Una notificación de Windows unas horas antes de cada entrega. Tú eliges cuántas.</p>
+      </div>
+      <div class="tarjeta">
+        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></div>
+        <h3>Nunca te estorba</h3>
+        <p>Vive en el fondo del escritorio, debajo de tus ventanas. Cinco estilos, opacidad y tamaño a tu gusto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="instalar">
+  <div class="contenedor">
+    <div class="titulo-seccion">
+      <h2>Listo en un minuto</h2>
+      <p>No hay que configurar nada: inicias sesión una vez y ya.</p>
+    </div>
+    <div class="pasos">
+      <div class="paso"><h3>Descarga e instala</h3><p>Abre <b>BB-Today-Setup.exe</b>. Se instala solo, sin pedir permisos de administrador.</p></div>
+      <div class="paso"><h3>Inicia sesión</h3><p>El widget te pide entrar. Usas el inicio de sesión de tu escuela, como siempre.</p></div>
+      <div class="paso"><h3>Olvídate</h3><p>Arranca con Windows, revisa Blackboard cada hora y se actualiza solo cuando hay versión nueva.</p></div>
+    </div>
+    <div class="aviso"><b>¿Windows dice «Windows protegió tu PC»?</b> Es porque BB Today todavía no tiene un certificado de firma de pago. Pulsa <b>Más información</b> y luego <b>Ejecutar de todos modos</b>. Sólo pasa la primera vez.</div>
+  </div>
+</section>
+
+<section id="preguntas">
+  <div class="contenedor preguntas">
+    <div class="titulo-seccion"><h2>Preguntas</h2></div>
+    <details><summary>¿Es seguro darle mi cuenta?</summary><p>BB Today no ve tu contraseña: inicias sesión en la página de tu escuela dentro de una ventana, igual que en el navegador. La app sólo guarda la sesión en tu computadora, no tiene servidor y no manda tus datos a ningún lado. Lee el <a href="privacidad.html">aviso de privacidad</a>.</p></details>
+    <details><summary>¿Puede entregar tareas o cambiar algo?</summary><p>No. Sólo lee. Para entregar, el botón «Abrir en Blackboard» te lleva a la tarea.</p></details>
+    <details><summary>¿Funciona con mi escuela?</summary><p>Con cualquier escuela que use Blackboard Learn con la experiencia Ultra. Viene listo para la Universidad Panamericana; para otra, en la primera pantalla eliges «cambiar» y escribes la dirección de tu Blackboard.</p></details>
+    <details><summary>¿Hay versión para Mac o el celular?</summary><p>Por ahora sólo Windows 10 y 11.</p></details>
+    <details><summary>¿Es oficial?</summary><p>No. BB Today es un proyecto independiente y no está afiliado a Blackboard, Anthology ni a ninguna universidad. «Blackboard» es marca de sus dueños y se menciona sólo para decir con qué funciona.</p></details>
+    <details><summary>¿Cómo lo quito?</summary><p>Desde Configuración de Windows → Aplicaciones → BB Today → Desinstalar. Antes puedes cerrar sesión desde su icono en la bandeja.</p></details>
+  </div>
+</section>
+
+<div class="contenedor cierre">
+  <h2>Deja de abrir Blackboard para ver qué toca.</h2>
+  <a class="descargar" href="https://github.com/Ironmistyfox/bb-today-descargas/releases/latest/download/BB-Today-Setup.exe">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
+    Descargar BB Today
+  </a>
+</div>
+
+<footer>
+  <div class="contenedor">
+    <span>BB Today · hecho por <a href="https://github.com/Ironmistyfox">Ironmistyfox</a></span>
+    <span><a href="privacidad.html">Privacidad</a> · <a href="https://github.com/Ironmistyfox/bb-today-descargas/releases">Versiones</a> · <a href="https://github.com/Ironmistyfox/bb-today-descargas/issues">Reportar un problema</a></span>
+  </div>
+</footer>
+
+<script>
+  // La versión y el tamaño reales, del último release; si GitHub no
+  // responde, se queda el texto de arriba.
+  fetch('https://api.github.com/repos/Ironmistyfox/bb-today-descargas/releases/latest')
+    .then((r) => (r.ok ? r.json() : null))
+    .then((r) => {
+      if (!r) return;
+      const exe = r.assets.find((a) => a.name.endsWith('.exe'));
+      const mb = exe ? ` · ${Math.round(exe.size / 1048576)} MB` : '';
+      const fecha = new Date(r.published_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('version').textContent = `Versión ${r.tag_name.replace(/^v/, '')}${mb} · ${fecha} · se actualiza sola`;
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>

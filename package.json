@@ -13,7 +13,8 @@
     "probar": "node src/probar.js",
     "widget": "electron .",
     "empaquetar": "electron-builder --win --publish never -c.directories.output=%LOCALAPPDATA%/bb-today-build",
-    "publicar": "node tools/publicar.mjs"
+    "publicar": "node tools/publicar.mjs",
+    "desplegar-sitio": "node tools/desplegar-sitio.mjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",

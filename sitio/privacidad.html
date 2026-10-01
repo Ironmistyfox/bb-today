@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacidad · BB Today</title>
+<meta name="description" content="Qué datos usa BB Today, dónde se guardan y cómo borrarlos.">
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --fondo: #06102e; --texto: #eef2ff; --suave: #b3bedd; --tenue: #7383ad; --borde: rgb(140 170 255 / .14); --turquesa: #1fe0c4; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.7 Inter, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .contenedor { max-width: 760px; margin: 0 auto; padding: 0 20px 64px; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0 8px; }
+  .marca { display: flex; align-items: center; gap: 10px; color: var(--texto); text-decoration: none; font: 700 18px "Plus Jakarta Sans", sans-serif; }
+  .marca img { width: 32px; height: 32px; border-radius: 8px; }
+  nav a.volver { color: var(--suave); text-decoration: none; font-size: 14px; }
+  h1 { font: 800 clamp(30px, 5vw, 42px)/1.1 "Plus Jakarta Sans", sans-serif; letter-spacing: -.02em; margin: 36px 0 8px; }
+  .fecha { color: var(--tenue); font-size: 14px; margin-bottom: 28px; }
+  .resumen { background: rgb(31 224 196 / .07); border: 1px solid rgb(31 224 196 / .25); border-radius: 14px; padding: 18px 20px; margin-bottom: 8px; }
+  .resumen b { color: var(--turquesa); }
+  h2 { font: 700 21px "Plus Jakarta Sans", sans-serif; margin: 36px 0 8px; }
+  p, li { color: var(--suave); }
+  b, strong { color: var(--texto); font-weight: 600; }
+  ul { padding-left: 20px; }
+  li { margin: 6px 0; }
+  code { font: 14px "Cascadia Mono", Consolas, monospace; background: rgb(255 255 255 / .06); padding: 1px 6px; border-radius: 5px; color: var(--texto); }
+  a { color: var(--turquesa); }
+  footer { border-top: 1px solid var(--borde); margin-top: 48px; padding-top: 20px; color: var(--tenue); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <nav><a class="marca" href="./"><img src="img/icono-192.png" alt="">BB Today</a><a class="volver" href="./">← Inicio</a></nav>
+
+  <h1>Aviso de privacidad</h1>
+  <div class="fecha">Última actualización: 1 de octubre de 2026 · versión 1.0.0</div>
+
+  <div class="resumen"><b>En corto:</b> BB Today no tiene servidor. Habla directamente con el Blackboard de tu escuela desde tu computadora, sólo lee, y todo lo que guarda se queda en tu computadora. No hay analítica, publicidad ni venta de datos.</div>
+
+  <h2>Quién es responsable</h2>
+  <p>BB Today es un proyecto independiente de <a href="https://github.com/Ironmistyfox">Ironmistyfox</a>. No está afiliado a Blackboard, Anthology ni a ninguna universidad. Para cualquier duda sobre este aviso, abre un reporte en <a href="https://github.com/Ironmistyfox/bb-today-descargas/issues">GitHub</a>.</p>
+
+  <h2>Tu contraseña</h2>
+  <p>BB Today <strong>nunca ve ni guarda tu contraseña</strong>. Al iniciar sesión se abre la página oficial de tu escuela (o de Google, si tu escuela usa Google) en una ventana de la app, y escribes ahí tus datos como en cualquier navegador. Lo único que la app conserva es la <strong>cookie de sesión</strong> que Blackboard le entrega al terminar, igual que la conserva tu navegador.</p>
+
+  <h2>Qué datos usa</h2>
+  <p>Con esa sesión, BB Today pide a Blackboard, y sólo para mostrártelo:</p>
+  <ul>
+    <li>Tu nombre y usuario, para saludarte y saber con qué cuenta entraste.</li>
+    <li>Tus cursos del semestre actual y su horario.</li>
+    <li>El contenido de cada curso, para encontrar tareas, sus fechas, instrucciones y archivos.</li>
+    <li>Si ya entregaste cada tarea. Para saberlo lee tu libro de calificaciones, pero <strong>no muestra ni guarda tus calificaciones</strong>.</li>
+    <li>Los archivos que abres desde la vista previa.</li>
+  </ul>
+  <p><strong>Sólo lee.</strong> BB Today no entrega tareas, no envía mensajes y no cambia nada en Blackboard.</p>
+
+  <h2>Dónde se guarda</h2>
+  <p>Todo se queda en tu computadora:</p>
+  <ul>
+    <li><code>%APPDATA%\blackboard-mcp</code>: la sesión de Blackboard, tus preferencias, la última lista de tareas (para enseñarla al encender, aunque no haya internet todavía) y la lista de avisos ya mostrados.</li>
+    <li><code>Descargas\BB Today</code>: los archivos que abres desde la vista previa.</li>
+  </ul>
+
+  <h2>Con quién se conecta</h2>
+  <ul>
+    <li><strong>El Blackboard de tu escuela</strong>, para leer tus cursos.</li>
+    <li><strong>El inicio de sesión de tu escuela</strong> (por ejemplo, Google), sólo cuando inicias o se renueva la sesión.</li>
+    <li><strong>GitHub</strong>, para buscar y descargar actualizaciones de BB Today. GitHub recibe una petición desde tu IP, como al visitar cualquier página.</li>
+  </ul>
+  <p>Nada más: no hay servidores de BB Today, ni analítica, ni publicidad, ni rastreadores. Esta página web no usa cookies; sólo carga sus tipografías desde Google Fonts.</p>
+
+  <h2>Cómo borrarlo todo</h2>
+  <ul>
+    <li><strong>Cerrar sesión</strong> (icono de la bandeja o Configuración → Cuenta) borra la sesión, la lista guardada y la cookie de Blackboard.</li>
+    <li><strong>Desinstalar</strong> desde Configuración de Windows → Aplicaciones quita la app. Si además quieres borrar tus preferencias, elimina la carpeta <code>%APPDATA%\blackboard-mcp</code>.</li>
+  </ul>
+
+  <h2>Cambios a este aviso</h2>
+  <p>Si BB Today empieza a usar datos de otra forma, este aviso se actualizará antes y el cambio se contará en las notas de la versión.</p>
+
+  <footer>BB Today · <a href="./">Inicio</a> · <a href="https://github.com/Ironmistyfox/bb-today-descargas/releases">Versiones</a></footer>
+</div>
+</body>
+</html>
