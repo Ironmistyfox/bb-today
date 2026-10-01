@@ -18,8 +18,11 @@ import path from 'node:path';
 const REPO_DESCARGAS = 'Ironmistyfox/bb-today-descargas';
 const raiz = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')), '..');
 const salida = path.join(process.env.LOCALAPPDATA, 'bb-today-build');
-const sh = (cmd, args, opciones = {}) => execFileSync(cmd, args, { cwd: raiz, stdio: 'inherit', shell: process.platform === 'win32', ...opciones });
-const leer = (cmd, args) => execFileSync(cmd, args, { cwd: raiz, encoding: 'utf8', shell: process.platform === 'win32' }).trim();
+// Sólo npx (un .cmd) necesita shell en Windows; con shell, los argumentos
+// con espacios ("BB Today 1.0.0") se parten.
+const conShell = (cmd) => process.platform === 'win32' && cmd === 'npx';
+const sh = (cmd, args, opciones = {}) => execFileSync(cmd, args, { cwd: raiz, stdio: 'inherit', shell: conShell(cmd), ...opciones });
+const leer = (cmd, args) => execFileSync(cmd, args, { cwd: raiz, encoding: 'utf8', shell: conShell(cmd) }).trim();
 
 const { version } = JSON.parse(fs.readFileSync(path.join(raiz, 'package.json'), 'utf8'));
 const etiqueta = `v${version}`;
