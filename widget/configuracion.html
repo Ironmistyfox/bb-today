@@ -121,6 +121,10 @@
       <div class="texto"><b>Sólo si aún se pueden entregar</b><span>Oculta las vencidas que no aceptan entrega tardía</span></div>
       <label class="interruptor"><input type="checkbox" id="soloTardias"><i></i></label>
     </div>
+    <div class="opcion">
+      <div class="texto"><b>Tareas sin fecha de entrega</b><span>Las que no tienen fecha y aún no entregas, al final de la lista</span></div>
+      <label class="interruptor"><input type="checkbox" id="sinFecha"><i></i></label>
+    </div>
     <div class="opcion columna">
       <div class="texto"><b>Materias</b><span>Desmarca las que no quieras ver</span></div>
       <div class="materias" id="materias"></div>
@@ -253,7 +257,7 @@ function pintar() {
 
   $('sub').textContent = `BB Today ${datos.version}`;
   for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin']) $(id).value = String(p[id]);
-  for (const id of ['soloTardias', 'vistaPrevia', 'avisos']) $(id).checked = !!p[id];
+  for (const id of ['soloTardias', 'sinFecha', 'vistaPrevia', 'avisos']) $(id).checked = p[id] !== false;
   $('alIniciar').checked = !!datos.alIniciar;
   $('fila-aviso').style.display = p.avisos ? '' : 'none';
   $('soloTardias').disabled = p.diasAtras === 0;
@@ -311,7 +315,7 @@ async function guardar(cambios) {
 for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin']) {
   $(id).addEventListener('change', () => guardar({ [id]: Number($(id).value) }));
 }
-for (const id of ['soloTardias', 'vistaPrevia', 'avisos']) {
+for (const id of ['soloTardias', 'sinFecha', 'vistaPrevia', 'avisos']) {
   $(id).addEventListener('change', () => guardar({ [id]: $(id).checked }));
 }
 $('opacidad').addEventListener('input', () => {

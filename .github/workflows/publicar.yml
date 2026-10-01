@@ -1,0 +1,81 @@
+# Publica una versión al subir una etiqueta vX.Y.Z (npm run publicar la crea).
+#
+# Compila en Windows, firma el instalador con SignPath si está configurado
+# (secreto SIGNPATH_API_TOKEN y variable SIGNPATH_ORGANIZATION_ID; ver
+# docs/FIRMA.md), recalcula los archivos del actualizador y crea el release.
+# Sin SignPath, publica el instalador sin firmar.
+
+name: Publicar
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      FIRMAR: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Comprobar que la etiqueta es la versión de package.json
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "La etiqueta $GITHUB_REF_NAME no coincide con la versión $version"; exit 1; }
+          node tools/notas-version.mjs "$version" notas.md
+
+      - name: Compilar el instalador
+        run: npx electron-builder --win --publish never -c.directories.output=dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Guardar el instalador sin firmar
+        id: sin-firmar
+        uses: actions/upload-artifact@v4
+        with:
+          name: instalador-sin-firmar
+          path: dist/BB-Today-Setup.exe
+          if-no-files-found: error
+
+      - name: Firmar con SignPath
+        if: env.FIRMAR == 'true'
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: bb-today
+          signing-policy-slug: release-signing
+          github-artifact-id: ${{ steps.sin-firmar.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: firmado
+
+      - name: Usar el instalador firmado
+        if: env.FIRMAR == 'true'
+        shell: bash
+        run: cp firmado/BB-Today-Setup.exe dist/BB-Today-Setup.exe
+
+      - name: Recalcular latest.yml y blockmap
+        run: node tools/finalizar-instalador.mjs dist
+
+      - name: Crear el release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          gh release create "$GITHUB_REF_NAME" \
+            dist/BB-Today-Setup.exe dist/BB-Today-Setup.exe.blockmap dist/latest.yml dist/BB-Today-Instalador.exe \
+            --title "BB Today $version" --notes-file notas.md --latest

@@ -219,7 +219,7 @@
     <h1>Todas tus tareas <em>a solo un clic</em>.</h1>
     <p class="lema">Un widget que vive en el fondo de tu escritorio, se actualiza solo y te enseña las instrucciones y los archivos de cada tarea sin abrir el navegador.</p>
     <div class="acciones">
-      <a class="descargar" id="descargar" href="https://github.com/Ironmistyfox/bb-today-descargas/releases/latest/download/BB-Today-Instalador.exe">
+      <a class="descargar" id="descargar" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
         Descargar para Windows
       </a>
@@ -320,7 +320,7 @@
 
 <div class="contenedor cierre">
   <h2>Deja de abrir Blackboard para ver qué toca.</h2>
-  <a class="descargar" href="https://github.com/Ironmistyfox/bb-today-descargas/releases/latest/download/BB-Today-Instalador.exe">
+  <a class="descargar" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
     Descargar BB Today
   </a>
@@ -328,8 +328,8 @@
 
 <footer>
   <div class="contenedor">
-    <span>BB Today</span>
-    <span><a href="privacidad.html">Privacidad</a> · <a href="https://github.com/Ironmistyfox/bb-today-descargas/releases">Versiones</a> · <a href="https://github.com/Ironmistyfox/bb-today-descargas/issues">Reportar un problema</a></span>
+    <span>BB Today · <a href="https://github.com/Ironmistyfox/bb-today">código abierto (MIT)</a></span>
+    <span><a href="privacidad.html">Privacidad</a> · <a href="https://github.com/Ironmistyfox/bb-today/releases">Versiones</a> · <a href="https://github.com/Ironmistyfox/bb-today/issues">Reportar un problema</a></span>
   </div>
 </footer>
 
@@ -441,11 +441,15 @@
   // Las descargas cuentan sólo BB-Today-Instalador.exe, la copia que enlaza
   // esta página: las actualizaciones automáticas bajan BB-Today-Setup.exe y
   // no deben inflar el número.
-  fetch('https://api.github.com/repos/Ironmistyfox/bb-today-descargas/releases?per_page=100')
-    .then((r) => (r.ok ? r.json() : null))
-    .then((lista) => {
-      if (!Array.isArray(lista)) return;
-      const publicadas = lista.filter((r) => !r.draft && !r.prerelease);
+  // Hasta la 1.0.0 los instaladores vivían en bb-today-descargas; desde la
+  // 1.0.1, en el repo del código. Se suman ambos.
+  const releases = (repo) => fetch(`https://api.github.com/repos/Ironmistyfox/${repo}/releases?per_page=100`).then((r) => (r.ok ? r.json() : []));
+  Promise.all([releases('bb-today'), releases('bb-today-descargas')])
+    .then(([actual, antiguo]) => {
+      if (!Array.isArray(actual) || !Array.isArray(antiguo)) return;
+      const publicadas = [...actual, ...antiguo]
+        .filter((r) => !r.draft && !r.prerelease)
+        .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at));
       const ultima = publicadas[0];
       if (ultima) {
         const exe = ultima.assets.find((a) => a.name === 'BB-Today-Instalador.exe') || ultima.assets.find((a) => a.name.endsWith('.exe'));

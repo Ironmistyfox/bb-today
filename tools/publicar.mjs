@@ -1,62 +1,35 @@
-// node tools/publicar.mjs
+// node tools/publicar.mjs   (npm run publicar)
 //
-// Publica la versión de package.json:
-//   1. exige un árbol limpio y que CHANGELOG.md tenga la versión;
-//   2. compila el instalador fuera de OneDrive (OneDrive bloquea archivos a
-//      media compilación);
-//   3. crea el release vX.Y.Z en Ironmistyfox/bb-today-descargas con el
-//      instalador, su .blockmap y latest.yml (lo que lee el actualizador);
-//   4. etiqueta el commit en el repo del código.
+// Publica la versión de package.json: comprueba que el árbol está limpio y
+// subido, que CHANGELOG.md tiene la versión y que la etiqueta no existe, y
+// sube la etiqueta vX.Y.Z. El resto lo hace GitHub Actions
+// (.github/workflows/publicar.yml): compila, firma si SignPath está
+// configurado y crea el release del que se actualizan las apps instaladas.
 //
-// No se usa "electron-builder --publish": crea el release dos veces a la vez
-// y GitHub rechaza una, dejando el release sin latest.yml.
+// Así lo que se publica sale siempre del código público y no de esta
+// carpeta: es lo que exige la firma de SignPath.
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import path from 'node:path';
 
-const REPO_DESCARGAS = 'Ironmistyfox/bb-today-descargas';
-const raiz = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')), '..');
-const salida = path.join(process.env.LOCALAPPDATA, 'bb-today-build');
-// Sólo npx (un .cmd) necesita shell en Windows; con shell, los argumentos
-// con espacios ("BB Today 1.0.0") se parten.
-const conShell = (cmd) => process.platform === 'win32' && cmd === 'npx';
-const sh = (cmd, args, opciones = {}) => execFileSync(cmd, args, { cwd: raiz, stdio: 'inherit', shell: conShell(cmd), ...opciones });
-const leer = (cmd, args) => execFileSync(cmd, args, { cwd: raiz, encoding: 'utf8', shell: conShell(cmd) }).trim();
+const leer = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8' }).trim();
+const correr = (cmd, args) => execFileSync(cmd, args, { stdio: 'inherit' });
+const salir = (mensaje) => {
+  console.error(mensaje);
+  process.exit(1);
+};
 
-const { version } = JSON.parse(fs.readFileSync(path.join(raiz, 'package.json'), 'utf8'));
+const { version } = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const etiqueta = `v${version}`;
 
-if (leer('git', ['status', '--porcelain'])) {
-  console.error('Hay cambios sin commitear: lo que se publica tiene que poder reconstruirse.');
-  process.exit(1);
-}
-const cambios = fs.readFileSync(path.join(raiz, 'CHANGELOG.md'), 'utf8');
-const seccion = cambios.split(/^## /m).find((s) => s.startsWith(`${version} `));
-if (!seccion) {
-  console.error(`CHANGELOG.md no tiene la sección "## ${version} · fecha".`);
-  process.exit(1);
-}
-const notas = seccion.split('\n').slice(1).join('\n').trim();
+if (leer('git', ['status', '--porcelain'])) salir('Hay cambios sin commitear.');
+correr('git', ['fetch', '--quiet', 'origin']);
+if (leer('git', ['rev-parse', 'HEAD']) !== leer('git', ['rev-parse', '@{u}'])) salir('La rama no está igual que en GitHub: haz push (o pull) antes.');
+if (leer('git', ['tag', '-l', etiqueta])) salir(`La etiqueta ${etiqueta} ya existe: sube la versión en package.json.`);
+correr('node', ['tools/notas-version.mjs', version, process.platform === 'win32' ? 'NUL' : '/dev/null']);
 
-fs.rmSync(salida, { recursive: true, force: true });
-sh('npx', ['electron-builder', '--win', '--publish', 'never', `-c.directories.output=${salida}`], {
-  env: { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: 'false' },
-});
-
-const archivos = ['BB-Today-Setup.exe', 'BB-Today-Setup.exe.blockmap', 'latest.yml'].map((a) => path.join(salida, a));
-for (const a of archivos) if (!fs.existsSync(a)) throw new Error(`Falta ${a}`);
-
-// Copia sólo para la página: su contador de descargas no debe sumar las
-// actualizaciones automáticas, que bajan BB-Today-Setup.exe.
-const paraLaPagina = path.join(salida, 'BB-Today-Instalador.exe');
-fs.copyFileSync(archivos[0], paraLaPagina);
-archivos.push(paraLaPagina);
-
-const notasArchivo = path.join(salida, 'notas.md');
-fs.writeFileSync(notasArchivo, `${notas}\n\n**Instalar:** https://bb-today.pages.dev\n`);
-sh('gh', ['release', 'create', etiqueta, ...archivos, '-R', REPO_DESCARGAS, '--title', `BB Today ${version}`, '--notes-file', notasArchivo, '--latest']);
-
-sh('git', ['tag', '-f', etiqueta]);
-sh('git', ['push', '-f', 'origin', etiqueta]);
-console.log(`\nPublicada ${etiqueta}. Los que ya la tienen instalada se actualizan solos.`);
+correr('git', ['tag', etiqueta]);
+correr('git', ['push', 'origin', etiqueta]);
+const repo = leer('gh', ['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner']);
+console.log(`\nEtiqueta ${etiqueta} subida. GitHub está compilando: https://github.com/${repo}/actions`);
+console.log('Si SignPath está configurado, aprueba la firma en su panel para que termine.');

@@ -1,5 +1,15 @@
 # Cambios
 
+## 1.0.1 · 2026-10-01
+
+- Arreglado: mover el slider de opacidad en Configuración iba ensanchando el
+  widget (con la pantalla escalada, cada ajuste de altura le sumaba un par de
+  píxeles de ancho). Si quedó demasiado ancho, vuelve a su tamaño normal.
+- Las tareas pendientes sin fecha de entrega aparecen al final de la lista, en
+  «Sin fecha de entrega». Se pueden ocultar en Configuración.
+- BB Today ahora es de código abierto (licencia MIT) y cada versión se compila
+  en GitHub a partir de ese código.
+
 ## 1.0.0 · 2026-10-01
 
 Primera versión pública de BB Today.

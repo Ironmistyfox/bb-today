@@ -110,7 +110,7 @@ function tamano(b) {
 }
 
 function chipsEntrega(t) {
-  if (!t.entrega) return '';
+  if (!t.entrega) return '<div class="chips"><span class="chip">Sin fecha de entrega</span></div>';
   const cuando = Date.parse(t.entrega);
   const ms = cuando - Date.now();
   const dias = Math.round((inicioDia(Date.now()) - inicioDia(cuando)) / DIA);

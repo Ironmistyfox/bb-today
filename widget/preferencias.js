@@ -11,6 +11,7 @@ export const PREDETERMINADAS = {
   diasAdelante: 0, // 0 = sólo hoy; 1 = hoy y mañana; ...
   diasAtras: 7, // vencidas de hasta N días atrás; 0 = no mostrarlas
   soloTardias: true, // de las vencidas, sólo las que aceptan entrega tardía
+  sinFecha: true, // tareas pendientes sin fecha de entrega, al final
   tema: 'medianoche', // medianoche | marca | claro | papel | vidrio | sistema
   opacidad: 92, // % de opacidad del fondo
   tamano: 1, // zoom: 0.9 compacto, 1 normal, 1.15 grande

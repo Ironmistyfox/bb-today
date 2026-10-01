@@ -124,7 +124,7 @@ const inicioDia = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return
 const fmtHoy = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
 const fmtHora = new Intl.DateTimeFormat('es-MX', { hour: 'numeric', minute: '2-digit' });
 
-const prefs = () => estado.prefs || { diasAdelante: 0, diasAtras: 7, soloTardias: true, vistaPrevia: true };
+const prefs = () => estado.prefs || { diasAdelante: 0, diasAtras: 7, soloTardias: true, sinFecha: true, vistaPrevia: true };
 
 // Qué se muestra, según Configuración:
 // - Lo no entregado que vence de hoy a `diasAdelante` días. Lo de hoy cuya
@@ -141,10 +141,17 @@ function pendientes() {
   const vale = (t) => t.tardia || !p.soloTardias;
   const proximas = [];
   const atrasadas = [];
+  const sinFecha = [];
   (estado.datos?.cursos || []).forEach((c, i) => {
     const color = COLORES[i % COLORES.length];
     for (const t of c.tareas) {
-      if (t.estado !== 'pendiente' || !t.entrega) continue;
+      if (t.estado !== 'pendiente') continue;
+      // Sin fecha: no salen en el calendario de Blackboard y son las que más
+      // se olvidan. Las bloqueadas (aún no liberadas) no cuentan.
+      if (!t.entrega) {
+        if (p.sinFecha !== false && !t.bloqueada) sinFecha.push({ ...t, curso: c.nombre, cursoId: c.id, color, cuando: null });
+        continue;
+      }
       const cuando = Date.parse(t.entrega);
       const item = { ...t, curso: c.nombre, cursoId: c.id, color, cuando };
       if (cuando >= hoy && cuando < fin) {
@@ -156,7 +163,8 @@ function pendientes() {
   });
   proximas.sort((a, b) => a.cuando - b.cuando);
   atrasadas.sort((a, b) => b.cuando - a.cuando);
-  return { deHoy: proximas, atrasadas };
+  sinFecha.sort((a, b) => a.curso.localeCompare(b.curso, 'es') || a.titulo.localeCompare(b.titulo, 'es'));
+  return { deHoy: proximas, atrasadas, sinFecha };
 }
 
 const fmtDiaCorto = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -251,8 +259,8 @@ function pintar() {
     return;
   }
 
-  const { deHoy, atrasadas } = pendientes();
-  const total = deHoy.length + atrasadas.length;
+  const { deHoy, atrasadas, sinFecha } = pendientes();
+  const total = deHoy.length + atrasadas.length + sinFecha.length;
   const cuenta = $('cuenta');
   cuenta.textContent = total;
   cuenta.className = `cuenta ${deHoy.some((t) => t.cuando - Date.now() < 6 * 3_600_000) ? 'urge' : total ? 'hay' : ''}`;
@@ -275,6 +283,10 @@ function pintar() {
   if (atrasadas.length) {
     html += `<div class="separador${prefs().diasAdelante > 0 ? ' dia vencidas' : ''}">Vencidas${prefs().soloTardias ? ' · aceptan tardía' : ''}</div>`;
     html += atrasadas.map((t) => fila(t, ...pastillaAtrasada(t))).join('');
+  }
+  if (sinFecha.length) {
+    html += `<div class="separador${prefs().diasAdelante > 0 ? ' dia' : ''}">Sin fecha de entrega</div>`;
+    html += sinFecha.map((t) => fila(t, 'sin fecha', '')).join('');
   }
   if (!total) {
     html = estado.datos

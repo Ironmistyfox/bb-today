@@ -56,6 +56,13 @@ const ARCHIVO_CACHE = path.join(DIR_DATOS, 'agenda.json');
 const ARCHIVO_VENTANA = path.join(DIR_DATOS, 'posicion.json');
 const ANCHO = 280;
 const ANCHO_MIN = 220;
+const ANCHO_MAX = 480;
+// El ancho lo decide sólo quien redimensiona el widget. No se vuelve a leer
+// de Windows al ajustar la altura: con la pantalla escalada (125 %) cada
+// getBounds/setBounds lo redondea un píxel hacia arriba, y el slider de
+// opacidad, que repinta decenas de veces, lo hacía crecer sin parar.
+let anchoWidget = ANCHO;
+let ultimoAjuste = 0;
 
 // Todo (sesión, ajustes, agenda) vive en una sola carpeta, la misma en
 // desarrollo y en la versión instalada: instalar no obliga a volver a entrar.
@@ -146,7 +153,10 @@ function posicionInicial() {
     return guardada.x >= a.x - 50 && guardada.y >= a.y - 50 && guardada.x < a.x + a.width && guardada.y < a.y + a.height;
   });
   const a = screen.getPrimaryDisplay().workArea;
-  const width = visible ? Math.max(ANCHO_MIN, guardada.width || ANCHO) : ANCHO;
+  // Un ancho guardado fuera de rango (lo dejó el error del slider) vuelve al normal.
+  const valido = guardada?.width >= ANCHO_MIN && guardada.width <= ANCHO_MAX;
+  const width = visible && valido ? guardada.width : ANCHO;
+  anchoWidget = width;
   if (visible) return { x: guardada.x, y: guardada.y, width, height: 80 };
   return { x: a.x + a.width - width - 16, y: a.y + 16, width, height: 80 };
 }
@@ -155,6 +165,7 @@ function crearVentana() {
   ventana = new BrowserWindow({
     ...posicionInicial(),
     minWidth: ANCHO_MIN,
+    maxWidth: ANCHO_MAX,
     minHeight: 40,
     frame: false,
     transparent: true,
@@ -183,11 +194,17 @@ function crearVentana() {
 
   const guardar = () => {
     if (ventana.isDestroyed()) return;
-    const { x, y, width } = ventana.getBounds();
-    escribirJson(ARCHIVO_VENTANA, { x, y, width });
+    const { x, y } = ventana.getBounds();
+    escribirJson(ARCHIVO_VENTANA, { x, y, width: anchoWidget });
   };
   ventana.on('moved', guardar);
-  ventana.on('resized', guardar);
+  ventana.on('resized', () => {
+    // Sólo cuenta si lo redimensionó la persona, no un ajuste de altura nuestro.
+    if (Date.now() - ultimoAjuste > 400) {
+      anchoWidget = Math.max(ANCHO_MIN, Math.min(ANCHO_MAX, ventana.getBounds().width));
+    }
+    guardar();
+  });
   // Cerrar la ventana sólo la esconde; para salir está la bandeja.
   ventana.on('close', (e) => {
     if (!app.salir) {
@@ -410,10 +427,11 @@ ipcMain.handle('config:esquina', () => {
   if (!ventana) return;
   const a = screen.getPrimaryDisplay().workArea;
   const b = ventana.getBounds();
-  const x = a.x + a.width - b.width - 16;
+  const x = a.x + a.width - anchoWidget - 16;
   const y = a.y + 16;
-  ventana.setBounds({ ...b, x, y });
-  escribirJson(ARCHIVO_VENTANA, { x, y, width: b.width });
+  ultimoAjuste = Date.now();
+  ventana.setBounds({ x, y, width: anchoWidget, height: b.height });
+  escribirJson(ARCHIVO_VENTANA, { x, y, width: anchoWidget });
   ventana.showInactive();
   alFondo();
 });
@@ -564,7 +582,9 @@ ipcMain.handle('agenda:alto', (_e, alto) => {
   const b = ventana.getBounds();
   const area = screen.getDisplayMatching(b).workArea;
   const height = Math.max(40, Math.min(Math.round(alto * estado.prefs.tamano), area.y + area.height - b.y - 8));
-  if (height !== b.height) ventana.setBounds({ ...b, height });
+  if (Math.abs(height - b.height) <= 1 && Math.abs(b.width - anchoWidget) <= 1) return;
+  ultimoAjuste = Date.now();
+  ventana.setBounds({ x: b.x, y: b.y, width: anchoWidget, height });
 });
 
 app.on('second-instance', mostrar);
@@ -613,12 +633,34 @@ app.whenReady().then(() => {
   bandeja.setContextMenu(menuBandeja());
   bandeja.on('click', mostrar);
 
+  // BB_PRUEBA_SLIDER=1: mueve la opacidad 40 veces, como al arrastrar el
+  // slider, e imprime el tamaño del widget antes y después (el ancho no debe
+  // cambiar). Correr con APPDATA apuntando a una carpeta temporal.
+  if (process.env.BB_PRUEBA_SLIDER) {
+    setTimeout(async () => {
+      const antes = ventana.getBounds();
+      for (let i = 0; i < 40; i++) {
+        const anteriores = estado.prefs;
+        estado = { ...estado, prefs: preferencias.guardar({ opacidad: 40 + (i % 30) * 2 }) };
+        aplicarPreferencias(anteriores);
+        avisar();
+        await new Promise((ok) => setTimeout(ok, 60));
+      }
+      await new Promise((ok) => setTimeout(ok, 800));
+      console.log(JSON.stringify({ antes, despues: ventana.getBounds(), escala: screen.getPrimaryDisplay().scaleFactor }));
+      app.salir = true;
+      app.exit(0);
+    }, 2500);
+    return;
+  }
+
   // BB_CAPTURA=ruta.png: actualiza, guarda una captura del widget y sale.
   // Sirve para revisar cómo se ve sin tocar el escritorio.
   if (process.env.BB_CAPTURA) {
     // BB_CAPTURA_TAREA=título: abre además su vista previa y la guarda en
     // <ruta>-vista.png.
-    actualizar().then(() => setTimeout(async () => {
+    // BB_CAPTURA_SIN_RED=1: usa la última lista guardada, sin consultar Blackboard.
+    (process.env.BB_CAPTURA_SIN_RED ? Promise.resolve() : actualizar()).then(() => setTimeout(async () => {
       const imagen = await ventana.webContents.capturePage();
       fs.writeFileSync(process.env.BB_CAPTURA, imagen.toPNG());
       if (process.env.BB_CAPTURA_CONFIG) {

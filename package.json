@@ -1,6 +1,6 @@
 {
   "name": "bb-today",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Tus pendientes de Blackboard en el escritorio de Windows.",
   "type": "module",
@@ -88,7 +88,7 @@
       {
         "provider": "github",
         "owner": "Ironmistyfox",
-        "repo": "bb-today-descargas",
+        "repo": "bb-today",
         "releaseType": "release"
       }
     ],
@@ -98,5 +98,10 @@
       "en-US"
     ],
     "compression": "maximum"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ironmistyfox/bb-today.git"
   }
 }
