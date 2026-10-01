@@ -1,12 +1,12 @@
 // BB Today: tus pendientes de Blackboard en el escritorio.
 //
 // Una ventana sin marco anclada al escritorio, fuera de la barra de tareas,
-// con un icono en la bandeja. La primera vez sólo pide iniciar sesión; desde
-// ahí arranca con Windows, consulta Blackboard cada hora y renueva la sesión
-// sola. Si un día no puede, lo dice y vuelve a pedir iniciar sesión.
+// con un icono en la bandeja (en Mac, en la barra de menús). La primera vez
+// sólo pide iniciar sesión; desde ahí arranca con el sistema, consulta
+// Blackboard cada hora y renueva la sesión sola. Si un día no puede, lo dice
+// y vuelve a pedir iniciar sesión. Funciona en Windows y en Mac.
 
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, powerMonitor, screen, shell, Tray } from 'electron';
-import koffi from 'koffi';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,41 +17,44 @@ import { DIR_DATOS } from '../src/sesion.js';
 import * as cuentaApp from './sesion-app.js';
 import * as preferencias from './preferencias.js';
 import * as actualizaciones from './actualizaciones.js';
+import { crearAnclaje } from './anclaje.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const NOMBRE = 'BB Today';
 const ICONO = path.join(DIR, 'icono', 'icono.ico');
 const ICONO_PNG = path.join(DIR, 'icono', 'icono.png');
 
-// ---- Anclado al escritorio ----
-//
-// El widget vive al fondo del orden de ventanas: nunca tapa una aplicación.
-// Windows sube una ventana al hacerle clic, así que cada vez que gana el
-// foco se la devuelve al fondo. La vista previa se coloca justo encima del
-// widget, también por debajo de todo lo demás.
-const user32 = koffi.load('user32.dll');
-const SetWindowPos = user32.func('bool __stdcall SetWindowPos(intptr hWnd, intptr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags)');
-const GetWindow = user32.func('intptr __stdcall GetWindow(intptr hWnd, uint uCmd)');
-const HWND_BOTTOM = 1;
-const GW_HWNDPREV = 3;
-const SWP_QUIETO = 0x0001 | 0x0002 | 0x0010; // sin mover, sin redimensionar, sin activar
+const WIN = process.platform === 'win32';
+const MAC = process.platform === 'darwin';
+// BB_CAPTURA_SIN_RED=1: trabaja sólo con la última lista guardada, sin
+// consultar Blackboard (pruebas con datos de ejemplo, p. ej. en GitHub).
+const SIN_RED = !!process.env.BB_CAPTURA_SIN_RED;
 
-function hwnd(v) {
-  const b = v.getNativeWindowHandle();
-  return b.length >= 8 ? Number(b.readBigUInt64LE()) : b.readUInt32LE();
-}
+// ---- Anclado al escritorio (widget/anclaje.js) ----
+//
+// El widget vive debajo de todas las aplicaciones: nunca tapa ninguna. La
+// vista previa va justo encima del widget, también por debajo del resto.
+const anclaje = crearAnclaje((contexto, e) => registrar(contexto, e));
 
 function alFondo() {
   if (!ventana || ventana.isDestroyed()) return;
-  SetWindowPos(hwnd(ventana), HWND_BOTTOM, 0, 0, 0, 0, SWP_QUIETO);
+  try {
+    anclaje.alFondo(ventana);
+  } catch (e) {
+    registrar('anclaje', e);
+  }
   if (vistaPrevia?.isVisible()) encimaDelWidget();
 }
 
 function encimaDelWidget() {
-  // Debajo de la ventana que está justo encima del widget = pegada a él.
-  const anterior = GetWindow(hwnd(ventana), GW_HWNDPREV);
-  SetWindowPos(hwnd(vistaPrevia), anterior || HWND_BOTTOM, 0, 0, 0, 0, SWP_QUIETO);
+  if (!vistaPrevia || vistaPrevia.isDestroyed()) return;
+  try {
+    anclaje.encima(vistaPrevia, ventana);
+  } catch (e) {
+    registrar('anclaje', e);
+  }
 }
+
 const ARCHIVO_CACHE = path.join(DIR_DATOS, 'agenda.json');
 const ARCHIVO_VENTANA = path.join(DIR_DATOS, 'posicion.json');
 const ANCHO = 280;
@@ -67,7 +70,7 @@ let ultimoAjuste = 0;
 // Todo (sesión, ajustes, agenda) vive en una sola carpeta, la misma en
 // desarrollo y en la versión instalada: instalar no obliga a volver a entrar.
 app.setPath('userData', DIR_DATOS);
-// Debe coincidir con el appId del instalador o Windows no muestra los avisos.
+// En Windows debe coincidir con el appId del instalador o no se ven los avisos.
 const ID_APP = app.isPackaged ? 'dev.ironmistyfox.bbtoday' : 'blackboard-agenda';
 
 // El widget vive al fondo, casi siempre tapado por otras ventanas. Chromium
@@ -125,6 +128,10 @@ const conLimite = (promesa, ms) =>
 
 async function actualizar() {
   if (estado.cargando || cuentaApp.estaEntrando()) return;
+  if (SIN_RED) {
+    publicar({ sesion: cuentaApp.cuenta() ? 'lista' : 'falta', error: null, cargando: false });
+    return;
+  }
   // Sin cuenta no hay nada que consultar: se queda esperando el inicio de sesión.
   if (!cuentaApp.cuenta()) {
     publicar({ sesion: 'falta', datos: null, error: null, cargando: false });
@@ -183,8 +190,9 @@ function crearVentana() {
     minimizable: false,
     fullscreenable: false,
     show: false,
-    type: 'toolbar',
-    // Sin activarse al clic: Windows no la sube por encima de nada.
+    // Windows: fuera de Alt+Tab. Mac: acepta el primer clic sin activarse.
+    ...(WIN ? { type: 'toolbar' } : { acceptFirstMouse: true }),
+    // Sin activarse al clic: el sistema no la sube por encima de nada.
     focusable: false,
     icon: ICONO,
     title: NOMBRE,
@@ -265,7 +273,7 @@ function crearVistaPrevia() {
     skipTaskbar: true,
     resizable: false,
     focusable: false,
-    type: 'toolbar',
+    ...(WIN ? { type: 'toolbar' } : { acceptFirstMouse: true }),
     show: false,
     webPreferences: { preload: path.join(DIR, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
@@ -323,7 +331,9 @@ async function mostrarVistaPrevia({ cursoId, tareaId, color, y }) {
   vistaAbierta = true;
   vigilarVistaPrevia();
 
-  const datos = await detalle(cursoId, tarea).catch(() => null);
+  const datos = SIN_RED
+    ? { instrucciones: tarea.instrucciones || '', archivos: [] }
+    : await detalle(cursoId, tarea).catch(() => null);
   if (n !== pedidoVista) return;
   vistaPrevia.webContents.send('vista:datos', { ...base, cargando: false, detalle: datos, error: !datos });
   datos?.archivos.forEach((archivo, i) => {
@@ -468,6 +478,7 @@ function datosConfiguracion() {
 }
 
 function abrirConfiguracion() {
+  if (MAC) app.focus({ steal: true });
   if (configuracion && !configuracion.isDestroyed()) {
     configuracion.show();
     configuracion.focus();
@@ -565,7 +576,11 @@ function abrirExterno(url) {
 }
 
 function iconoBandeja() {
-  return nativeImage.createFromPath(ICONO);
+  if (!MAC) return nativeImage.createFromPath(ICONO);
+  // bandejaTemplate.png (+ @2x): macOS lo tiñe según el modo claro u oscuro.
+  const imagen = nativeImage.createFromPath(path.join(DIR, 'icono', 'bandejaTemplate.png'));
+  imagen.setTemplateImage(true);
+  return imagen;
 }
 
 // En desarrollo el ejecutable es electron.exe y hay que pasarle la carpeta.
@@ -585,7 +600,7 @@ function menuBandeja() {
       : { label: 'Iniciar sesión en Blackboard', click: entrar },
     { type: 'separator' },
     {
-      label: 'Abrir al iniciar Windows',
+      label: MAC ? 'Abrir al iniciar sesión' : 'Abrir al iniciar Windows',
       type: 'checkbox',
       checked: alIniciar,
       click: (item) => {
@@ -695,7 +710,12 @@ app.on('second-instance', mostrar);
 app.on('window-all-closed', (e) => e.preventDefault());
 
 app.whenReady().then(() => {
-  app.setAppUserModelId(ID_APP);
+  if (WIN) app.setAppUserModelId(ID_APP);
+  // Mac: un menú de aplicación con Edición, para que Cmd+C/Cmd+V funcionen
+  // al escribir (la dirección de la escuela, el inicio de sesión).
+  if (MAC) {
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]));
+  }
   cuentaApp.configurar({ iconoVentanas: ICONO });
   cuentaApp.aplicarEscuela();
   // Todas las consultas pasan por el navegador de la app.
@@ -722,7 +742,7 @@ app.whenReady().then(() => {
     app.setLoginItemSettings({ openAtLogin: true, ...opcionesInicio() });
     // La versión instalada reemplaza a la de desarrollo: que no arranquen
     // las dos con Windows.
-    if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: false, name: 'blackboard-agenda' });
+    if (app.isPackaged && WIN) app.setLoginItemSettings({ openAtLogin: false, name: 'blackboard-agenda' });
     fs.mkdirSync(DIR_DATOS, { recursive: true });
     fs.writeFileSync(marca, new Date().toISOString());
   }
@@ -841,6 +861,7 @@ app.whenReady().then(() => {
       await esperar(600);
       await anotar('6. sube al título del widget');
 
+      registro.push({ anclaje: anclaje.sistema, nivel: anclaje.nivel ?? null, plataforma: process.platform, arquitectura: process.arch });
       console.log(JSON.stringify(registro, null, 1));
       app.salir = true;
       app.exit(0);

@@ -28,19 +28,25 @@ export function estadoActualizacion() {
   return estado;
 }
 
+// En Mac, macOS sólo deja que una app se reemplace sola si está firmada con
+// una cuenta de desarrollador de Apple. Sin ella, la versión nueva no se
+// descarga: se avisa y el botón lleva a la página.
+const SOLO_AVISO = process.platform === 'darwin';
+
 export function iniciarActualizaciones({ alCambiar, antesDeSalir, registrar }) {
   avisar = alCambiar;
   antesDeInstalar = antesDeSalir;
   // En desarrollo (electron .) no hay instalador que actualizar.
   if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = !SOLO_AVISO;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.logger = { info() {}, warn() {}, debug() {}, error: (e) => registrar('actualización', e) };
 
   autoUpdater.on('checking-for-update', () => cambiar({ estado: 'buscando' }));
   autoUpdater.on('update-not-available', () => cambiar({ estado: 'al-dia', revisado: new Date().toISOString() }));
-  autoUpdater.on('update-available', (info) => cambiar({ estado: 'descargando', version: info.version, porcentaje: 0 }));
+  autoUpdater.on('update-available', (info) =>
+    cambiar(SOLO_AVISO ? { estado: 'aviso', version: info.version } : { estado: 'descargando', version: info.version, porcentaje: 0 }));
   autoUpdater.on('download-progress', (p) => cambiar({ estado: 'descargando', porcentaje: Math.round(p.percent) }));
   autoUpdater.on('update-downloaded', (info) => {
     cambiar({ estado: 'lista', version: info.version, porcentaje: 100 });
@@ -57,7 +63,7 @@ export function iniciarActualizaciones({ alCambiar, antesDeSalir, registrar }) {
 }
 
 export function buscar() {
-  if (!app.isPackaged || estado.estado === 'descargando' || estado.estado === 'lista') return;
+  if (!app.isPackaged || ['descargando', 'lista', 'aviso'].includes(estado.estado)) return;
   autoUpdater.checkForUpdates().catch(() => {});
 }
 

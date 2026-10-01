@@ -155,6 +155,8 @@ function ventanaBlackboard(opciones = {}) {
 // El clic viene del widget, que no toma el foco; sin esto Windows puede
 // dejar la ventana nueva escondida detrás de lo que estés usando.
 function alFrente(v) {
+  // Mac: la app no tiene icono en el Dock; hay que pedir el frente.
+  if (process.platform === 'darwin') app.focus({ steal: true });
   if (v.isMinimized()) v.restore();
   v.show();
   v.setAlwaysOnTop(true);

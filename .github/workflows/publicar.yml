@@ -1,15 +1,25 @@
-# Publica una versión al subir una etiqueta vX.Y.Z (npm run publicar la crea).
+# Compila BB Today para Windows y Mac, la prueba y la publica.
 #
-# Compila en Windows, firma el instalador con SignPath si está configurado
-# (secreto SIGNPATH_API_TOKEN y variable SIGNPATH_ORGANIZATION_ID; ver
-# docs/FIRMA.md), recalcula los archivos del actualizador y crea el release.
-# Sin SignPath, publica el instalador sin firmar.
+# - Al subir una etiqueta vX.Y.Z (npm run publicar la crea): compila, prueba
+#   y crea el release del que se actualizan las apps instaladas.
+# - A mano (Actions → Publicar → Run workflow): compila y prueba, sin publicar.
+#
+# Cada sistema pasa una prueba de humo con datos de ejemplo
+# (tools/probar-paquete.mjs): capturas del widget, la vista previa y
+# Configuración, y la vista previa recorrida con un ratón simulado. Las
+# capturas quedan como artefactos del run ("pruebas-windows", "pruebas-mac").
+#
+# Windows se firma con SignPath si está configurado (secreto
+# SIGNPATH_API_TOKEN y variable SIGNPATH_ORGANIZATION_ID; ver docs/FIRMA.md).
+# Mac va con firma ad hoc: sin cuenta de desarrollador de Apple no se puede
+# notarizar, y la app sólo avisa de las versiones nuevas.
 
 name: Publicar
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -29,19 +39,24 @@ jobs:
 
       - run: npm ci
 
-      - name: Comprobar que la etiqueta es la versión de package.json
-        shell: bash
-        run: |
-          version=$(node -p "require('./package.json').version")
-          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "La etiqueta $GITHUB_REF_NAME no coincide con la versión $version"; exit 1; }
-          node tools/notas-version.mjs "$version" notas.md
-
       - name: Compilar el instalador
         # bash: PowerShell parte el argumento "-c.directories.output" por el punto.
         shell: bash
         run: npx electron-builder --win --publish never -c.directories.output=dist
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Prueba de humo
+        shell: bash
+        run: node tools/probar-paquete.mjs "dist/win-unpacked/BB Today.exe" pruebas
+
+      - name: Guardar las capturas de la prueba
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruebas-windows
+          path: pruebas
+          if-no-files-found: ignore
 
       - name: Guardar el instalador sin firmar
         id: sin-firmar
@@ -52,7 +67,7 @@ jobs:
           if-no-files-found: error
 
       - name: Firmar con SignPath
-        if: env.FIRMAR == 'true'
+        if: env.FIRMAR == 'true' && startsWith(github.ref, 'refs/tags/')
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -65,19 +80,96 @@ jobs:
           output-artifact-directory: firmado
 
       - name: Usar el instalador firmado
-        if: env.FIRMAR == 'true'
+        if: env.FIRMAR == 'true' && startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: cp firmado/BB-Today-Setup.exe dist/BB-Today-Setup.exe
 
       - name: Recalcular latest.yml y blockmap
         run: node tools/finalizar-instalador.mjs dist
 
+      - name: Guardar los archivos de Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/BB-Today-Setup.exe
+            dist/BB-Today-Setup.exe.blockmap
+            dist/BB-Today-Instalador.exe
+            dist/latest.yml
+          if-no-files-found: error
+
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # npm sólo instala el binario de koffi de esta máquina (Apple Silicon);
+      # la versión para Intel necesita también el suyo.
+      - name: Binario de koffi para Mac Intel
+        run: npm install --no-save --force @koromix/koffi-darwin-x64@$(node -p "require('koffi/package.json').version")
+
+      - name: Compilar para Mac
+        run: npx electron-builder --mac --publish never -c.directories.output=dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Prueba de humo
+        run: node tools/probar-paquete.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today" pruebas
+
+      - name: Guardar las capturas de la prueba
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruebas-mac
+          path: pruebas
+          if-no-files-found: ignore
+
+      - name: Guardar los archivos de Mac
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: |
+            dist/BB-Today-Mac-*.dmg
+            dist/BB-Today-Mac-*.zip
+            dist/BB-Today-Mac-*.blockmap
+            dist/latest-mac.yml
+          if-no-files-found: error
+
+  publicar:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [windows, mac]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows
+          path: archivos/windows
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac
+          path: archivos/mac
+
+      - name: Comprobar que la etiqueta es la versión de package.json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "La etiqueta $GITHUB_REF_NAME no coincide con la versión $version"; exit 1; }
+          node tools/notas-version.mjs "$version" notas.md
+
       - name: Crear el release
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          ls -la archivos/*
           version=${GITHUB_REF_NAME#v}
-          gh release create "$GITHUB_REF_NAME" \
-            dist/BB-Today-Setup.exe dist/BB-Today-Setup.exe.blockmap dist/latest.yml dist/BB-Today-Instalador.exe \
+          gh release create "$GITHUB_REF_NAME" archivos/windows/* archivos/mac/* \
             --title "BB Today $version" --notes-file notas.md --latest

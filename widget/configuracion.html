@@ -181,7 +181,7 @@
       <label class="interruptor"><input type="checkbox" id="vistaPrevia"><i></i></label>
     </div>
     <div class="opcion">
-      <div class="texto"><b>Avisos de Windows</b><span>Cuando una tarea está por vencer</span></div>
+      <div class="texto"><b id="t-avisos">Avisos de Windows</b><span>Cuando una tarea está por vencer</span></div>
       <label class="interruptor"><input type="checkbox" id="avisos"><i></i></label>
     </div>
     <div class="opcion" id="fila-aviso">
@@ -203,7 +203,7 @@
       </select>
     </div>
     <div class="opcion">
-      <div class="texto"><b>Abrir al iniciar Windows</b></div>
+      <div class="texto"><b id="t-inicio">Abrir al iniciar Windows</b></div>
       <label class="interruptor"><input type="checkbox" id="alIniciar"><i></i></label>
     </div>
     <div class="opcion">
@@ -232,7 +232,7 @@
       <ul>
         <li><b>Tu contraseña nunca pasa por BB Today.</b> Inicias sesión en la página de tu escuela (o de Google) dentro de una ventana; la app sólo guarda la cookie de sesión que Blackboard le da, en esta computadora.</li>
         <li><b>Sólo lee.</b> No entrega tareas, no escribe mensajes y no cambia nada en Blackboard.</li>
-        <li><b>Lo que guarda</b> está en <code>%APPDATA%\blackboard-mcp</code>: la sesión, tus preferencias y la última lista de tareas, para mostrarla al encender. Los archivos que abres se bajan a <code>Descargas\BB Today</code>.</li>
+        <li><b>Lo que guarda</b> está en <code id="t-carpeta">%APPDATA%\blackboard-mcp</code>: la sesión, tus preferencias y la última lista de tareas, para mostrarla al encender. Los archivos que abres se bajan a <code id="t-descargas">Descargas\BB Today</code>.</li>
         <li><b>Nada de analítica ni publicidad.</b> Aparte de Blackboard y del inicio de sesión de tu escuela, la única conexión es a GitHub, para buscar actualizaciones.</li>
         <li><b>Para borrarlo todo:</b> «Cerrar sesión» elimina la sesión y la lista guardada; desinstalar quita la app.</li>
       </ul>
@@ -278,7 +278,14 @@ function mini(tema, nombre) {
 function pintar() {
   if (!datos) return;
   const p = datos.prefs;
-  // La ventana de configuración sigue el modo claro/oscuro de Windows.
+  // En Mac, los textos que hablan de Windows.
+  if (window.agenda.plataforma === 'darwin') {
+    $('t-avisos').textContent = 'Notificaciones';
+    $('t-inicio').textContent = 'Abrir al iniciar sesión';
+    $('t-carpeta').textContent = '~/Library/Application Support/BB Today';
+    $('t-descargas').textContent = 'Descargas/BB Today';
+  }
+  // La ventana de configuración sigue el modo claro/oscuro del sistema.
   document.documentElement.dataset.tema = temaSistema();
 
   $('sub').textContent = `BB Today ${datos.version}`;

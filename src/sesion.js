@@ -9,10 +9,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-export const DIR_DATOS = path.join(
-  process.env.APPDATA || path.join(os.homedir(), '.config'),
-  'blackboard-mcp',
-);
+// La carpeta de datos de la app: %APPDATA%\blackboard-mcp en Windows y
+// ~/Library/Application Support/BB Today en Mac. BB_DATOS apunta a otra
+// (pruebas con datos de ejemplo).
+export const DIR_DATOS =
+  process.env.BB_DATOS ||
+  (process.platform === 'darwin'
+    ? path.join(os.homedir(), 'Library', 'Application Support', 'BB Today')
+    : path.join(process.env.APPDATA || path.join(os.homedir(), '.config'), 'blackboard-mcp'));
 const ARCHIVO_SESION = path.join(DIR_DATOS, 'sesion.json');
 const PERFIL_NAVEGADOR = path.join(DIR_DATOS, 'perfil-navegador');
 

@@ -3,6 +3,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('agenda', {
+  // 'win32' o 'darwin': algunos textos cambian (Windows/Mac).
+  plataforma: process.platform,
   obtener: () => ipcRenderer.invoke('agenda:obtener'),
   actualizar: () => ipcRenderer.invoke('agenda:actualizar'),
   entrar: () => ipcRenderer.invoke('agenda:entrar'),

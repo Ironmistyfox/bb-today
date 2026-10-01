@@ -28,4 +28,22 @@ for (const t of lista) {
   desplaz += pngs[t].length; dir.push(e); datos.push(pngs[t]);
 }
 fs.writeFileSync('widget/icono/icono.ico', Buffer.concat([cab, ...dir, ...datos]));
+// Mac: icono de la app con el margen de los iconos de macOS (824 de 1024),
+// del que electron-builder saca el .icns.
+const mac = await sharp(origen).resize(824, 824).png().toBuffer();
+await sharp({ create: { width: 1024, height: 1024, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+  .composite([{ input: mac, left: 100, top: 100 }])
+  .png()
+  .toFile('widget/icono/icono-mac.png');
+
+// Mac: icono de plantilla para la barra de menús (negro con transparencia;
+// macOS lo tiñe según el modo claro u oscuro). Las dos tarjetas del logo: la
+// de delante rellena y la de atrás en contorno.
+const plantilla = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <path d="M15.6 12.6 19 5.4h9.6l-3.4 7.2z" fill="none" stroke="#000" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M4.2 26.4 8.6 17h13l-4.4 9.4z" fill="#000" stroke="#000" stroke-width="2.4" stroke-linejoin="round"/>
+</svg>`);
+await sharp(plantilla).resize(16, 16).png().toFile('widget/icono/bandejaTemplate.png');
+await sharp(plantilla).resize(32, 32).png().toFile('widget/icono/bandejaTemplate@2x.png');
+
 console.log('ok', fs.readdirSync('widget/icono').join(', '));
