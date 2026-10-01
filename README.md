@@ -1,6 +1,6 @@
 # BB Today
 
-**Tus pendientes de Blackboard en el escritorio de Windows.** Un widget que vive
+**Tus pendientes de Blackboard en el escritorio de Windows y Mac.** Un widget que vive
 al fondo del escritorio, revisa tus cursos de Blackboard Learn (Ultra) cada
 hora y te enseña lo que vence hoy, con las instrucciones y los archivos de cada
 tarea al pasar el ratón.
@@ -26,7 +26,7 @@ Anthology ni a ninguna universidad.
 
 ## Desarrollo
 
-Requisitos: Windows 10/11 y Node.js 22 o más reciente.
+Requisitos: Windows 10/11 o macOS, y Node.js 22 o más reciente.
 
 ```bash
 npm install
@@ -60,6 +60,7 @@ toca tus datos ni tu sesión. Cierra antes la app instalada si comparten datos
 | `src/agenda.js` | Tareas de cada curso del semestre: recorre el contenido, cruza con el libro de calificaciones (sólo para saber si ya entregaste) y empareja el material que el profesor sube al lado |
 | `src/detalle.js` | Detalle al momento de una tarea y las muestras de sus archivos |
 | `widget/main.js` | Proceso principal de Electron: widget, vista previa, bandeja, avisos, anclado al escritorio |
+| `widget/anclaje.js` | Anclado al escritorio por sistema: `SetWindowPos` en Windows; nivel de los iconos del escritorio + 1 vía Cocoa en Mac (koffi) |
 | `widget/sesion-app.js` | Sesión dentro de la app (partición `persist:blackboard`), login, renovación silenciosa por el SSO de la escuela |
 | `widget/actualizaciones.js` | Actualizaciones automáticas desde los Releases de este repo |
 | `widget/preferencias.js`, `configuracion.html`, `temas.css` | Configuración y estilos |
@@ -81,8 +82,9 @@ Detalles que costó descubrir:
   el ratón; se cierra preguntando a Windows dónde está el puntero, porque una
   ventana que no toma el foco no siempre recibe `mouseleave`.
 
-Los datos de la app viven en `%APPDATA%\blackboard-mcp`: sesión, ajustes,
-última lista y posición del widget.
+Los datos de la app viven en `%APPDATA%\blackboard-mcp` (Windows) o
+`~/Library/Application Support/BB Today` (Mac): sesión, ajustes, última lista
+y posición del widget.
 
 ## Publicar una versión
 
@@ -99,6 +101,19 @@ Los datos de la app viven en `%APPDATA%\blackboard-mcp`: sesión, ajustes,
 Cada release lleva el instalador dos veces: `BB-Today-Setup.exe` (el que baja
 el actualizador, según `latest.yml`) y `BB-Today-Instalador.exe`, la copia que
 enlaza la página; así su contador de descargas no suma las actualizaciones.
+
+### Mac
+
+Se compila en GitHub Actions (`macos-latest`) para Apple Silicon e Intel, con
+firma ad hoc: sin cuenta de desarrollador de Apple (99 USD al año) no se puede
+notarizar, así que macOS pide permiso la primera vez (Ajustes del Sistema →
+Privacidad y seguridad → Abrir de todas formas) y la app sólo **avisa** de las
+versiones nuevas: macOS no deja que una app sin firmar se reemplace sola. Con
+una cuenta de Apple bastaría con poner la identidad en `build.mac` y quitar
+`SOLO_AVISO` en `widget/actualizaciones.js`.
+
+No hay una Mac para probarla a mano: cada compilación pasa la prueba de humo
+en la Mac de GitHub y sus capturas quedan en el artefacto `pruebas-mac`.
 
 ## Servidor MCP
 

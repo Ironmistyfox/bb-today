@@ -1,5 +1,14 @@
 # Cambios
 
+## 1.1.0 · 2026-10-01
+
+- **BB Today para Mac**, con Apple Silicon (M1 en adelante) e Intel. Vive en
+  el escritorio, por debajo de todas las aplicaciones, y su icono está en la
+  barra de menús. Como no tiene la firma de pago de Apple, la primera vez hay
+  que abrirla desde Ajustes del Sistema → Privacidad y seguridad, y avisa
+  cuando hay una versión nueva en lugar de instalarla sola.
+- Windows no cambia: se sigue actualizando solo.
+
 ## 1.0.3 · 2026-10-01
 
 - El botón de actualizar vuelve a estar siempre a la vista en el widget.

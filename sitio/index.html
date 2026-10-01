@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BB Today · Tus pendientes de Blackboard en el escritorio</title>
-<meta name="description" content="Un widget para Windows que te muestra lo que vence hoy en Blackboard, con las instrucciones y los archivos de cada tarea a un vistazo.">
+<meta name="description" content="Un widget para Windows y Mac que te muestra lo que vence hoy en Blackboard, con las instrucciones y los archivos de cada tarea a un vistazo.">
 <link rel="icon" href="favicon.png">
 <meta property="og:title" content="BB Today">
-<meta property="og:description" content="Tus pendientes de Blackboard, en el escritorio de Windows.">
+<meta property="og:description" content="Tus pendientes de Blackboard, en el escritorio de Windows y Mac.">
 <meta property="og:image" content="img/icono-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -61,6 +61,10 @@
   .descargar:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgb(26 167 224 / .4); }
   .descargar svg { width: 18px; height: 18px; }
   .detalle-descarga { color: var(--tenue); font-size: 13px; margin: 14px 0 0; }
+  .otros-sistemas { color: var(--tenue); font-size: 13px; margin: 8px 0 0; }
+  .otros-sistemas a { color: var(--suave); }
+  .solo-mac, .es-mac .solo-windows { display: none; }
+  .es-mac .solo-mac { display: block; }
   .contador { display: inline-flex; align-items: center; gap: 7px; margin: 12px 0 0; padding: 5px 12px; border-radius: 999px; font-size: 13px; color: var(--suave); background: rgb(255 255 255 / .04); border: 1px solid var(--borde); }
   .contador[hidden] { display: none; }
   .contador svg { color: var(--turquesa); }
@@ -219,17 +223,19 @@
     <h1>Todas tus tareas <em>a solo un clic</em>.</h1>
     <p class="lema">Un widget que vive en el fondo de tu escritorio, se actualiza solo y te enseña las instrucciones y los archivos de cada tarea sin abrir el navegador.</p>
     <div class="acciones">
-      <a class="descargar" id="descargar" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
+      <a class="descargar" id="descargar" data-windows="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe" data-mac="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
-        Descargar para Windows
+        <span id="descargar-texto">Descargar para Windows</span>
       </a>
       <a class="secundario" href="#instalar">Cómo se instala →</a>
     </div>
     <p class="detalle-descarga" id="version">Versión 1.0.0 · ~100 MB · se actualiza sola</p>
+    <p class="otros-sistemas solo-windows">También para <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg">Mac con Apple Silicon</a> y <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-x64.dmg">Mac con Intel</a>.</p>
+    <p class="otros-sistemas solo-mac">¿Tu Mac es de antes de 2021, con Intel? <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-x64.dmg">Descárgala aquí</a> · <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">Windows</a></p>
     <p class="contador" id="contador" hidden><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg><b id="descargas"></b></p>
   </header>
 
-  <div class="escritorio" aria-label="Ejemplo de BB Today en un escritorio de Windows, con tareas de muestra">
+  <div class="escritorio" aria-label="Ejemplo de BB Today en un escritorio, con tareas de muestra">
     <div class="iconos" aria-hidden="true">
       <div class="icono-esc"><span style="background:linear-gradient(135deg,#ffd36b,#f0a630)"><svg width="24" height="24" viewBox="0 0 24 24" fill="#7a4b00" opacity=".55"><path d="M3 7h7l2 2h9v10H3z"/></svg></span>Tareas</div>
       <div class="icono-esc"><span style="background:rgb(255 255 255 / .14)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dfe6ff" stroke-width="1.6"><path d="M5 7h14l-1 13H6zM9 7V4h6v3M3 7h18"/></svg></span>Papelera</div>
@@ -280,7 +286,7 @@
       <div class="tarjeta">
         <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
         <h3>Avisos antes de que venza</h3>
-        <p>Una notificación de Windows unas horas antes de cada entrega. Tú eliges cuántas.</p>
+        <p>Una notificación unas horas antes de cada entrega. Tú eliges cuántas.</p>
       </div>
       <div class="tarjeta">
         <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></div>
@@ -298,11 +304,12 @@
       <p>No hay que configurar nada: inicias sesión una vez y ya.</p>
     </div>
     <div class="pasos">
-      <div class="paso"><h3>Descarga e instala</h3><p>Abre <b>BB-Today-Setup.exe</b>. Se instala solo, sin pedir permisos de administrador.</p></div>
+      <div class="paso"><h3>Descarga e instala</h3><p class="solo-windows">Abre <b>BB-Today-Instalador.exe</b>. Se instala solo, sin pedir permisos de administrador.</p><p class="solo-mac">Abre el <b>.dmg</b> y arrastra <b>BB Today</b> a Aplicaciones.</p></div>
       <div class="paso"><h3>Inicia sesión</h3><p>El widget te pide entrar. Usas el inicio de sesión de tu escuela, como siempre.</p></div>
-      <div class="paso"><h3>Olvídate</h3><p>Arranca con Windows, revisa Blackboard cada hora y se actualiza solo cuando hay versión nueva.</p></div>
+      <div class="paso"><h3>Olvídate</h3><p class="solo-windows">Arranca con Windows, revisa Blackboard cada hora y se actualiza solo cuando hay versión nueva.</p><p class="solo-mac">Arranca al iniciar sesión, revisa Blackboard cada hora y te avisa cuando hay versión nueva.</p></div>
     </div>
-    <div class="aviso"><b>¿Windows dice «Windows protegió tu PC»?</b> Es porque BB Today todavía no tiene un certificado de firma de pago. Pulsa <b>Más información</b> y luego <b>Ejecutar de todos modos</b>. Sólo pasa la primera vez.</div>
+    <div class="aviso solo-windows"><b>¿Windows dice «Windows protegió tu PC»?</b> Es porque BB Today todavía no tiene un certificado de firma de pago. Pulsa <b>Más información</b> y luego <b>Ejecutar de todos modos</b>. Sólo pasa la primera vez.</div>
+    <div class="aviso solo-mac"><b>¿Tu Mac dice que no puede verificar BB Today?</b> Es porque no tiene la firma de pago de Apple. Ve a <b>Ajustes del Sistema → Privacidad y seguridad</b>, baja hasta el aviso de BB Today y pulsa <b>Abrir de todas formas</b>. Sólo pasa la primera vez.</div>
   </div>
 </section>
 
@@ -312,15 +319,15 @@
     <details><summary>¿Es seguro darle mi cuenta?</summary><p>BB Today no ve tu contraseña: inicias sesión en la página de tu escuela dentro de una ventana, igual que en el navegador. La app sólo guarda la sesión en tu computadora, no tiene servidor y no manda tus datos a ningún lado. Lee el <a href="privacidad.html">aviso de privacidad</a>.</p></details>
     <details><summary>¿Puede entregar tareas o cambiar algo?</summary><p>No. Sólo lee. Para entregar, el botón «Abrir en Blackboard» te lleva a la tarea.</p></details>
     <details><summary>¿Funciona con mi escuela?</summary><p>Con cualquier escuela que use Blackboard Learn con la experiencia Ultra. Viene listo para la Universidad Panamericana; para otra, en la primera pantalla eliges «cambiar» y escribes la dirección de tu Blackboard.</p></details>
-    <details><summary>¿Hay versión para Mac o el celular?</summary><p>Por ahora sólo Windows 10 y 11.</p></details>
+    <details><summary>¿Funciona en Mac?</summary><p>Sí: en Mac con Apple Silicon (M1 en adelante) y con Intel. Vive en el escritorio y su icono está en la barra de menús. Como no tiene la firma de pago de Apple, no se puede actualizar sola: te avisa cuando hay versión nueva y la bajas de esta página. No hay versión para celular.</p></details>
     <details><summary>¿Es oficial?</summary><p>No. BB Today es un proyecto independiente y no está afiliado a Blackboard, Anthology ni a ninguna universidad. «Blackboard» es marca de sus dueños y se menciona sólo para decir con qué funciona.</p></details>
-    <details><summary>¿Cómo lo quito?</summary><p>Desde Configuración de Windows → Aplicaciones → BB Today → Desinstalar. Antes puedes cerrar sesión desde su icono en la bandeja.</p></details>
+    <details><summary>¿Cómo lo quito?</summary><p>Antes puedes cerrar sesión desde su icono en la bandeja (en Mac, en la barra de menús). En Windows: Configuración → Aplicaciones → BB Today → Desinstalar. En Mac: sal de la app y arrastra BB Today de Aplicaciones a la Papelera.</p></details>
   </div>
 </section>
 
 <div class="contenedor cierre">
   <h2>Deja de abrir Blackboard para ver qué toca.</h2>
-  <a class="descargar" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
+  <a class="descargar" id="descargar-2" data-windows="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe" data-mac="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
     Descargar BB Today
   </a>
@@ -436,6 +443,19 @@
   })();
 </script>
 <script>
+  // Quien entra desde una Mac ve primero la descarga para Mac.
+  (() => {
+    const plataforma = navigator.userAgentData?.platform || navigator.platform || '';
+    if (!/mac/i.test(plataforma)) return;
+    document.documentElement.classList.add('es-mac');
+    for (const id of ['descargar', 'descargar-2']) {
+      const a = document.getElementById(id);
+      if (a) a.href = a.dataset.mac;
+    }
+    document.getElementById('descargar-texto').textContent = 'Descargar para Mac';
+  })();
+</script>
+<script>
   // Versión, tamaño y descargas, de los Releases de GitHub; si GitHub no
   // responde, se queda el texto de arriba y el contador no aparece.
   // Las descargas cuentan sólo BB-Today-Instalador.exe, la copia que enlaza
@@ -459,7 +479,7 @@
       }
       const total = publicadas
         .flatMap((r) => r.assets)
-        .filter((a) => a.name === 'BB-Today-Instalador.exe')
+        .filter((a) => a.name === 'BB-Today-Instalador.exe' || /^BB-Today-Mac-.*\.dmg$/.test(a.name))
         .reduce((suma, a) => suma + a.download_count, 0);
       document.getElementById('descargas').textContent = total > 0
         ? `${total.toLocaleString('es-MX')} ${total === 1 ? 'descarga' : 'descargas'}`
