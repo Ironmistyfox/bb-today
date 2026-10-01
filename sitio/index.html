@@ -63,6 +63,9 @@
   .detalle-descarga { color: var(--tenue); font-size: 13px; margin: 14px 0 0; }
   .otros-sistemas { color: var(--tenue); font-size: 13px; margin: 8px 0 0; }
   .otros-sistemas a { color: var(--suave); }
+  .es-mac .descargar.mac { order: -1; }
+  /* Los dos botones del mismo ancho, también apilados en el celular. */
+  .acciones .descargar { min-width: 250px; justify-content: center; }
   .solo-mac, .es-mac .solo-windows { display: none; }
   .es-mac .solo-mac { display: block; }
   .contador { display: inline-flex; align-items: center; gap: 7px; margin: 12px 0 0; padding: 5px 12px; border-radius: 999px; font-size: 13px; color: var(--suave); background: rgb(255 255 255 / .04); border: 1px solid var(--borde); }
@@ -223,15 +226,17 @@
     <h1>Todas tus tareas <em>a solo un clic</em>.</h1>
     <p class="lema">Un widget que vive en el fondo de tu escritorio, se actualiza solo y te enseña las instrucciones y los archivos de cada tarea sin abrir el navegador.</p>
     <div class="acciones">
-      <a class="descargar" id="descargar" data-windows="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe" data-mac="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
+      <a class="descargar windows" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
-        <span id="descargar-texto">Descargar para Windows</span>
+        Descargar para Windows
       </a>
-      <a class="secundario" href="#instalar">Cómo se instala →</a>
+      <a class="descargar mac" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
+        Descargar para Mac
+      </a>
     </div>
     <p class="detalle-descarga" id="version">Versión 1.0.0 · ~100 MB · se actualiza sola</p>
-    <p class="otros-sistemas solo-windows">También para <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg">Mac con Apple Silicon</a> y <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-x64.dmg">Mac con Intel</a>.</p>
-    <p class="otros-sistemas solo-mac">¿Tu Mac es de antes de 2021, con Intel? <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-x64.dmg">Descárgala aquí</a> · <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">Windows</a></p>
+    <p class="otros-sistemas">¿Mac con Intel (de antes de 2021)? <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-x64.dmg">Descárgala aquí</a> · <a href="#instalar">Cómo se instala</a></p>
     <p class="contador" id="contador" hidden><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg><b id="descargas"></b></p>
   </header>
 
@@ -327,10 +332,16 @@
 
 <div class="contenedor cierre">
   <h2>Deja de abrir Blackboard para ver qué toca.</h2>
-  <a class="descargar" id="descargar-2" data-windows="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe" data-mac="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
-    Descargar BB Today
-  </a>
+  <div class="acciones">
+      <a class="descargar windows" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
+        Descargar para Windows
+      </a>
+      <a class="descargar mac" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
+        Descargar para Mac
+      </a>
+  </div>
 </div>
 
 <footer>
@@ -443,17 +454,10 @@
   })();
 </script>
 <script>
-  // Quien entra desde una Mac ve primero la descarga para Mac.
-  (() => {
-    const plataforma = navigator.userAgentData?.platform || navigator.platform || '';
-    if (!/mac/i.test(plataforma)) return;
+  // Desde una Mac: el botón de Mac va primero y las instrucciones son las de Mac.
+  if (/mac/i.test(navigator.userAgentData?.platform || navigator.platform || '')) {
     document.documentElement.classList.add('es-mac');
-    for (const id of ['descargar', 'descargar-2']) {
-      const a = document.getElementById(id);
-      if (a) a.href = a.dataset.mac;
-    }
-    document.getElementById('descargar-texto').textContent = 'Descargar para Mac';
-  })();
+  }
 </script>
 <script>
   // Versión, tamaño y descargas, de los Releases de GitHub; si GitHub no
