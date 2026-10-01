@@ -70,6 +70,13 @@ app.setPath('userData', DIR_DATOS);
 // Debe coincidir con el appId del instalador o Windows no muestra los avisos.
 const ID_APP = app.isPackaged ? 'dev.ironmistyfox.bbtoday' : 'blackboard-agenda';
 
+// El widget vive al fondo, casi siempre tapado por otras ventanas. Chromium
+// trata una ventana tapada como oculta: deja de dibujarla y frena sus
+// temporizadores, y la vista previa no llegaba a aparecer. Se desactiva.
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+
 if (!app.requestSingleInstanceLock()) app.quit();
 
 let ventana = null;
@@ -181,7 +188,7 @@ function crearVentana() {
     focusable: false,
     icon: ICONO,
     title: NOMBRE,
-    webPreferences: { preload: path.join(DIR, 'preload.cjs'), contextIsolation: true, sandbox: true },
+    webPreferences: { preload: path.join(DIR, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
   ventana.loadFile(path.join(DIR, 'index.html'));
   ventana.once('ready-to-show', () => {
@@ -221,21 +228,36 @@ function crearVentana() {
 
 // ---- Vista previa al pasar el ratón por una tarea ----
 //
-// Es otra ventana sin marco, pegada al costado del widget a la altura de la
-// fila. Se queda abierta mientras el ratón esté sobre la fila o sobre ella,
-// para poder hacer clic en los archivos.
+// Otra ventana sin marco, pegada al costado del widget. Ocupa todo el alto
+// del área de trabajo y no cambia de tamaño mientras se ve: cambiarlo en cada
+// carga la hacía parpadear y saltar. Lo que se mueve es la tarjeta, dentro.
+// Las zonas transparentes dejan pasar el ratón a lo que haya detrás.
+//
+// La ventana está siempre abierta mientras se ve el widget: vacía,
+// transparente y sin atrapar el ratón. Lo que aparece y desaparece es la
+// tarjeta, con un fundido. Mostrar y ocultar una ventana transparente cuesta
+// casi un segundo la primera vez y se notaba como un tirón.
+//
+// Se cierra cuando el puntero no está ni sobre el widget ni sobre la tarjeta.
+// Eso se comprueba preguntando a Windows dónde está el puntero y no con
+// eventos de ratón: una ventana que no toma el foco a veces no recibe
+// "mouseleave" y la vista previa se quedaba abierta.
 
 const ANCHO_VISTA = 360;
 const MARGEN_VISTA = 14; // aire transparente alrededor para la sombra
-let filaVista = { y: 0 };
-let altoVista = 200;
+const GRACIA_CIERRE_MS = 220;
+let tarjetaVista = null; // rectángulo de la tarjeta en pantalla
+let tarjetaLocal = null; // el mismo, en px de la página (para las capturas)
 let ocultarVista = null;
 let pedidoVista = 0;
+let vigiaVista = null;
+let fueraDesde = 0;
+let vistaAbierta = false;
 
 function crearVistaPrevia() {
   vistaPrevia = new BrowserWindow({
     width: ANCHO_VISTA + 2 * MARGEN_VISTA,
-    height: altoVista,
+    height: 600,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -245,29 +267,34 @@ function crearVistaPrevia() {
     focusable: false,
     type: 'toolbar',
     show: false,
-    webPreferences: { preload: path.join(DIR, 'preload.cjs'), contextIsolation: true, sandbox: true },
+    webPreferences: { preload: path.join(DIR, 'preload.cjs'), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
   vistaPrevia.loadFile(path.join(DIR, 'vista-previa.html'));
   vistaPrevia.webContents.on('did-finish-load', () => vistaPrevia.webContents.setZoomFactor(estado.prefs.tamano));
+  // Lo transparente no atrapa el ratón; la tarjeta lo pide al entrar.
+  vistaPrevia.setIgnoreMouseEvents(true, { forward: true });
   vistaPrevia.webContents.setWindowOpenHandler(({ url }) => {
     abrirExterno(url);
     return { action: 'deny' };
   });
 }
 
+// Columna al costado del widget, de todo el alto del área de trabajo. Sólo se
+// mueve si de verdad cambió (el widget se movió o cambió el tamaño de letra).
 function colocarVistaPrevia() {
-  if (!ventana || !vistaPrevia) return;
   const b = ventana.getBounds();
   const area = screen.getDisplayMatching(b).workArea;
-  const ancho = Math.round((ANCHO_VISTA + 2 * MARGEN_VISTA) * estado.prefs.tamano);
-  const margen = Math.round(MARGEN_VISTA * estado.prefs.tamano);
+  const z = estado.prefs.tamano;
+  const ancho = Math.round((ANCHO_VISTA + 2 * MARGEN_VISTA) * z);
+  const margen = Math.round(MARGEN_VISTA * z);
   // A la izquierda del widget si cabe; si no, a la derecha.
   let x = b.x - ancho + margen - 6;
   if (x + margen < area.x) x = b.x + b.width + 6 - margen;
-  const alto = Math.min(altoVista, area.height);
-  let y = b.y + filaVista.y * estado.prefs.tamano - margen - 4;
-  y = Math.max(area.y - margen, Math.min(y, area.y + area.height - alto + margen));
-  vistaPrevia.setBounds({ x: Math.round(x), y: Math.round(y), width: ancho, height: alto });
+  const deseado = { x: Math.round(x), y: area.y, width: ancho, height: area.height };
+  const actual = vistaPrevia.getBounds();
+  const distinto = ['x', 'y', 'width', 'height'].some((k) => Math.abs(actual[k] - deseado[k]) > 1);
+  if (distinto) vistaPrevia.setBounds(deseado);
+  return deseado;
 }
 
 // Las imágenes viajan reducidas: una foto del celular pesa varios MB.
@@ -285,12 +312,16 @@ async function mostrarVistaPrevia({ cursoId, tareaId, color, y }) {
   const tarea = curso?.tareas.find((t) => t.id === tareaId);
   if (!tarea || !vistaPrevia) return;
   const n = ++pedidoVista;
-  filaVista = { y };
-  const base = { n, curso: curso.nombre, color, tarea, cargando: true, prefs: estado.prefs };
+  const z = estado.prefs.tamano;
+  const marco = colocarVistaPrevia();
+  // Altura de la fila dentro de la ventana de la vista previa, en px de la página.
+  const ancla = (ventana.getBounds().y + y * z - marco.y) / z;
+  const base = { n, curso: curso.nombre, color, tarea, cargando: true, prefs: estado.prefs, ancla };
   vistaPrevia.webContents.send('vista:datos', base);
-  colocarVistaPrevia();
   if (!vistaPrevia.isVisible()) vistaPrevia.showInactive();
-  encimaDelWidget();
+  if (!vistaAbierta) encimaDelWidget();
+  vistaAbierta = true;
+  vigilarVistaPrevia();
 
   const datos = await detalle(cursoId, tarea).catch(() => null);
   if (n !== pedidoVista) return;
@@ -302,12 +333,81 @@ async function mostrarVistaPrevia({ cursoId, tareaId, color, y }) {
   });
 }
 
+// En BB_PRUEBA_HOVER el puntero es falso: la prueba no mueve el ratón real.
+let punteroFalso = null;
+const puntero = () => punteroFalso || screen.getCursorScreenPoint();
+
+const dentroDe = (p, r, holgura = 0) =>
+  r && p.x >= r.x - holgura && p.x <= r.x + r.width + holgura && p.y >= r.y - holgura && p.y <= r.y + r.height + holgura;
+
+// El hueco entre la tarjeta y el widget cuenta como "dentro": cruzarlo no la cierra.
+function puente(widget, tarjeta) {
+  if (!tarjeta) return null;
+  const izquierda = tarjeta.x < widget.x;
+  const x = izquierda ? tarjeta.x + tarjeta.width - 4 : widget.x + widget.width - 4;
+  const fin = izquierda ? widget.x + 4 : tarjeta.x + 4;
+  return { x, y: tarjeta.y, width: Math.max(0, fin - x), height: tarjeta.height };
+}
+
+function vigilarVistaPrevia() {
+  fueraDesde = 0;
+  // En las capturas de prueba nadie mueve el ratón: no se cierra sola.
+  if (vigiaVista || (process.env.BB_CAPTURA && !process.env.BB_PRUEBA_HOVER)) return;
+  vigiaVista = setInterval(() => {
+    if (!vistaAbierta) return cerrarVistaPrevia();
+    const p = puntero();
+    const w = ventana.getBounds();
+    const dentro = dentroDe(p, w, 2) || dentroDe(p, tarjetaVista, 8) || dentroDe(p, puente(w, tarjetaVista));
+    if (dentro) {
+      fueraDesde = 0;
+      return;
+    }
+    fueraDesde ||= Date.now();
+    if (Date.now() - fueraDesde > GRACIA_CIERRE_MS) cerrarVistaPrevia();
+  }, 50);
+}
+
+function cerrarVistaPrevia() {
+  clearTimeout(ocultarVista);
+  clearInterval(vigiaVista);
+  vigiaVista = null;
+  pedidoVista++;
+  tarjetaVista = null;
+  vistaAbierta = false;
+  if (vistaPrevia && !vistaPrevia.isDestroyed()) {
+    vistaPrevia.setIgnoreMouseEvents(true, { forward: true });
+    vistaPrevia.webContents.send('vista:cerrar');
+  }
+  ventana?.webContents.send('vista:cerrada');
+}
+
+// El widget avisa cuando el ratón sale de la lista (p. ej. sube al título);
+// si en ese rato no entra en la tarjeta, se cierra.
 function soltarVistaPrevia() {
   clearTimeout(ocultarVista);
-  ocultarVista = setTimeout(() => {
-    pedidoVista++;
-    vistaPrevia?.hide();
-  }, 260);
+  ocultarVista = setTimeout(cerrarVistaPrevia, GRACIA_CIERRE_MS);
+}
+
+// Precarga el detalle y las muestras de las tareas que se ven en el widget,
+// de una en una y en segundo plano, para que la vista previa salga al
+// instante. detalle() y muestraDe() guardan lo que bajan.
+let colaPrecarga = Promise.resolve();
+let precargadas = '';
+function precargarVistas(lista) {
+  if (!estado.prefs.vistaPrevia || estado.sesion !== 'lista' || !Array.isArray(lista)) return;
+  const clave = lista.map((x) => x.tareaId).join(',');
+  if (clave === precargadas) return;
+  precargadas = clave;
+  const tareas = lista.slice(0, 12).map(({ cursoId, tareaId }) => {
+    const curso = estado.datos?.cursos.find((c) => c.id === cursoId);
+    return { cursoId, tarea: curso?.tareas.find((t) => t.id === tareaId) };
+  }).filter((x) => x.tarea);
+  colaPrecarga = colaPrecarga.then(async () => {
+    for (const { cursoId, tarea } of tareas) {
+      const d = await detalle(cursoId, tarea).catch(() => null);
+      for (const archivo of d?.archivos || []) await muestraDe(archivo, miniatura).catch(() => null);
+    }
+  }).catch(() => {});
 }
 
 // ---- Avisos de Windows ----
@@ -558,11 +658,17 @@ ipcMain.handle('agenda:ocultar', () => ventana?.hide());
 ipcMain.handle('vista:mostrar', (_e, datos) => mostrarVistaPrevia(datos));
 ipcMain.handle('vista:soltar', () => soltarVistaPrevia());
 ipcMain.handle('vista:mantener', () => clearTimeout(ocultarVista));
-ipcMain.handle('vista:alto', (_e, alto) => {
-  if (!Number.isFinite(alto)) return;
-  altoVista = Math.round((alto + 2 * MARGEN_VISTA) * estado.prefs.tamano);
-  colocarVistaPrevia();
+// Dónde quedó la tarjeta (px de la página): para saber si el puntero está encima.
+ipcMain.handle('vista:tarjeta', (_e, r) => {
+  if (!vistaPrevia || !r || !vistaAbierta) return;
+  const z = estado.prefs.tamano;
+  const b = vistaPrevia.getBounds();
+  tarjetaLocal = r;
+  tarjetaVista = { x: b.x + r.x * z, y: b.y + r.y * z, width: r.width * z, height: r.height * z };
 });
+// Sobre la tarjeta, la ventana atrapa el ratón (clics en archivos); fuera, lo deja pasar.
+ipcMain.handle('vista:raton', (_e, sobre) => vistaPrevia?.setIgnoreMouseEvents(!sobre, { forward: true }));
+ipcMain.handle('vista:precargar', (_e, lista) => precargarVistas(lista));
 ipcMain.handle('agenda:alto', (_e, alto) => {
   if (!ventana || !Number.isFinite(alto)) return;
   const b = ventana.getBounds();
@@ -611,12 +717,123 @@ app.whenReady().then(() => {
 
   crearVentana();
   crearVistaPrevia();
-  ventana.on('hide', () => vistaPrevia?.hide());
-  ventana.on('move', () => vistaPrevia?.hide());
+  ventana.on('hide', () => {
+    cerrarVistaPrevia();
+    vistaPrevia?.hide();
+  });
+  ventana.on('show', () => {
+    colocarVistaPrevia();
+    vistaPrevia?.showInactive();
+    encimaDelWidget();
+  });
+  ventana.on('move', () => vistaAbierta && cerrarVistaPrevia());
+  ventana.on('moved', colocarVistaPrevia);
+  vistaPrevia.webContents.once('did-finish-load', () => {
+    if (!ventana.isVisible()) return;
+    colocarVistaPrevia();
+    vistaPrevia.showInactive();
+    encimaDelWidget();
+  });
   bandeja = new Tray(iconoBandeja());
   bandeja.setToolTip(`${NOMBRE} · pendientes de Blackboard`);
   bandeja.setContextMenu(menuBandeja());
   bandeja.on('click', mostrar);
+
+  // BB_PRUEBA_HOVER=1: recorre la vista previa con un ratón simulado (eventos
+  // enviados a las ventanas y un puntero falso; el cursor real no se mueve)
+  // e imprime qué pasó en cada paso: aparecer, cambiar de tarea, entrar en
+  // la tarjeta y salir de golpe del widget.
+  if (process.env.BB_PRUEBA_HOVER) {
+    const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    const z = () => estado.prefs.tamano;
+    // Dentro de cada página se generan los mismos eventos que daría el
+    // navegador (mouseover/enter/leave) sobre el elemento bajo el puntero.
+    // Al salir de una ventana de golpe, ésta NO se entera: es el caso real
+    // que dejaba la vista previa abierta, y lo tiene que resolver la vigilancia.
+    const SIMULAR = `window.__sim = window.__sim || ((x, y) => {
+      const nuevo = document.elementFromPoint(x, y);
+      const viejo = window.__simUltimo || null;
+      if (nuevo === viejo) return;
+      const cadena = (el) => { const c = []; for (let e = el; e; e = e.parentElement) c.push(e); return c; };
+      const antes = cadena(viejo), despues = cadena(nuevo);
+      for (const e of antes) if (!despues.includes(e)) e.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+      if (nuevo) nuevo.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      for (const e of despues.reverse()) if (!antes.includes(e)) e.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+      window.__simUltimo = nuevo;
+    });`;
+    const mover = async (x, y) => {
+      punteroFalso = { x: Math.round(x), y: Math.round(y) };
+      for (const v of [ventana, vistaPrevia]) {
+        const b = v.getBounds();
+        if (v.isVisible() && x >= b.x && x < b.x + b.width && y >= b.y && y < b.y + b.height) {
+          await v.webContents.executeJavaScript(`${SIMULAR}; window.__sim(${(x - b.x) / z()}, ${(y - b.y) / z()})`);
+        }
+      }
+    };
+    const filas = () => ventana.webContents.executeJavaScript(
+      `[...document.querySelectorAll('.lista .item')].map((e) => { const r = e.getBoundingClientRect(); return { y: r.top + r.height / 2, x: r.left + r.width / 2, t: e.querySelector('.titulo').textContent }; })`);
+    const tarjetaMostrada = () => vistaPrevia.webContents.executeJavaScript(
+      `document.getElementById('tarjeta').classList.contains('visible') ? document.querySelector('#contenido h2')?.textContent : null`);
+    const registro = [];
+    const anotar = async (paso) => registro.push({ paso, tarjeta: await tarjetaMostrada() });
+    setTimeout(async () => {
+      const lista = await filas();
+      const b = ventana.getBounds();
+      const enFila = (f) => mover(b.x + f.x * z(), b.y + f.y * z());
+      if (lista.length < 2) {
+        console.log(JSON.stringify({ error: 'hacen falta al menos 2 tareas en la lista', filas: lista.length }));
+        app.salir = true;
+        return app.exit(0);
+      }
+      // Precarga en marcha: se le da tiempo, como pasa al usar el widget.
+      await esperar(6000);
+      const t0 = Date.now();
+      await enFila(lista[0]);
+      let aparecio = null;
+      for (let i = 0; i < 60 && !aparecio; i++) {
+        await esperar(20);
+        if (await tarjetaMostrada()) aparecio = Date.now() - t0;
+      }
+      registro.push({ paso: '1. sobre la primera tarea', ms_hasta_verse: aparecio });
+      await esperar(300);
+      await anotar('1b. quieto sobre ella');
+
+      await enFila(lista[1]);
+      await esperar(120);
+      await anotar(`2. salta a la segunda (${lista[1].t})`);
+
+      // A la tarjeta, cruzando el hueco entre ventanas.
+      const r = tarjetaVista;
+      if (r) {
+        for (let k = 1; k <= 5; k++) await mover(b.x - (b.x - (r.x + r.width / 2)) * (k / 5), r.y + 40);
+        await esperar(500);
+        await anotar('3. dentro de la tarjeta');
+      }
+
+      // Sale de golpe al escritorio, sin pasar por ningún borde.
+      await mover(b.x - 900, b.y + 600);
+      await esperar(500);
+      await anotar('4. sale de golpe al escritorio');
+
+      // Vuelve a una tarea y sale por el título del widget.
+      const t5 = Date.now();
+      await enFila(lista[0]);
+      let reaparecio = null;
+      for (let i = 0; i < 60 && !reaparecio; i++) {
+        await esperar(20);
+        if (await tarjetaMostrada()) reaparecio = Date.now() - t5;
+      }
+      await esperar(300);
+      await anotar(`5. vuelve sobre una tarea (se vio a los ${reaparecio} ms)`);
+      await mover(b.x + 20 * z(), b.y + 10 * z());
+      await esperar(600);
+      await anotar('6. sube al título del widget');
+
+      console.log(JSON.stringify(registro, null, 1));
+      app.salir = true;
+      app.exit(0);
+    }, 3000);
+  }
 
   // BB_PRUEBA_SLIDER=1: mueve la opacidad 40 veces, como al arrastrar el
   // slider, e imprime el tamaño del widget antes y después (el ancho no debe
@@ -658,9 +875,12 @@ app.whenReady().then(() => {
       const curso = titulo && estado.datos?.cursos.find((c) => c.tareas.some((t) => t.titulo === titulo));
       if (curso) {
         const tarea = curso.tareas.find((t) => t.titulo === titulo);
-        await mostrarVistaPrevia({ cursoId: curso.id, tareaId: tarea.id, color: "#7d9cf0", y: 40 });
+        await mostrarVistaPrevia({ cursoId: curso.id, tareaId: tarea.id, color: '#7d9cf0', y: 40 });
         await new Promise((ok) => setTimeout(ok, Number(process.env.BB_CAPTURA_ESPERA) || 8000));
-        const vista = await vistaPrevia.webContents.capturePage();
+        // Sólo la tarjeta (con su sombra): la ventana ocupa todo el alto.
+        const r = tarjetaLocal;
+        const recorte = r && { x: Math.max(0, Math.floor(r.x - 14)), y: Math.max(0, Math.floor(r.y - 14)), width: Math.ceil(r.width + 28), height: Math.ceil(r.height + 28) };
+        const vista = await vistaPrevia.webContents.capturePage(recorte || undefined);
         fs.writeFileSync(process.env.BB_CAPTURA.replace(/\.png$/, '-vista.png'), vista.toPNG());
       }
       app.salir = true;

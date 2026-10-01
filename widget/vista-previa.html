@@ -7,15 +7,20 @@
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; background: transparent; overflow: hidden; }
+  html, body { height: 100%; }
   body {
-    padding: 14px;
     color: var(--texto);
     font: 12.5px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
+  /* La ventana ocupa todo el alto y no cambia de tamaño: la tarjeta se mueve
+     dentro (translateY) hasta la altura de la fila. */
   .tarjeta {
-    position: relative;
-    max-height: 640px;
+    position: absolute;
+    top: 0;
+    left: 14px;
+    right: 14px;
+    max-height: min(640px, calc(100vh - 28px));
     overflow-y: auto;
     /* La vista previa va casi opaca aunque el widget sea translúcido: es
        para leer. */
@@ -25,10 +30,16 @@
     box-shadow: var(--sombra);
     scrollbar-width: none;
     opacity: 0;
-    transform: translateY(3px);
-    transition: opacity .14s ease-out, transform .14s ease-out;
+    pointer-events: none;
+    transform: translateY(var(--y, 0px)) translateX(6px);
+    transition: opacity .13s ease-out, transform .18s cubic-bezier(.2, .8, .2, 1);
+    will-change: transform, opacity;
   }
-  .tarjeta.lista { opacity: 1; transform: none; }
+  .tarjeta.visible { opacity: 1; pointer-events: auto; transform: translateY(var(--y, 0px)); }
+  .tarjeta.quieta { transition: opacity .13s ease-out; }
+  /* Al cambiar de tarea, el contenido nuevo entra con un fundido corto. */
+  .contenido { transition: opacity .12s ease-out; }
+  .contenido.entrando { opacity: .25; transition: none; }
   .franja { height: 3px; }
   .cuerpo { padding: 12px 14px 12px; }
   .curso { font-size: 10.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
@@ -52,7 +63,7 @@
   .muestra .zip { padding: 7px 10px; font: 11px/1.6 "Cascadia Mono", Consolas, monospace; color: var(--suave); background: var(--codigo); }
   .muestra .zip span { color: var(--tenue); }
   .muestra .texto { padding: 8px 10px; color: var(--suave); font-size: 11.5px; white-space: pre-line; max-height: 110px; overflow: hidden; background: var(--codigo); -webkit-mask-image: linear-gradient(#000 70%, transparent); }
-  .esqueleto { height: 64px; background: linear-gradient(90deg, var(--pieza) 25%, var(--pieza-hover) 50%, var(--pieza) 75%); background-size: 200% 100%; animation: brillo 1.2s linear infinite; }
+  .esqueleto { height: 72px; background: linear-gradient(90deg, var(--pieza) 25%, var(--pieza-hover) 50%, var(--pieza) 75%); background-size: 200% 100%; animation: brillo 1.2s linear infinite; }
   @keyframes brillo { to { background-position: -200% 0; } }
   .fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 10px; }
   .tipo { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; padding: 2px 5px; border-radius: 4px; color: #fff; }
@@ -72,10 +83,12 @@
   .abrir:hover { background: var(--pieza-hover); }
   .ruta { font-size: 10.5px; color: var(--tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
   .cargando-linea { height: 10px; border-radius: 5px; margin: 6px 0; }
+  .esqueleto.alto-pdf { height: 118px; }
+  .muestra canvas { height: 118px; object-fit: cover; }
 </style>
 </head>
 <body>
-<div class="tarjeta" id="tarjeta"></div>
+<div class="tarjeta" id="tarjeta"><div class="contenido" id="contenido"></div></div>
 
 <script type="module">
 import * as pdfjs from '../node_modules/pdfjs-dist/build/pdf.min.mjs';
@@ -117,7 +130,8 @@ function chipsEntrega(t) {
   let chips = '';
   if (ms >= 0) {
     const h = Math.floor(ms / 3_600_000);
-    const falta = h < 1 ? `${Math.max(1, Math.round(ms / 60_000))} min` : `${h} h`;
+    const dias = Math.round((inicioDia(cuando) - inicioDia(Date.now())) / DIA);
+    const falta = h < 1 ? `${Math.max(1, Math.round(ms / 60_000))} min` : h < 24 ? `${h} h` : dias <= 1 ? `${h} h` : `${dias} días`;
     const hoy = inicioDia(cuando) === inicioDia(Date.now());
     chips += `<span class="chip ${h < 3 ? 'mal' : 'pronto'}">${hoy ? 'Hoy' : fmtDia.format(cuando)} · ${fmtHora.format(cuando)} · faltan ${falta}</span>`;
   } else {
@@ -128,6 +142,10 @@ function chipsEntrega(t) {
 }
 
 let actual = null;
+const $contenido = document.getElementById('contenido');
+let esperaPrimera = null;
+
+// ---- Pintado ----
 
 function pintar() {
   const { tarea, curso, color, cargando, detalle, error } = actual;
@@ -149,7 +167,7 @@ function pintar() {
     const otros = archivos.map((a, i) => ({ a, i })).filter(({ a }) => !esFoto(a));
     html += `<div class="seccion">Archivos · ${archivos.length}</div>`;
     if (fotos.length) {
-      html += `<div class="fotos">${fotos.map(({ a, i }) => `<div class="foto" data-archivo="${i}" title="${esc(a.nombre)} · clic para abrir">${a.muestra?.src ? `<img src="${a.muestra.src}" alt="">` : '<div class="esqueleto" style="height:100%"></div>'}</div>`).join('')}</div>`;
+      html += `<div class="fotos">${fotos.map(({ a, i }) => `<div class="foto" data-archivo="${i}" title="${esc(a.nombre)} · clic para abrir">${contenidoFoto(a)}</div>`).join('')}</div>`;
       if (otros.length) html += '<div style="height:8px"></div>';
     }
     html += `<div class="archivos">${otros.map(({ a, i }) => tarjetaArchivo(a, i)).join('')}</div>`;
@@ -159,34 +177,68 @@ function pintar() {
 
   const ruta = (tarea.ruta || []).join(' › ');
   html += `</div><div class="pie"><span class="ruta" title="${esc(ruta)}">${esc(ruta)}</span><button class="abrir" data-url="${esc(tarea.enlace)}">Abrir en Blackboard ↗</button></div>`;
-  $tarjeta.innerHTML = html;
-  for (const lienzo of $tarjeta.querySelectorAll('canvas[data-pdf]')) dibujarPdf(lienzo, Number(lienzo.dataset.pdf));
-  requestAnimationFrame(() => {
-    $tarjeta.classList.add('lista');
-    vista.alto($tarjeta.offsetHeight);
-  });
+  $contenido.innerHTML = html;
+  for (const lienzo of $contenido.querySelectorAll('canvas[data-pdf]')) dibujarPdf(lienzo, Number(lienzo.dataset.pdf));
 }
 
-function tarjetaArchivo(a, i) {
-  const [etiqueta, color] = tipoDe(a.nombre);
+const contenidoFoto = (a) => (a.muestra?.src ? `<img src="${a.muestra.src}" alt="">` : '<div class="esqueleto" style="height:100%"></div>');
+
+function htmlMuestra(a, i) {
   const m = a.muestra;
-  let muestra = '';
-  if (m?.tipo === 'pdf') muestra = `<canvas data-pdf="${i}"></canvas>`;
-  else if (m?.tipo === 'zip') muestra = `<div class="zip">${m.archivos.map((n) => {
+  if (m?.tipo === 'pdf') return `<canvas data-pdf="${i}"></canvas>`;
+  if (m?.tipo === 'zip') return `<div class="zip">${m.archivos.map((n) => {
     const partes = n.split('/');
     const base = partes.pop();
     return `<div>${partes.length ? `<span>${esc(partes.join('/'))}/</span>` : ''}${esc(base)}</div>`;
   }).join('')}${m.resto ? `<div><span>y ${m.resto} más…</span></div>` : ''}</div>`;
-  else if (m?.tipo === 'codigo') muestra = `<pre>${esc(m.lineas.join('\n'))}${m.resto ? `\n<span style="opacity:.6">… ${m.resto} líneas más</span>` : ''}</pre>`;
-  else if (m?.tipo === 'texto') muestra = `<div class="texto">${m.nota ? `<b>${esc(m.nota)}</b>\n` : ''}${esc(m.texto)}</div>`;
-  else if (!m && !a.sinMuestra && previsualizable(a)) muestra = '<div class="esqueleto"></div>';
+  if (m?.tipo === 'codigo') return `<pre>${esc(m.lineas.join('\n'))}${m.resto ? `\n<span style="opacity:.6">… ${m.resto} líneas más</span>` : ''}</pre>`;
+  if (m?.tipo === 'texto') return `<div class="texto">${m.nota ? `<b>${esc(m.nota)}</b>\n` : ''}${esc(m.texto)}</div>`;
+  if (!m && !a.sinMuestra && previsualizable(a)) return `<div class="esqueleto${/\.pdf$/i.test(a.nombre || '') ? ' alto-pdf' : ''}"></div>`;
+  return '';
+}
+
+const htmlOrigen = (a) => esc([tamano(a.bytes || a.muestra?.bytes), a.origen].filter(Boolean).join(' · '));
+
+const ICONO_BAJAR = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7.5 8 11l3.5-3.5M3 13.5h10"/></svg>';
+const htmlBajar = (a) => `${a.estadoDescarga ? `<span>${esc(a.estadoDescarga)}</span>` : ''}${ICONO_BAJAR}`;
+
+function tarjetaArchivo(a, i) {
+  const [etiqueta, color] = tipoDe(a.nombre);
+  const muestra = htmlMuestra(a, i);
   return `<div class="archivo" data-archivo="${i}" title="Clic para abrir ${esc(a.nombre)}">
     ${muestra ? `<div class="muestra">${muestra}</div>` : ''}
     <div class="fila">
       <span class="tipo" style="background:${color}">${etiqueta}</span>
-      <div style="min-width:0"><div class="nombre">${esc(a.nombre)}</div><div class="origen">${esc([tamano(a.bytes || m?.bytes), a.origen].filter(Boolean).join(' · '))}</div></div>
-      <span class="bajar">${a.estadoDescarga ? `<span>${esc(a.estadoDescarga)}</span>` : ''}<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7.5 8 11l3.5-3.5M3 13.5h10"/></svg></span>
+      <div style="min-width:0"><div class="nombre">${esc(a.nombre)}</div><div class="origen">${htmlOrigen(a)}</div></div>
+      <span class="bajar">${htmlBajar(a)}</span>
     </div></div>`;
+}
+
+// Cuando llega la muestra de un archivo sólo se toca su casilla: rehacer la
+// tarjeta entera volvía a dibujar los PDF y hacía parpadear todo.
+function actualizarArchivo(i) {
+  const a = actual.detalle.archivos[i];
+  const el = $contenido.querySelector(`[data-archivo="${i}"]`);
+  if (!el) return;
+  if (el.classList.contains('foto')) {
+    el.innerHTML = contenidoFoto(a);
+    return;
+  }
+  const html = htmlMuestra(a, i);
+  let caja = el.querySelector('.muestra');
+  if (!html) {
+    caja?.remove();
+  } else {
+    if (!caja) {
+      caja = document.createElement('div');
+      caja.className = 'muestra';
+      el.prepend(caja);
+    }
+    caja.innerHTML = html;
+    const lienzo = caja.querySelector('canvas[data-pdf]');
+    if (lienzo) dibujarPdf(lienzo, i);
+  }
+  el.querySelector('.origen').innerHTML = htmlOrigen(a);
 }
 
 const pdfs = new Map();
@@ -201,19 +253,48 @@ async function dibujarPdf(lienzo, i) {
       pagina = await doc.getPage(1);
       pdfs.set(archivo.url, pagina);
     }
-    if (n !== actual.n) return;
+    if (!actual || n !== actual.n || !lienzo.isConnected) return;
     const base = pagina.getViewport({ scale: 1 });
     const escala = (330 * devicePixelRatio) / base.width; // nítido en pantallas con escala
     const viewport = pagina.getViewport({ scale: escala });
-    lienzo.width = viewport.width;
-    lienzo.height = Math.min(viewport.height, 118 * (viewport.width / 330));
-    await pagina.render({ canvasContext: lienzo.getContext('2d'), viewport }).promise;
-    vista.alto($tarjeta.offsetHeight);
+    // Se dibuja fuera de pantalla y se copia de golpe: sin franjas a medio pintar.
+    const fuera = document.createElement('canvas');
+    fuera.width = viewport.width;
+    fuera.height = Math.min(viewport.height, 118 * (viewport.width / 330));
+    await pagina.render({ canvasContext: fuera.getContext('2d'), viewport }).promise;
+    if (!actual || n !== actual.n || !lienzo.isConnected) return;
+    lienzo.width = fuera.width;
+    lienzo.height = fuera.height;
+    lienzo.getContext('2d').drawImage(fuera, 0, 0);
   } catch {
-    lienzo.parentElement.remove();
-    vista.alto($tarjeta.offsetHeight);
+    lienzo.closest('.muestra')?.remove();
   }
 }
+
+// ---- Posición y visibilidad ----
+
+// La tarjeta se coloca a la altura de la fila, sin salirse de la pantalla.
+function colocar({ animar }) {
+  if (!actual) return;
+  const alto = $tarjeta.offsetHeight;
+  const y = Math.round(Math.max(8, Math.min(actual.ancla - 6, innerHeight - alto - 8)));
+  $tarjeta.classList.toggle('quieta', !animar);
+  $tarjeta.style.setProperty('--y', `${y}px`);
+  vista.tarjeta({ x: $tarjeta.offsetLeft, y, width: $tarjeta.offsetWidth, height: alto });
+}
+
+function mostrarTarjeta() {
+  clearTimeout(esperaPrimera);
+  if (!actual || $tarjeta.classList.contains('visible')) return;
+  colocar({ animar: false });
+  // (setTimeout y no requestAnimationFrame: éste se detiene si Windows da la
+  // ventana por tapada, y la tarjeta no llegaba a mostrarse.)
+  setTimeout(() => $tarjeta.classList.add('visible'), 16);
+}
+
+new ResizeObserver(() => {
+  if ($tarjeta.classList.contains('visible')) colocar({ animar: true });
+}).observe($tarjeta);
 
 const oscuroSistema = matchMedia('(prefers-color-scheme: dark)');
 function aplicarTema(p) {
@@ -223,39 +304,77 @@ function aplicarTema(p) {
 
 vista.alDatos((datos) => {
   aplicarTema(datos.prefs);
-  if (actual && datos.n !== actual.n) { pdfs.clear(); $tarjeta.classList.remove('lista'); }
-  // Al llegar el detalle se conservan las muestras que ya hubieran llegado.
+  const nueva = !actual || datos.n !== actual.n;
+  const visible = $tarjeta.classList.contains('visible');
+  if (nueva) pdfs.clear();
   actual = datos;
+  if (nueva && visible) {
+    // Cambio de tarea con la tarjeta ya abierta: fundido corto y se desliza.
+    $contenido.classList.add('entrando');
+    pintar();
+    setTimeout(() => $contenido.classList.remove('entrando'), 16);
+    colocar({ animar: true });
+    return;
+  }
   pintar();
+  if (visible) {
+    colocar({ animar: true });
+  } else if (!datos.cargando) {
+    mostrarTarjeta();
+  } else {
+    // Primera vez: si el detalle llega enseguida (estaba precargado) se
+    // muestra ya completo; si no, a los 140 ms con lo que haya.
+    clearTimeout(esperaPrimera);
+    esperaPrimera = setTimeout(mostrarTarjeta, 140);
+  }
 });
+
 vista.alMuestra(({ n, i, muestra }) => {
   if (!actual || n !== actual.n || !actual.detalle) return;
   if (muestra) actual.detalle.archivos[i].muestra = muestra;
   else actual.detalle.archivos[i].sinMuestra = true;
-  const y = $tarjeta.scrollTop;
-  pintar();
-  $tarjeta.scrollTop = y;
+  actualizarArchivo(i);
 });
 
-$tarjeta.addEventListener('mouseenter', () => vista.mantener());
-$tarjeta.addEventListener('mouseleave', () => vista.soltar());
+vista.alCerrar(() => {
+  clearTimeout(esperaPrimera);
+  $tarjeta.classList.add('quieta');
+  $tarjeta.classList.remove('visible');
+  actual = null;
+  vista.raton(false);
+});
+
+// ---- Ratón ----
+
+$tarjeta.addEventListener('mouseenter', () => {
+  vista.raton(true);
+  vista.mantener();
+});
+$tarjeta.addEventListener('mouseleave', () => {
+  vista.raton(false);
+  vista.soltar();
+});
 $tarjeta.addEventListener('click', async (e) => {
-  const archivo = e.target.closest('[data-archivo]');
-  if (archivo && actual?.detalle) {
+  const el = e.target.closest('[data-archivo]');
+  if (el && actual?.detalle) {
     // Se descarga con la sesión de la app (nunca pide volver a entrar) y
-    // se abre con su programa.
-    const a = actual.detalle.archivos[Number(archivo.dataset.archivo)];
+    // se abre con su programa. Sólo cambia su etiqueta, nada más se repinta.
+    const i = Number(el.dataset.archivo);
+    const a = actual.detalle.archivos[i];
     if (a.estadoDescarga === 'Abriendo…') return;
-    a.estadoDescarga = 'Abriendo…';
-    pintar();
+    const marcar = (texto) => {
+      a.estadoDescarga = texto;
+      const bajar = $contenido.querySelector(`[data-archivo="${i}"] .bajar`);
+      if (bajar) bajar.innerHTML = htmlBajar(a);
+    };
+    marcar('Abriendo…');
     const r = await window.agenda.abrirArchivo({ url: a.url, nombre: a.nombre, curso: actual.curso });
-    a.estadoDescarga = r?.error || 'Abierto';
-    pintar();
-    setTimeout(() => { a.estadoDescarga = null; if (actual?.detalle?.archivos.includes(a)) pintar(); }, 4000);
+    marcar(r?.error || 'Abierto');
+    setTimeout(() => marcar(null), 4000);
     return;
   }
-  const el = e.target.closest('[data-url]');
-  if (el?.dataset.url) window.agenda.abrir(el.dataset.url);
+  const enlace = e.target.closest('[data-url]');
+  if (enlace?.dataset.url) window.agenda.abrir(enlace.dataset.url);
 });
 </script>
 </body>

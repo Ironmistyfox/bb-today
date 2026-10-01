@@ -1,5 +1,15 @@
 # Cambios
 
+## 1.0.2 · 2026-10-01
+
+- La vista previa al pasar el ratón ya no se queda abierta: se cierra en
+  cuanto el puntero sale del widget y de la tarjeta, aunque salgas de golpe.
+- Ya no parpadea ni salta: la tarjeta se desliza a la altura de la tarea y,
+  cuando llega la muestra de un archivo, sólo cambia ese archivo.
+- Sale más rápido (de ~1 s a ~0,25 s) y, con la tarjeta abierta, pasar a otra
+  tarea la cambia al momento. El detalle de las tareas que ves se precarga.
+- Las fechas lejanas dicen «faltan 5 días» en vez de «faltan 128 h».
+
 ## 1.0.1 · 2026-10-01
 
 - Arreglado: mover el slider de opacidad en Configuración iba ensanchando el

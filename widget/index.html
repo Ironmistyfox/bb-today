@@ -296,6 +296,7 @@ function pintar() {
   const activa = document.querySelector('.item.activa')?.dataset.tarea;
   $('lista').innerHTML = html;
   if (activa) document.querySelector(`.item[data-tarea="${activa}"]`)?.classList.add('activa');
+  precargarVisibles();
 
   if (estado.datos) {
     const g = new Date(estado.datos.generado);
@@ -367,31 +368,58 @@ function ajustarAlto() {
   window.agenda.alto(Math.ceil(natural));
 }
 
-// Vista previa: aparece tras una pausa corta sobre la fila, para que pasar
-// el ratón de largo no la dispare.
+// Vista previa: la primera vez aparece tras una pausa corta sobre la fila
+// (pasar el ratón de largo no la dispara); con la tarjeta ya abierta, pasar
+// a otra fila la cambia al momento. Cerrarla lo decide el proceso principal,
+// que sabe dónde está el puntero; aquí sólo se quita el resaltado.
 let esperaVista = null;
+let vistaAbierta = false;
+function quitarResaltado() {
+  document.querySelectorAll('.item.activa').forEach((x) => x.classList.remove('activa'));
+}
+function abrirVista(item) {
+  vistaAbierta = true;
+  window.agenda.vista.mostrar({
+    cursoId: item.dataset.curso,
+    tareaId: item.dataset.tarea,
+    color: item.dataset.color,
+    y: Math.round(item.getBoundingClientRect().top),
+  });
+}
 $('lista').addEventListener('mouseover', (e) => {
   const item = e.target.closest('.item');
   if (!item || prefs().vistaPrevia === false) return;
   window.agenda.vista.mantener();
   if (item.classList.contains('activa')) return;
-  document.querySelectorAll('.item.activa').forEach((x) => x.classList.remove('activa'));
+  quitarResaltado();
   item.classList.add('activa');
   clearTimeout(esperaVista);
-  esperaVista = setTimeout(() => {
-    window.agenda.vista.mostrar({
-      cursoId: item.dataset.curso,
-      tareaId: item.dataset.tarea,
-      color: item.dataset.color,
-      y: Math.round(item.getBoundingClientRect().top),
-    });
-  }, 220);
+  if (vistaAbierta) abrirVista(item);
+  else esperaVista = setTimeout(() => abrirVista(item), 180);
 });
 $('lista').addEventListener('mouseleave', () => {
   clearTimeout(esperaVista);
-  document.querySelectorAll('.item.activa').forEach((x) => x.classList.remove('activa'));
-  window.agenda.vista.soltar();
+  if (vistaAbierta) window.agenda.vista.soltar();
+  else quitarResaltado();
 });
+window.agenda.vista.alCerrada(() => {
+  vistaAbierta = false;
+  clearTimeout(esperaVista);
+  quitarResaltado();
+});
+
+// Precarga en segundo plano el detalle de lo que se ve, para que la vista
+// previa salga al instante.
+let precargaPendiente = null;
+function precargarVisibles() {
+  clearTimeout(precargaPendiente);
+  if (prefs().vistaPrevia === false) return;
+  precargaPendiente = setTimeout(() => {
+    const lista = [...document.querySelectorAll('.lista .item')].map((x) => ({ cursoId: x.dataset.curso, tareaId: x.dataset.tarea }));
+    if (lista.length) window.agenda.vista.precargar(lista);
+  }, 1500);
+}
+
 $('lista').addEventListener('click', (e) => {
   const item = e.target.closest('[data-enlace]');
   if (item?.dataset.enlace) window.agenda.abrir(item.dataset.enlace);

@@ -46,7 +46,9 @@ BB_CAPTURA=ruta.png BB_CAPTURA_TAREA="título de una tarea" BB_CAPTURA_CONFIG=1 
 Variables extra: `BB_CAPTURA_TEMA` y `BB_CAPTURA_DIAS` prueban un estilo o un
 rango de días sin guardarlo; `BB_CAPTURA_SIN_RED=1` usa la última lista
 guardada; `BB_PRUEBA_SLIDER=1` comprueba que mover la opacidad no cambia el
-ancho del widget. Con `APPDATA` apuntando a una carpeta temporal, nada de esto
+ancho del widget; `BB_PRUEBA_HOVER=1` recorre la vista previa con un ratón
+simulado (aparecer, cambiar de tarea, entrar en la tarjeta, salir de golpe) y
+dice cuánto tardó en verse. Con `APPDATA` apuntando a una carpeta temporal, nada de esto
 toca tus datos ni tu sesión. Cierra antes la app instalada si comparten datos
 (instancia única).
 
@@ -73,6 +75,11 @@ Detalles que costó descubrir:
   (con `outline/` responde «no podemos encontrar esa página»).
 - Con la pantalla escalada, `getBounds`/`setBounds` redondean el ancho hacia
   arriba: el widget fija su ancho en vez de releerlo de Windows.
+- Chromium trata como oculta una ventana tapada por otras y deja de dibujarla:
+  como el widget vive al fondo, se desactiva (`CalculateNativeWinOcclusion`).
+- La vista previa es una ventana siempre abierta y transparente que no atrapa
+  el ratón; se cierra preguntando a Windows dónde está el puntero, porque una
+  ventana que no toma el foco no siempre recibe `mouseleave`.
 
 Los datos de la app viven en `%APPDATA%\blackboard-mcp`: sesión, ajustes,
 última lista y posición del widget.
