@@ -1,0 +1,132 @@
+/* Temas del widget y de la vista previa. El tema se elige en
+   Configuración; "sistema" lo resuelve la página según el modo de Windows.
+   La opacidad del fondo la pone la página en --alfa (0–1). */
+
+:root,
+:root[data-tema="medianoche"],
+[data-muestra="medianoche"] {
+  --fondo-a: #232327;
+  --fondo-b: #16161a;
+  --alfa-tema: 1;
+  --borde: rgb(255 255 255 / .08);
+  --linea: rgb(255 255 255 / .07);
+  --brillo: rgb(255 255 255 / .06);
+  --texto: #f3f2ee;
+  --suave: #b0ada6;
+  --tenue: #75736d;
+  --hover: rgb(255 255 255 / .055);
+  --pieza: rgb(255 255 255 / .045);
+  --pieza-hover: rgb(255 255 255 / .08);
+  --codigo: rgb(0 0 0 / .28);
+  --mal: #f07a6f;
+  --pronto: #e7b04f;
+  --bien: #5cc98d;
+  --neutro: rgb(255 255 255 / .07);
+  --acento: #2f6fd6;
+  --sombra: 0 10px 28px rgb(0 0 0 / .45), 0 2px 6px rgb(0 0 0 / .3);
+  --sombra-texto: none;
+  color-scheme: dark;
+}
+
+/* Los colores del logo: azul marino y el degradado turquesa. */
+:root[data-tema="marca"],
+[data-muestra="marca"] {
+  --fondo-a: #10245a;
+  --fondo-b: #08163a;
+  --alfa-tema: 1;
+  --borde: rgb(120 170 255 / .16);
+  --linea: rgb(120 170 255 / .12);
+  --brillo: rgb(255 255 255 / .08);
+  --texto: #ffffff;
+  --suave: #bccaea;
+  --tenue: #8293bd;
+  --hover: rgb(120 170 255 / .1);
+  --pieza: rgb(120 170 255 / .08);
+  --pieza-hover: rgb(120 170 255 / .15);
+  --codigo: rgb(0 0 0 / .22);
+  --mal: #ff8b7b;
+  --pronto: #ffc76b;
+  --bien: #22d8c6;
+  --neutro: rgb(120 170 255 / .12);
+  --acento: #1aa7e0;
+  --sombra: 0 10px 28px rgb(2 8 30 / .55), 0 2px 6px rgb(2 8 30 / .35);
+  --sombra-texto: none;
+  color-scheme: dark;
+}
+
+:root[data-tema="claro"],
+[data-muestra="claro"] {
+  --fondo-a: #fdfcfa;
+  --fondo-b: #f2f1ed;
+  --alfa-tema: 1;
+  --borde: rgb(0 0 0 / .08);
+  --linea: rgb(0 0 0 / .07);
+  --brillo: rgb(255 255 255 / .7);
+  --texto: #1d1c1a;
+  --suave: #55514a;
+  --tenue: #938e85;
+  --hover: rgb(0 0 0 / .045);
+  --pieza: rgb(0 0 0 / .035);
+  --pieza-hover: rgb(0 0 0 / .065);
+  --codigo: rgb(0 0 0 / .05);
+  --mal: #c23a30;
+  --pronto: #a86a12;
+  --bien: #1f8a4c;
+  --neutro: rgb(0 0 0 / .05);
+  --acento: #2f6fd6;
+  --sombra: 0 10px 28px rgb(0 0 0 / .16), 0 2px 6px rgb(0 0 0 / .08);
+  --sombra-texto: none;
+  color-scheme: light;
+}
+
+/* Cálido, como una nota de papel. */
+:root[data-tema="papel"],
+[data-muestra="papel"] {
+  --fondo-a: #f8f1e2;
+  --fondo-b: #eee3cc;
+  --alfa-tema: 1;
+  --borde: rgb(80 55 20 / .14);
+  --linea: rgb(80 55 20 / .1);
+  --brillo: rgb(255 255 255 / .55);
+  --texto: #2e2619;
+  --suave: #5f5341;
+  --tenue: #9b8c73;
+  --hover: rgb(80 55 20 / .06);
+  --pieza: rgb(80 55 20 / .05);
+  --pieza-hover: rgb(80 55 20 / .09);
+  --codigo: rgb(80 55 20 / .06);
+  --mal: #b8432f;
+  --pronto: #9a6512;
+  --bien: #3d7a3a;
+  --neutro: rgb(80 55 20 / .07);
+  --acento: #b8612f;
+  --sombra: 0 10px 28px rgb(60 40 10 / .2), 0 2px 6px rgb(60 40 10 / .1);
+  --sombra-texto: none;
+  color-scheme: light;
+}
+
+/* Casi transparente: se ve el fondo de pantalla a través. */
+:root[data-tema="vidrio"],
+[data-muestra="vidrio"] {
+  --fondo-a: #1b1d24;
+  --fondo-b: #111218;
+  --alfa-tema: .5;
+  --borde: rgb(255 255 255 / .2);
+  --linea: rgb(255 255 255 / .12);
+  --brillo: rgb(255 255 255 / .14);
+  --texto: #ffffff;
+  --suave: #e2e2e6;
+  --tenue: #b4b5bd;
+  --hover: rgb(255 255 255 / .1);
+  --pieza: rgb(255 255 255 / .08);
+  --pieza-hover: rgb(255 255 255 / .14);
+  --codigo: rgb(0 0 0 / .3);
+  --mal: #ff9a8f;
+  --pronto: #ffd27a;
+  --bien: #7ee0a8;
+  --neutro: rgb(255 255 255 / .12);
+  --acento: #6aa2ff;
+  --sombra: 0 10px 28px rgb(0 0 0 / .4), 0 2px 6px rgb(0 0 0 / .25);
+  --sombra-texto: 0 1px 2px rgb(0 0 0 / .55);
+  color-scheme: dark;
+}

@@ -1,0 +1,101 @@
+{
+  "name": "bb-today",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tus pendientes de Blackboard en el escritorio de Windows.",
+  "type": "module",
+  "bin": {
+    "blackboard-mcp": "src/servidor.js"
+  },
+  "scripts": {
+    "start": "node src/servidor.js",
+    "login": "node src/login.js",
+    "probar": "node src/probar.js",
+    "widget": "electron .",
+    "empaquetar": "electron-builder --win --publish never -c.directories.output=%LOCALAPPDATA%/bb-today-build",
+    "publicar": "electron-builder --win --publish always -c.directories.output=%LOCALAPPDATA%/bb-today-build"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "koffi": "^3.3.2",
+    "pdfjs-dist": "^6.3.289"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "playwright-core": "^1.63.0",
+    "sharp": "^0.35.5",
+    "zod": "^3.25.0"
+  },
+  "main": "widget/main.js",
+  "productName": "BB Today",
+  "author": "Ironmistyfox",
+  "homepage": "https://bb-today.pages.dev",
+  "build": {
+    "appId": "dev.ironmistyfox.bbtoday",
+    "productName": "BB Today",
+    "copyright": "© 2026 Ironmistyfox",
+    "directories": {
+      "output": "dist",
+      "buildResources": "widget/icono"
+    },
+    "files": [
+      "package.json",
+      "widget/**/*",
+      "!widget/icono/original.webp",
+      "src/agenda.js",
+      "src/cliente.js",
+      "src/datos.js",
+      "src/detalle.js",
+      "src/sesion.js",
+      "!node_modules/pdfjs-dist/legacy/**",
+      "!node_modules/pdfjs-dist/types/**",
+      "!node_modules/pdfjs-dist/web/**",
+      "!node_modules/pdfjs-dist/image_decoders/**",
+      "!node_modules/pdfjs-dist/**/*.map",
+      "!node_modules/@napi-rs/**"
+    ],
+    "asarUnpack": [
+      "node_modules/koffi/**",
+      "node_modules/koffi-win32-x64/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "widget/icono/icono.ico",
+      "artifactName": "BB-Today-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BB Today",
+      "installerIcon": "widget/icono/icono.ico",
+      "uninstallerIcon": "widget/icono/icono.ico",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Ironmistyfox",
+        "repo": "bb-today-descargas",
+        "releaseType": "release"
+      }
+    ],
+    "electronLanguages": [
+      "es",
+      "es-419",
+      "en-US"
+    ],
+    "compression": "maximum"
+  }
+}

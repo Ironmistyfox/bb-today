@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>Configuración · BB Today</title>
+<link rel="stylesheet" href="temas.css">
+<style>
+  * { box-sizing: border-box; }
+  html { background: var(--fondo-b); }
+  body {
+    margin: 0;
+    color: var(--texto);
+    background: var(--fondo-b);
+    font: 13px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .pagina { max-width: 560px; margin: 0 auto; padding: 22px 20px 36px; }
+  .cabecera { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .cabecera img { width: 40px; height: 40px; border-radius: 10px; }
+  h1 { margin: 0; font: 600 20px/1.2 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; }
+  .sub { color: var(--tenue); font-size: 12px; }
+
+  h2 { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--tenue); margin: 22px 0 8px 2px; }
+  .grupo { background: var(--fondo-a); border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; }
+  .opcion { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; }
+  .opcion + .opcion { border-top: 1px solid var(--linea); }
+  .opcion .texto b { display: block; font-weight: 500; }
+  .opcion .texto span { color: var(--tenue); font-size: 12px; }
+  .opcion.columna { flex-direction: column; align-items: stretch; }
+
+  select, button { font: inherit; }
+  select {
+    color: var(--texto); background: var(--pieza); border: 1px solid var(--borde); border-radius: 8px;
+    padding: 6px 28px 6px 10px; min-width: 170px; appearance: none; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--suave) 50%), linear-gradient(135deg, var(--suave) 50%, transparent 50%);
+    background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat;
+  }
+  select option { background: var(--fondo-a); color: var(--texto); }
+  .boton { color: var(--texto); background: var(--pieza); border: 1px solid var(--borde); border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+  .boton:hover { background: var(--pieza-hover); }
+  .boton.primario { background: var(--acento); border-color: var(--acento); color: #fff; }
+  .boton.peligro { color: var(--mal); }
+
+  /* Interruptor */
+  .interruptor { position: relative; width: 40px; height: 22px; flex: none; }
+  .interruptor input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .interruptor i { position: absolute; inset: 0; border-radius: 11px; background: var(--neutro); border: 1px solid var(--borde); transition: background .15s; pointer-events: none; }
+  .interruptor i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--suave); transition: transform .15s, background .15s; }
+  .interruptor input:checked + i { background: var(--acento); border-color: var(--acento); }
+  .interruptor input:checked + i::after { transform: translateX(18px); background: #fff; }
+  .interruptor input:focus-visible + i { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+  /* Temas */
+  .temas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px 14px; }
+  .tema { border: 2px solid transparent; border-radius: 12px; padding: 0; background: none; cursor: pointer; text-align: left; color: var(--texto); }
+  .tema.activo { border-color: var(--acento); }
+  .tema:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+  .mini {
+    height: 74px; border-radius: 10px; padding: 8px 9px; display: flex; flex-direction: column; gap: 5px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--fondo-a) calc(var(--alfa-tema) * 100%), transparent), color-mix(in srgb, var(--fondo-b) calc(var(--alfa-tema) * 100%), transparent));
+    border: 1px solid var(--borde); color: var(--texto);
+  }
+  .mini.vidrio-fondo { background-color: transparent; background-image: linear-gradient(180deg, rgb(27 29 36 / .5), rgb(17 18 24 / .5)), linear-gradient(135deg, #3a7bd5, #b06ab3 60%, #e4a663); }
+  .mini b { font-size: 10.5px; font-weight: 600; text-shadow: var(--sombra-texto); }
+  .mini .renglon { display: flex; align-items: center; gap: 5px; }
+  .mini .renglon i { width: 6px; height: 6px; border-radius: 50%; }
+  .mini .renglon span { height: 5px; border-radius: 3px; background: var(--suave); opacity: .55; flex: 1; }
+  .mini .renglon em { width: 20px; height: 9px; border-radius: 5px; background: color-mix(in srgb, var(--pronto) 30%, transparent); }
+  .tema .nombre { display: block; font-size: 12px; padding: 5px 2px 0; }
+
+  input[type=range] { width: 170px; accent-color: var(--acento); }
+  .segmentos { display: inline-flex; background: var(--pieza); border: 1px solid var(--borde); border-radius: 8px; padding: 2px; }
+  .segmentos button { border: 0; background: none; color: var(--suave); padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+  .segmentos button.activo { background: var(--fondo-a); color: var(--texto); box-shadow: 0 1px 2px rgb(0 0 0 / .15); }
+
+  .materias { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+  .materia { display: flex; align-items: center; gap: 10px; padding: 6px 2px; cursor: pointer; }
+  .materia input { width: 16px; height: 16px; accent-color: var(--acento); cursor: pointer; }
+  .vacio { color: var(--tenue); font-size: 12px; }
+  .cuenta { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: #fff; background: var(--acento); flex: none; }
+  .pie { color: var(--tenue); font-size: 11.5px; text-align: center; margin-top: 22px; }
+  .privacidad p { margin: 0 0 6px; color: var(--suave); }
+  .privacidad ul { margin: 0 0 10px; padding-left: 18px; color: var(--suave); font-size: 12.5px; }
+  .privacidad li { margin: 5px 0; }
+  .privacidad b { color: var(--texto); font-weight: 600; }
+  .privacidad code { font: 11.5px "Cascadia Mono", Consolas, monospace; background: var(--pieza); padding: 1px 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="pagina">
+  <div class="cabecera">
+    <img src="icono/icono.png" alt="">
+    <div><h1>Configuración</h1><div class="sub" id="sub">BB Today</div></div>
+  </div>
+
+  <h2>Qué mostrar</h2>
+  <div class="grupo">
+    <div class="opcion">
+      <div class="texto"><b>Tareas por entregar</b><span>Hasta qué día mirar hacia adelante</span></div>
+      <select id="diasAdelante">
+        <option value="0">Sólo hoy</option>
+        <option value="1">Hoy y mañana</option>
+        <option value="2">Próximos 3 días</option>
+        <option value="6">Próxima semana</option>
+        <option value="13">Próximas 2 semanas</option>
+      </select>
+    </div>
+    <div class="opcion">
+      <div class="texto"><b>Tareas vencidas</b><span>Las que se te pasaron y no entregaste</span></div>
+      <select id="diasAtras">
+        <option value="0">No mostrarlas</option>
+        <option value="1">Del último día</option>
+        <option value="3">De los últimos 3 días</option>
+        <option value="7">De la última semana</option>
+        <option value="14">De las últimas 2 semanas</option>
+      </select>
+    </div>
+    <div class="opcion">
+      <div class="texto"><b>Sólo si aún se pueden entregar</b><span>Oculta las vencidas que no aceptan entrega tardía</span></div>
+      <label class="interruptor"><input type="checkbox" id="soloTardias"><i></i></label>
+    </div>
+    <div class="opcion columna">
+      <div class="texto"><b>Materias</b><span>Desmarca las que no quieras ver</span></div>
+      <div class="materias" id="materias"></div>
+    </div>
+  </div>
+
+  <h2>Estilo</h2>
+  <div class="grupo">
+    <div class="temas" id="temas"></div>
+    <div class="opcion">
+      <div class="texto"><b>Opacidad del fondo</b><span id="opacidad-valor"></span></div>
+      <input type="range" id="opacidad" min="40" max="100" step="2">
+    </div>
+    <div class="opcion">
+      <div class="texto"><b>Tamaño</b></div>
+      <div class="segmentos" id="tamano">
+        <button data-valor="0.9">Compacto</button>
+        <button data-valor="1">Normal</button>
+        <button data-valor="1.15">Grande</button>
+      </div>
+    </div>
+  </div>
+
+  <h2>Comportamiento</h2>
+  <div class="grupo">
+    <div class="opcion">
+      <div class="texto"><b>Vista previa al pasar el ratón</b><span>Instrucciones y archivos de cada tarea</span></div>
+      <label class="interruptor"><input type="checkbox" id="vistaPrevia"><i></i></label>
+    </div>
+    <div class="opcion">
+      <div class="texto"><b>Avisos de Windows</b><span>Cuando una tarea está por vencer</span></div>
+      <label class="interruptor"><input type="checkbox" id="avisos"><i></i></label>
+    </div>
+    <div class="opcion" id="fila-aviso">
+      <div class="texto"><b>Avisarme con</b></div>
+      <select id="avisoHoras">
+        <option value="1">1 hora de anticipación</option>
+        <option value="2">2 horas de anticipación</option>
+        <option value="3">3 horas de anticipación</option>
+        <option value="6">6 horas de anticipación</option>
+        <option value="12">12 horas de anticipación</option>
+      </select>
+    </div>
+    <div class="opcion">
+      <div class="texto"><b>Revisar Blackboard cada</b><span id="actualizado"></span></div>
+      <select id="intervaloMin">
+        <option value="30">30 minutos</option>
+        <option value="60">1 hora</option>
+        <option value="120">2 horas</option>
+      </select>
+    </div>
+    <div class="opcion">
+      <div class="texto"><b>Abrir al iniciar Windows</b></div>
+      <label class="interruptor"><input type="checkbox" id="alIniciar"><i></i></label>
+    </div>
+    <div class="opcion">
+      <div class="texto"><b>Posición del widget</b><span>Si lo perdiste de vista</span></div>
+      <button class="boton" id="esquina">Regresarlo a la esquina</button>
+    </div>
+  </div>
+
+  <h2>Cuenta</h2>
+  <div class="grupo">
+    <div class="opcion" id="cuenta"></div>
+  </div>
+
+  <h2>Actualizaciones</h2>
+  <div class="grupo">
+    <div class="opcion">
+      <div class="texto"><b id="version"></b><span id="estado-actualizacion"></span></div>
+      <button class="boton" id="boton-actualizacion"></button>
+    </div>
+  </div>
+
+  <h2>Privacidad</h2>
+  <div class="grupo">
+    <div class="opcion columna privacidad">
+      <p><b>Tus datos no salen de tu computadora.</b> BB Today no tiene servidor propio: habla directamente con el Blackboard de tu escuela, igual que tu navegador.</p>
+      <ul>
+        <li><b>Tu contraseña nunca pasa por BB Today.</b> Inicias sesión en la página de tu escuela (o de Google) dentro de una ventana; la app sólo guarda la cookie de sesión que Blackboard le da, en esta computadora.</li>
+        <li><b>Sólo lee.</b> No entrega tareas, no escribe mensajes y no cambia nada en Blackboard.</li>
+        <li><b>Lo que guarda</b> está en <code>%APPDATA%\blackboard-mcp</code>: la sesión, tus preferencias y la última lista de tareas, para mostrarla al encender. Los archivos que abres se bajan a <code>Descargas\BB Today</code>.</li>
+        <li><b>Nada de analítica ni publicidad.</b> Aparte de Blackboard y del inicio de sesión de tu escuela, la única conexión es a GitHub, para buscar actualizaciones.</li>
+        <li><b>Para borrarlo todo:</b> «Cerrar sesión» elimina la sesión y la lista guardada; desinstalar quita la app.</li>
+      </ul>
+      <div><button class="boton" id="ver-privacidad">Aviso de privacidad completo</button></div>
+    </div>
+  </div>
+
+  <div class="pie" id="pie"></div>
+</div>
+
+<script>
+const api = window.agenda.config;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const fmtHora = new Intl.DateTimeFormat('es-MX', { hour: 'numeric', minute: '2-digit' });
+
+const TEMAS = [
+  ['medianoche', 'Medianoche'],
+  ['marca', 'BB Today'],
+  ['claro', 'Claro'],
+  ['papel', 'Papel'],
+  ['vidrio', 'Vidrio'],
+  ['sistema', 'Automático'],
+];
+
+let datos = null;
+const oscuroSistema = matchMedia('(prefers-color-scheme: dark)');
+const temaSistema = () => (oscuroSistema.matches ? 'medianoche' : 'claro');
+oscuroSistema.addEventListener('change', () => pintar());
+
+function mini(tema, nombre) {
+  const real = tema === 'sistema' ? temaSistema() : tema;
+  const activo = datos.prefs.tema === tema;
+  return `<button class="tema ${activo ? 'activo' : ''}" data-tema="${tema}" aria-pressed="${activo}">
+    <div class="mini ${real === 'vidrio' ? 'vidrio-fondo' : ''}" data-muestra="${real}">
+      <b>Pendientes</b>
+      <div class="renglon"><i style="background:#f07aa8"></i><span></span><em></em></div>
+      <div class="renglon"><i style="background:#4cc9a0"></i><span style="max-width:60%"></span></div>
+    </div>
+    <span class="nombre">${nombre}</span></button>`;
+}
+
+function pintar() {
+  if (!datos) return;
+  const p = datos.prefs;
+  // La ventana de configuración sigue el modo claro/oscuro de Windows.
+  document.documentElement.dataset.tema = temaSistema();
+
+  $('sub').textContent = `BB Today ${datos.version}`;
+  for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin']) $(id).value = String(p[id]);
+  for (const id of ['soloTardias', 'vistaPrevia', 'avisos']) $(id).checked = !!p[id];
+  $('alIniciar').checked = !!datos.alIniciar;
+  $('fila-aviso').style.display = p.avisos ? '' : 'none';
+  $('soloTardias').disabled = p.diasAtras === 0;
+  $('opacidad').value = p.opacidad;
+  $('opacidad-valor').textContent = `${p.opacidad} %`;
+  for (const b of $('tamano').querySelectorAll('button')) b.classList.toggle('activo', Number(b.dataset.valor) === p.tamano);
+  $('temas').innerHTML = TEMAS.map(([t, n]) => mini(t, n)).join('');
+
+  $('actualizado').textContent = datos.cargando
+    ? 'Revisando ahora…'
+    : datos.actualizado ? `Última revisión: ${fmtHora.format(new Date(datos.actualizado))}` : '';
+
+  const ocultas = datos.ocultas.map((t) => t.toLowerCase());
+  $('materias').innerHTML = datos.materias.length
+    ? datos.materias.map((m) => {
+        const oculta = m.oculta || ocultas.some((t) => m.nombre.toLowerCase().includes(t));
+        return `<label class="materia"><input type="checkbox" data-materia="${esc(m.nombre)}" ${oculta ? '' : 'checked'}> ${esc(m.nombre)}</label>`;
+      }).join('')
+    : '<div class="vacio">Aparecen cuando inicies sesión.</div>';
+
+  const host = new URL(datos.escuela).hostname;
+  $('cuenta').innerHTML = datos.cuenta
+    ? `<div class="cuenta"><span class="avatar">${esc(datos.cuenta[0].toUpperCase())}</span><div class="texto"><b>${esc(datos.cuenta)}</b><span>${esc(host)}</span></div></div><button class="boton peligro" id="salir">Cerrar sesión</button>`
+    : `<div class="texto"><b>No has iniciado sesión</b><span>${esc(host)}</span></div><button class="boton primario" id="entrar">Iniciar sesión</button>`;
+  if ($('salir')) $('salir').onclick = async () => { datos = await api.salirCuenta(); pintar(); };
+  if ($('entrar')) $('entrar').onclick = () => api.entrar();
+
+  const a = datos.actualizacion || {};
+  $('version').textContent = `BB Today ${datos.version}`;
+  const textos = {
+    desarrollo: 'Versión de desarrollo: no se actualiza sola',
+    inicial: 'Buscando actualizaciones al arrancar…',
+    buscando: 'Buscando actualizaciones…',
+    'al-dia': 'Tienes la versión más reciente',
+    descargando: `Descargando la ${a.version || 'nueva versión'}… ${a.porcentaje || 0} %`,
+    lista: `La ${a.version} está lista. Se instala sola cuando no uses la computadora.`,
+    aviso: `Hay una versión nueva${a.version ? ` (${a.version})` : ''}. Descárgala desde la página.`,
+    error: 'No se pudo buscar actualizaciones',
+  };
+  $('estado-actualizacion').textContent = textos[a.estado] || '';
+  const boton = $('boton-actualizacion');
+  boton.className = a.estado === 'lista' ? 'boton primario' : 'boton';
+  boton.textContent = a.estado === 'lista' ? 'Reiniciar ahora' : a.estado === 'aviso' ? 'Ir a la página' : 'Buscar ahora';
+  boton.disabled = ['desarrollo', 'buscando', 'descargando'].includes(a.estado);
+  boton.onclick = () => (a.estado === 'lista' ? window.agenda.actualizacion.instalar() : a.estado === 'aviso' ? window.agenda.web('/') : window.agenda.actualizacion.buscar());
+
+  $('pie').textContent = 'Los cambios se guardan solos.';
+}
+
+async function guardar(cambios) {
+  datos = await api.guardar(cambios);
+  pintar();
+}
+
+for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin']) {
+  $(id).addEventListener('change', () => guardar({ [id]: Number($(id).value) }));
+}
+for (const id of ['soloTardias', 'vistaPrevia', 'avisos']) {
+  $(id).addEventListener('change', () => guardar({ [id]: $(id).checked }));
+}
+$('opacidad').addEventListener('input', () => {
+  $('opacidad-valor').textContent = `${$('opacidad').value} %`;
+  guardar({ opacidad: Number($('opacidad').value) });
+});
+$('tamano').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (b) guardar({ tamano: Number(b.dataset.valor) });
+});
+$('temas').addEventListener('click', (e) => {
+  const b = e.target.closest('.tema');
+  if (b) guardar({ tema: b.dataset.tema });
+});
+$('materias').addEventListener('change', async () => {
+  const ocultas = [...$('materias').querySelectorAll('input:not(:checked)')].map((i) => i.dataset.materia);
+  datos = await api.materias(ocultas);
+  pintar();
+});
+$('alIniciar').addEventListener('change', async () => { datos = await api.inicio($('alIniciar').checked); pintar(); });
+$('esquina').addEventListener('click', () => api.esquina());
+$('ver-privacidad').addEventListener('click', () => window.agenda.web('/privacidad'));
+
+api.alCambiar((nuevos) => { datos = nuevos; pintar(); });
+api.obtener().then((d) => { datos = d; pintar(); });
+</script>
+</body>
+</html>
