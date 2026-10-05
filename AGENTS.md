@@ -110,3 +110,10 @@ antes de crear el release al recibir la corrección del estilo. No mover esa
 etiqueta. La versión corregida usa v1.2.1. El paquete local 1.2.1 volvió a
 superar arranque, vista previa, MCP y migración de datos de ejemplo; el
 pedido generado para Codex y Claude incluye el apunte digital imperfecto.
+
+La ejecución de v1.2.1 es
+https://github.com/Ironmistyfox/bb-today/actions/runs/37366222688 .
+Al registrar este estado, Windows y Mac siguen en cola por una incidencia
+de GitHub Actions al asignar equipos. No se ha creado el release ni
+desplegado el anuncio nuevo. Tras aprobar la ejecución, verificar sus
+assets y manifiestos, desplegar el sitio y comprobar descargas y contador.
