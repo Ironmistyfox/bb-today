@@ -2,7 +2,7 @@
 #
 # - Al subir una etiqueta vX.Y.Z (npm run publicar la crea): compila, prueba
 #   y crea el release del que se actualizan las apps instaladas.
-# - A mano (Actions → Publicar → Run workflow): compila y prueba, sin publicar.
+# - A mano: compila y prueba; con etiqueta existente, publica esa etiqueta.
 #
 # Cada sistema pasa una prueba de humo con datos de ejemplo
 # (tools/probar-paquete.mjs): capturas del widget, la vista previa y
@@ -20,22 +20,39 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      etiqueta:
+        description: 'Etiqueta existente que publicar; vacío sólo compila la referencia elegida'
+        type: string
+        default: ''
+      equipo_windows:
+        description: 'Equipo Windows para evitar una cola saturada'
+        type: choice
+        default: windows-latest
+        options: [windows-latest, windows-2022]
+      equipo_mac:
+        description: 'Equipo Mac Apple Silicon para evitar una cola saturada'
+        type: choice
+        default: macos-latest
+        options: [macos-latest, macos-15, macos-14]
 
 permissions:
   contents: write
 
 # Una sola ejecución a la vez por etiqueta.
 concurrency:
-  group: publicar-${{ github.ref }}
+  group: publicar-${{ inputs.etiqueta && format('refs/tags/{0}', inputs.etiqueta) || github.ref }}
   cancel-in-progress: false
 
 jobs:
   windows:
-    runs-on: windows-latest
+    runs-on: ${{ inputs.equipo_windows || 'windows-latest' }}
     env:
       FIRMAR: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.etiqueta || github.ref }}
 
       - uses: actions/setup-node@v5
         with:
@@ -80,7 +97,7 @@ jobs:
           if-no-files-found: error
 
       - name: Firmar con SignPath
-        if: env.FIRMAR == 'true' && startsWith(github.ref, 'refs/tags/')
+        if: env.FIRMAR == 'true' && (startsWith(github.ref, 'refs/tags/') || inputs.etiqueta != '')
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -93,7 +110,7 @@ jobs:
           output-artifact-directory: firmado
 
       - name: Usar el instalador firmado
-        if: env.FIRMAR == 'true' && startsWith(github.ref, 'refs/tags/')
+        if: env.FIRMAR == 'true' && (startsWith(github.ref, 'refs/tags/') || inputs.etiqueta != '')
         shell: bash
         run: cp firmado/BB-Today-Setup.exe dist/BB-Today-Setup.exe
 
@@ -112,9 +129,11 @@ jobs:
           if-no-files-found: error
 
   mac:
-    runs-on: macos-latest
+    runs-on: ${{ inputs.equipo_mac || 'macos-latest' }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.etiqueta || github.ref }}
 
       - uses: actions/setup-node@v5
         with:
@@ -163,11 +182,13 @@ jobs:
           if-no-files-found: error
 
   publicar:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.etiqueta != ''
     needs: [windows, mac]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.etiqueta || github.ref }}
 
       - uses: actions/download-artifact@v4
         with:
@@ -180,22 +201,27 @@ jobs:
           path: archivos/mac
 
       - name: Comprobar que la etiqueta es la versión de package.json
+        env:
+          ETIQUETA: ${{ inputs.etiqueta || github.ref_name }}
         run: |
           version=$(node -p "require('./package.json').version")
-          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "La etiqueta $GITHUB_REF_NAME no coincide con la versión $version"; exit 1; }
+          [[ "$ETIQUETA" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Se requiere una etiqueta estable vX.Y.Z"; exit 1; }
+          [ "v$version" = "$ETIQUETA" ] || { echo "La etiqueta $ETIQUETA no coincide con la versión $version"; exit 1; }
+          [ "$(git rev-parse HEAD)" = "$(git rev-parse "$ETIQUETA^{commit}")" ] || { echo "El código no coincide con la etiqueta"; exit 1; }
           node tools/notas-version.mjs "$version" notas.md
 
       - name: Crear el release
         env:
           GH_TOKEN: ${{ github.token }}
+          ETIQUETA: ${{ inputs.etiqueta || github.ref_name }}
         run: |
           ls -la archivos/*
-          version=${GITHUB_REF_NAME#v}
+          version=${ETIQUETA#v}
           # GitHub a veces lanza dos ejecuciones para la misma etiqueta: si el
           # release ya existe, se suben los archivos encima en vez de fallar.
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" archivos/windows/* archivos/mac/* --clobber
+          if gh release view "$ETIQUETA" >/dev/null 2>&1; then
+            gh release upload "$ETIQUETA" archivos/windows/* archivos/mac/* --clobber
           else
-            gh release create "$GITHUB_REF_NAME" archivos/windows/* archivos/mac/* \
+            gh release create "$ETIQUETA" archivos/windows/* archivos/mac/* \
               --title "BB Today $version" --notes-file notas.md --latest
           fi

@@ -122,3 +122,9 @@ exacta para Windows/Mac cuando detecta una versión >=1.2.1 y su instalador.
 Se verificaron en producción siete tamaños, temas, animaciones, teclado,
 contador de 29 descargas y ambos estados del aviso mediante respuestas de
 GitHub simuladas. Tras aprobar la ejecución, verificar assets y manifiestos.
+
+El flujo Publicar permite ejecución manual con etiqueta existente y equipos
+alternativos (windows-2022, macos-14/15 arm64). Compila el checkout de esa
+etiqueta, conserva las pruebas y verifica versión y commit antes del release.
+Se añadió como respaldo a la incidencia de asignación de equipos de GitHub,
+sin modificar v1.2.1. Sin etiqueta, el modo manual sólo prueba la referencia.
