@@ -130,13 +130,13 @@ export function prepararCarpeta({ carpeta, curso, tarea, entrega, instrucciones,
     ? []
     : motor === 'codex'
       ? [
-          '- **Ejercicios para resolver y entregar en papel** (matemáticas, física, química, contabilidad…): además, la hoja resuelta en imagen, hecha con tu herramienta de generación de imágenes, en entrega/hoja-1.png (hoja-2.png… si no cabe legible en una).',
+          '- **Ejercicios** (matemáticas, física, química, contabilidad…): además, un apunte digital resuelto en imagen, hecho con tu herramienta de generación de imágenes, en entrega/hoja-1.png (hoja-2.png… si no cabe legible en una).',
           '  Contenido: cada ejercicio con su número, el procedimiento completo y el resultado, con la notación como se escribe a mano (no LaTeX).',
           `  Estilo: ${estiloImagen}`,
           `  Si no puedes generar imágenes (no tienes la herramienta o tu plan no lo permite), no la inventes ni la hagas con código: escribe ${PEDIDO_IMAGEN} con el pedido completo de la hoja (contenido y estilo) y sigue con lo demás.`,
         ]
       : [
-          `- **Ejercicios para resolver y entregar en papel** (matemáticas, física, química, contabilidad…): además, escribe ${PEDIDO_IMAGEN} en esta carpeta con el pedido completo para un generador de imágenes que dibuje la hoja resuelta: el contenido exacto (cada ejercicio con su número, el procedimiento y el resultado, en notación escrita a mano, no LaTeX) y este estilo: ${estiloImagen}`,
+          `- **Ejercicios** (matemáticas, física, química, contabilidad…): además, escribe ${PEDIDO_IMAGEN} en esta carpeta con el pedido completo para un generador de imágenes que dibuje el apunte digital resuelto: el contenido exacto (cada ejercicio con su número, el procedimiento y el resultado, en notación de lápiz digital, no LaTeX) y este estilo: ${estiloImagen}`,
           '  Si son muchos ejercicios, reparte el pedido en hojas («Hoja 1», «Hoja 2»…). BB Today se la pide a otra IA.',
         ];
   fs.writeFileSync(

@@ -52,7 +52,7 @@ export function mensajeConAdjuntos({ pedido, estiloImagen, titulo, curso, entreg
     `Te adjunto ${archivos.length === 1 ? 'el archivo' : 'los archivos'} de la tarea: ${archivos.map((a) => `«${a}»`).join(', ')}.`,
   ];
   if (estiloImagen) {
-    partes.push('', `Si son ejercicios para resolver y entregar en papel (matemáticas, física…), después de la solución genera también una imagen de la hoja resuelta, con todo el procedimiento. Estilo: ${estiloImagen}`);
+    partes.push('', `Si son ejercicios (matemáticas, física…), después de la solución genera también una imagen del apunte digital resuelto, con todo el procedimiento. Estilo: ${estiloImagen}`);
   }
   return partes.filter((x) => x !== null).join('\n');
 }
@@ -81,9 +81,9 @@ function mensajeTarea({ pedido, estiloImagen, titulo, curso, entrega, instruccio
     else if (a.texto) partes.push(a.texto.length > limiteArchivo ? `${a.texto.slice(0, limiteArchivo)}\n(…el resto no cabe en el mensaje)` : a.texto);
     else partes.push(a.aviso || '(No se pudo leer: lo tienes en la carpeta de descargas para adjuntarlo.)');
   }
-  // Si son ejercicios para entregar en papel, ChatGPT también hace la hoja.
+  // Los ejercicios llevan también un apunte digital con el estilo elegido.
   if (estiloImagen) {
-    partes.push('', `Si son ejercicios para resolver y entregar en papel (matemáticas, física…), después de la solución genera también una imagen de la hoja resuelta, con todo el procedimiento. Estilo: ${estiloImagen}`);
+    partes.push('', `Si son ejercicios (matemáticas, física…), después de la solución genera también una imagen del apunte digital resuelto, con todo el procedimiento. Estilo: ${estiloImagen}`);
   }
   return partes.filter((x) => x !== null).join('\n');
 }

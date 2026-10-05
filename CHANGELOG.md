@@ -1,6 +1,6 @@
 # Cambios
 
-## 1.2.0 · 2026-10-05
+## 1.2.1 · 2026-10-05
 
 - **BB Today completo:** pendientes, respuestas, archivos propios, ajustes y
   cuenta en una sola ventana, junto al widget de escritorio.
@@ -12,6 +12,8 @@
   tú en Blackboard; si no se pueden colocar archivos, puedes arrastrarlos.
 - **Materiales completos:** si un archivo no pudo descargarse, lo indica y
   detiene la preparación. La app conserva originales y prepara copias.
+- **Apuntes digitales:** las imágenes de ejercicios usan trazos y espaciado
+  imperfectos de lápiz digital, sin simular fotos de libretas en papel.
 - **Mensajes y anuncios:** nuevos mensajes de tus cursos en el widget;
   si la consulta falla, lo indica. Marcar visto sólo cambia BB Today.
 - **Guía de inicio:** también al actualizar desde 1.1.0; disponible desde

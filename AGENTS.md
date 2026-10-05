@@ -2,7 +2,7 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión pública es 1.2.0. Todo el código, textos y comentarios se
+MCP. La versión pública es 1.2.1. Todo el código, textos y comentarios se
 escriben en español.
 
 ## Trabajo y publicación
@@ -10,7 +10,7 @@ escriben en español.
 `main` contiene la versión pública. Cualquier rama local de experimentación
 se conserva separada: no publicar su historial ni datos personales. Publicar
 una versión o desplegar la web requiere una petición del responsable del
-proyecto. La versión 1.2.0 con IA está autorizada para su lanzamiento.
+proyecto. La versión 1.2.1 con IA está autorizada para su lanzamiento.
 
 Antes de publicar: actualizar package.json/package-lock.json, CHANGELOG,
 README, privacidad y este documento; verificar el paquete Windows y las
@@ -90,7 +90,7 @@ No incorporar cuentas, cookies, rutas de una persona ni capturas privadas al
 repositorio o a los instaladores. Mantener registro de qué pruebas se hicieron
 realmente y de sus límites.
 
-## Verificación de 1.2.0 (2026-10-05)
+## Verificación de 1.2.1 (2026-10-05)
 
 Antes del lanzamiento se construyó el paquete Windows: arranque, vista previa
 con ratón y servidor MCP superaron las pruebas. Con datos de ejemplo en el
@@ -99,3 +99,8 @@ guía y se guardó al cerrarla. Esto verifica la migración de datos, no sustitu
 una prueba del actualizador completo sobre una instalación real de 1.1.0.
 La web pasó siete tamaños (320–1817 px), temas, teclado y movimiento reducido.
 GitHub Actions debe aprobar Windows y Mac antes de crear el release.
+
+Antes de publicar, el responsable corrigió el estilo de las imágenes:
+apunte digital imperfecto, como captura de GoodNotes/Notability, sin foto
+ni papel físico. Conservar la exactitud del contenido; la imperfección es
+sólo visual. No reemplazar los pedidos personalizados guardados.
