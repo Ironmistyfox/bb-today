@@ -114,6 +114,11 @@ pedido generado para Codex y Claude incluye el apunte digital imperfecto.
 La ejecución de v1.2.1 es
 https://github.com/Ironmistyfox/bb-today/actions/runs/37366222688 .
 Al registrar este estado, Windows y Mac siguen en cola por una incidencia
-de GitHub Actions al asignar equipos. No se ha creado el release ni
-desplegado el anuncio nuevo. Tras aprobar la ejecución, verificar sus
-assets y manifiestos, desplegar el sitio y comprobar descargas y contador.
+de GitHub Actions al asignar equipos. Todavía no se ha creado el release.
+El responsable pidió desplegar la web de inmediato: ya está publicada en
+https://bb-today.pages.dev (despliegue fb3dd010, 2026-10-05). El aviso muestra
+«Próximamente» mientras falta el release; recorrido.js activa la descarga
+exacta para Windows/Mac cuando detecta una versión >=1.2.1 y su instalador.
+Se verificaron en producción siete tamaños, temas, animaciones, teclado,
+contador de 29 descargas y ambos estados del aviso mediante respuestas de
+GitHub simuladas. Tras aprobar la ejecución, verificar assets y manifiestos.
