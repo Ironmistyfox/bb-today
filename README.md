@@ -1,6 +1,6 @@
 # BB Today
 
-Tus pendientes de Blackboard, a la vista. BB Today 1.2.1 combina un widget
+Tus pendientes de Blackboard, a la vista. BB Today 1.2.2 combina un widget
 para Windows y Mac con una app para leer materiales, preparar respuestas con
 ChatGPT o Claude y revisar tus archivos antes de abrir la entrega oficial.
 

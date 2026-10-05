@@ -1,5 +1,15 @@
 # Cambios
 
+## 1.2.2 · 2026-10-05
+
+- **Detalle al pulsar una tarea:** abre la tarjeta flotante dentro de BB Today
+  y permanece abierta hasta cerrarla con la ✕ o Escape. Blackboard se abre
+  sólo al elegir su enlace.
+- **Quitar tareas:** la ✕ pide confirmación, cancelar conserva la tarea y
+  confirmar permite deshacer. La confirmación también se usa en la app completa.
+- **Teclado:** Enter o espacio abren el detalle; los botones tienen etiquetas
+  y la ✕ queda disponible al enfocar la fila.
+
 ## 1.2.1 · 2026-10-05
 
 - **BB Today completo:** pendientes, respuestas, archivos propios, ajustes y

@@ -28,12 +28,12 @@ on:
       equipo_windows:
         description: 'Equipo Windows para evitar una cola saturada'
         type: choice
-        default: windows-latest
+        default: windows-2022
         options: [windows-latest, windows-2022]
       equipo_mac:
         description: 'Equipo Mac Apple Silicon para evitar una cola saturada'
         type: choice
-        default: macos-latest
+        default: macos-14
         options: [macos-latest, macos-15, macos-14]
 
 permissions:
@@ -46,7 +46,7 @@ concurrency:
 
 jobs:
   windows:
-    runs-on: ${{ inputs.equipo_windows || 'windows-latest' }}
+    runs-on: ${{ inputs.equipo_windows || 'windows-2022' }}
     env:
       FIRMAR: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
     steps:
@@ -79,6 +79,10 @@ jobs:
       - name: Prueba del servidor MCP
         shell: bash
         run: node tools/probar-mcp.mjs "dist/win-unpacked/BB Today.exe"
+
+      - name: Prueba de interacción con tareas
+        shell: bash
+        run: node tools/probar-interacciones.mjs "dist/win-unpacked/BB Today.exe"
 
       - name: Guardar las capturas de la prueba
         if: always()
@@ -129,7 +133,7 @@ jobs:
           if-no-files-found: error
 
   mac:
-    runs-on: ${{ inputs.equipo_mac || 'macos-latest' }}
+    runs-on: ${{ inputs.equipo_mac || 'macos-14' }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -162,6 +166,9 @@ jobs:
       - name: Prueba del servidor MCP
         run: node tools/probar-mcp.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
 
+      - name: Prueba de interacción con tareas
+        run: node tools/probar-interacciones.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
+
       - name: Guardar las capturas de la prueba
         if: always()
         uses: actions/upload-artifact@v4
@@ -184,7 +191,7 @@ jobs:
   publicar:
     if: startsWith(github.ref, 'refs/tags/') || inputs.etiqueta != ''
     needs: [windows, mac]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
         with:

@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('agenda', {
   ocultar: () => ipcRenderer.invoke('agenda:ocultar'),
   alto: (px) => ipcRenderer.invoke('agenda:alto', px),
   vista: {
+    cerrar: () => ipcRenderer.invoke('vista:cerrar'),
     mostrar: (datos) => ipcRenderer.invoke('vista:mostrar', datos),
     soltar: () => ipcRenderer.invoke('vista:soltar'),
     mantener: () => ipcRenderer.invoke('vista:mantener'),

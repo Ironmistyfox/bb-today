@@ -2,7 +2,7 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión pública es 1.2.1. Todo el código, textos y comentarios se
+MCP. La versión en preparación es 1.2.2. Todo el código, textos y comentarios se
 escriben en español.
 
 ## Trabajo y publicación
@@ -10,7 +10,8 @@ escriben en español.
 `main` contiene la versión pública. Cualquier rama local de experimentación
 se conserva separada: no publicar su historial ni datos personales. Publicar
 una versión o desplegar la web requiere una petición del responsable del
-proyecto. La versión 1.2.1 con IA está autorizada para su lanzamiento.
+proyecto. El responsable autorizó el lanzamiento con IA y corrigió después
+el clic en tareas y el botón de quitar; ese parche se prepara como 1.2.2.
 
 Antes de publicar: actualizar package.json/package-lock.json, CHANGELOG,
 README, privacidad y este documento; verificar el paquete Windows y las
@@ -149,3 +150,17 @@ alternativos (windows-2022, macos-14/15 arm64). Compila el checkout de esa
 etiqueta, conserva las pruebas y verifica versión y commit antes del release.
 Se añadió como respaldo a la incidencia de asignación de equipos de GitHub,
 sin modificar v1.2.1. Sin etiqueta, el modo manual sólo prueba la referencia.
+
+## Parche 1.2.2: tareas
+
+Al pulsar una tarea, abrir la tarjeta flotante fijada, nunca Blackboard.
+Sólo el enlace explícito abre Blackboard. La tarjeta se cierra con su ✕ o
+Escape; el hover conserva su cierre automático y no reemplaza una fijada.
+El botón de quitar pide confirmación nativa; Cancelar conserva la tarea y
+confirmar permite Deshacer. No oculta la tarea hasta recibir confirmación.
+La comprobación tools/probar-interacciones.mjs usa datos de ejemplo, simula
+la respuesta del diálogo nativo y comprueba clic, Enter, ✕, Escape, cancelar,
+confirmar y deshacer, sin invocar el navegador. Pasó en desarrollo Windows;
+también se ejecuta en los paquetes Windows/Mac de GitHub antes de publicarlos.
+Los equipos por defecto son windows-2022, macos-14 y ubuntu-22.04 para evitar
+las colas que bloquearon la publicación anterior.

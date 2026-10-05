@@ -75,7 +75,10 @@
   .lado > * { grid-area: 1 / 1; transition: opacity .12s; }
   .quitar { -webkit-app-region: no-drag; width: 22px; height: 22px; border: 0; border-radius: 6px; padding: 0; display: grid; place-items: center; background: var(--neutro); color: var(--suave); cursor: pointer; opacity: 0; pointer-events: none; }
   .quitar:hover { background: color-mix(in srgb, var(--mal) 18%, transparent); color: var(--mal); }
-  .quitar svg { width: 11px; height: 11px; }
+  .quitar svg { width: 11px; height: 11px; pointer-events: none; }
+  .item:focus-within .pastilla { opacity: 0; pointer-events: none; }
+  .item:focus-within .quitar { opacity: 1; pointer-events: auto; }
+  .item:hover .pastilla { pointer-events: none; }
   .item:hover .pastilla { opacity: 0; }
   .item:hover .quitar { opacity: 1; pointer-events: auto; }
   .deshacer { display: flex; align-items: center; gap: 8px; padding: 7px 10px 8px 13px; border-top: 1px solid var(--borde); font-size: 11.5px; color: var(--suave); }
@@ -236,10 +239,10 @@ function nombreDia(t) {
 
 function fila(t, pastilla, clase) {
   const material = t.relacionados?.length || /\S/.test(t.instrucciones || '') ? CLIP : '';
-  return `<div class="item" data-curso="${esc(t.cursoId)}" data-tarea="${esc(t.id)}" data-color="${t.color}" data-enlace="${esc(t.enlace)}">
+  return `<div class="item" tabindex="0" role="group" aria-label="Abrir detalle de ${esc(t.titulo)}" data-curso="${esc(t.cursoId)}" data-tarea="${esc(t.id)}" data-color="${t.color}" data-enlace="${esc(t.enlace)}">
     <i class="punto" style="background:${t.color};color:${t.color}"></i>
     <div style="min-width:0"><div class="titulo">${esc(t.titulo)}</div><div class="meta">${esc(t.curso)}${material}${estado.respuestas?.[t.id] ? `<span class="resuelta" title="${esc(estado.respuestas[t.id])} ya la resolvió">· respuesta lista</span>` : ''}</div></div>
-    <span class="lado"><span class="pastilla ${clase}">${pastilla}</span><button class="quitar" data-quitar title="Quitar de la lista"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></span></div>`;
+    <span class="lado"><span class="pastilla ${clase}">${pastilla}</span><button type="button" class="quitar" data-quitar title="Quitar de la lista" aria-label="Quitar ${esc(t.titulo)}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></span></div>`;
 }
 
 function pastillaHoy(t) {
@@ -546,19 +549,29 @@ function ajustarAlto() {
 // que sabe dónde está el puntero; aquí sólo se quita el resaltado.
 let esperaVista = null;
 let vistaAbierta = false;
+let vistaFijada = false;
+let quitandoTarea = false;
 function quitarResaltado() {
   document.querySelectorAll('.item.activa').forEach((x) => x.classList.remove('activa'));
 }
-function abrirVista(item) {
+function abrirVista(item, { fijar = false } = {}) {
   vistaAbierta = true;
+  if (fijar) {
+    clearTimeout(esperaVista);
+    quitarResaltado();
+    item.classList.add('activa');
+    vistaFijada = true;
+  }
   window.agenda.vista.mostrar({
     cursoId: item.dataset.curso,
     tareaId: item.dataset.tarea,
     color: item.dataset.color,
     y: Math.round(item.getBoundingClientRect().top),
+    fijar,
   });
 }
 $('lista').addEventListener('mouseover', (e) => {
+  if (vistaFijada || quitandoTarea) return;
   const item = e.target.closest('.item');
   if (!item || prefs().vistaPrevia === false) return;
   window.agenda.vista.mantener();
@@ -581,6 +594,7 @@ $('lista').addEventListener('mouseleave', () => {
 });
 window.agenda.vista.alCerrada(() => {
   vistaAbierta = false;
+  vistaFijada = false;
   clearTimeout(esperaVista);
   quitarResaltado();
 });
@@ -616,22 +630,43 @@ function ofrecerDeshacer(tarea) {
   ajustarAlto();
 }
 
-$('lista').addEventListener('click', (e) => {
+$('lista').addEventListener('click', async (e) => {
   const quitar = e.target.closest('[data-quitar]');
   if (quitar) {
+    e.preventDefault();
     e.stopPropagation();
+    if (quitandoTarea) return;
+    quitandoTarea = true;
+    quitar.disabled = true;
+    clearTimeout(esperaVista);
     const item = quitar.closest('.item');
     const tarea = {
       id: item.dataset.tarea,
       titulo: item.querySelector('.titulo').textContent,
       curso: item.querySelector('.meta').textContent,
     };
-    window.agenda.tareas.descartar(tarea);
-    ofrecerDeshacer(tarea);
+    try {
+      if (await window.agenda.tareas.descartar(tarea)) ofrecerDeshacer(tarea);
+    } finally {
+      quitandoTarea = false;
+      quitar.disabled = false;
+    }
     return;
   }
-  const item = e.target.closest('[data-enlace]');
-  if (item?.dataset.enlace) window.agenda.abrir(item.dataset.enlace);
+  const item = e.target.closest('.item');
+  if (item) abrirVista(item, { fijar: true });
+});
+$('lista').addEventListener('keydown', (e) => {
+  if (e.target.matches('.item') && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    abrirVista(e.target, { fijar: true });
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && vistaFijada) {
+    e.preventDefault();
+    window.agenda.vista.cerrar();
+  }
 });
 $('refrescar').onclick = () => window.agenda.actualizar();
 $('abrir-app').onclick = () => window.agenda.app.abrir('pendientes');

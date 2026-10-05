@@ -352,6 +352,7 @@ let pedidoVista = 0;
 let vigiaVista = null;
 let fueraDesde = 0;
 let vistaAbierta = false;
+let vistaFijada = false;
 
 // La ventana de la vista previa se crea al acercar el ratón al widget y se
 // libera tras unos minutos sin usarse: abierta todo el día ocupaba memoria
@@ -407,6 +408,12 @@ function crearVistaPrevia() {
   vistaPrevia.webContents.on('did-finish-load', () => vistaPrevia.webContents.setZoomFactor(estado.prefs.tamano));
   // Lo transparente no atrapa el ratón; la tarjeta lo pide al entrar.
   vistaPrevia.setIgnoreMouseEvents(true, { forward: true });
+  vistaPrevia.webContents.on('before-input-event', (evento, tecla) => {
+    if (tecla.type === 'keyDown' && tecla.key === 'Escape') {
+      evento.preventDefault();
+      cerrarVistaPrevia();
+    }
+  });
   vistaPrevia.webContents.setWindowOpenHandler(({ url }) => {
     abrirExterno(url);
     return { action: 'deny' };
@@ -441,7 +448,8 @@ function miniatura(datos) {
   return `data:image/jpeg;base64,${chica.toJPEG(84).toString('base64')}`;
 }
 
-async function mostrarVistaPrevia({ cursoId, tareaId, color, y }) {
+async function mostrarVistaPrevia({ cursoId, tareaId, color, y, fijar = false }) {
+  if (vistaFijada && !fijar) return;
   clearTimeout(ocultarVista);
   const curso = estado.datos?.cursos.find((c) => c.id === cursoId);
   const tarea = curso?.tareas.find((t) => t.id === tareaId);
@@ -449,15 +457,21 @@ async function mostrarVistaPrevia({ cursoId, tareaId, color, y }) {
   await asegurarVistaPrevia();
   if (!vistaPrevia || vistaPrevia.isDestroyed()) return;
   const n = ++pedidoVista;
+  vistaFijada = !!fijar;
+  vistaPrevia.setFocusable(vistaFijada);
   const z = estado.prefs.tamano;
   const marco = colocarVistaPrevia();
   // Altura de la fila dentro de la ventana de la vista previa, en px de la página.
   const ancla = (ventana.getBounds().y + y * z - marco.y) / z;
-  const base = { n, curso: curso.nombre, color, tarea, cargando: true, prefs: estado.prefs, ancla, respuesta: respuestaParaVer(tareaId), resolverCon: NOMBRES_RUTA[estado.prefs.iaResolver] || 'ChatGPT', conAgente: null, otrasRutas: [] };
+  const base = { n, fijada: vistaFijada, curso: curso.nombre, color, tarea, cargando: true, prefs: estado.prefs, ancla, respuesta: respuestaParaVer(tareaId), resolverCon: NOMBRES_RUTA[estado.prefs.iaResolver] || 'ChatGPT', conAgente: null, otrasRutas: [] };
   vistaPrevia.webContents.send('vista:datos', base);
   if (!vistaPrevia.isVisible()) vistaPrevia.showInactive();
   if (!vistaAbierta) encimaDelWidget();
   vistaAbierta = true;
+  if (vistaFijada) {
+    vistaPrevia.show();
+    vistaPrevia.focus();
+  }
   vigilarVistaPrevia();
 
   const datos = SIN_RED
@@ -493,6 +507,7 @@ function vigilarVistaPrevia() {
   // En las capturas de prueba nadie mueve el ratón: no se cierra sola.
   if (vigiaVista || (process.env.BB_CAPTURA && !process.env.BB_PRUEBA_HOVER)) return;
   vigiaVista = setInterval(() => {
+    if (vistaFijada) return;
     if (!vistaAbierta) return cerrarVistaPrevia();
     const p = puntero();
     const w = ventana.getBounds();
@@ -513,8 +528,10 @@ function cerrarVistaPrevia() {
   pedidoVista++;
   tarjetaVista = null;
   vistaAbierta = false;
+  vistaFijada = false;
   programarLiberarVista();
   if (vistaPrevia && !vistaPrevia.isDestroyed()) {
+    vistaPrevia.setFocusable(false);
     vistaPrevia.setIgnoreMouseEvents(true, { forward: true });
     vistaPrevia.webContents.send('vista:cerrar');
   }
@@ -524,6 +541,7 @@ function cerrarVistaPrevia() {
 // El widget avisa cuando el ratón sale de la lista (p. ej. sube al título);
 // si en ese rato no entra en la tarjeta, se cierra.
 function soltarVistaPrevia() {
+  if (vistaFijada) return;
   clearTimeout(ocultarVista);
   ocultarVista = setTimeout(cerrarVistaPrevia, GRACIA_CIERRE_MS);
 }
@@ -1711,10 +1729,29 @@ ipcMain.handle('config:salir-cuenta', async () => {
 ipcMain.handle('config:entrar', () => entrar());
 // La ✕ de cada tarea: la quita de la lista (se puede deshacer o devolver
 // desde Configuración).
-ipcMain.handle('tareas:descartar', (_e, tarea) => {
-  if (!tarea?.id) return;
-  cerrarVistaPrevia();
-  publicar({ descartadas: preferencias.descartar(tarea) });
+const confirmacionesQuitar = new Map();
+ipcMain.handle('tareas:descartar', (evento, tarea) => {
+  if (!tarea?.id) return false;
+  if (confirmacionesQuitar.has(tarea.id)) return confirmacionesQuitar.get(tarea.id);
+  const confirmacion = (async () => {
+    const encontrada = buscarEnAgenda(tarea.id);
+    if (!encontrada) return false;
+    cerrarVistaPrevia();
+    const opciones = {
+      type: 'question', title: 'Quitar tarea', noLink: true,
+      message: `¿Quitar «${encontrada.tarea.titulo}» de la lista?`,
+      detail: 'Se ocultará sólo en BB Today. Puedes recuperarla en Ajustes → Tareas quitadas.',
+      buttons: ['Cancelar', 'Quitar de la lista'], defaultId: 0, cancelId: 0,
+    };
+    const origen = BrowserWindow.fromWebContents(evento.sender);
+    // El widget está anclado al escritorio; un diálogo sin ese padre queda visible.
+    const respuesta = await dialog.showMessageBox(...(origen && origen !== ventana ? [origen, opciones] : [opciones]));
+    if (respuesta.response !== 1) return false;
+    publicar({ descartadas: preferencias.descartar({ id: tarea.id, titulo: encontrada.tarea.titulo, curso: encontrada.curso.nombre }) });
+    return true;
+  })().finally(() => confirmacionesQuitar.delete(tarea.id));
+  confirmacionesQuitar.set(tarea.id, confirmacion);
+  return confirmacion;
 });
 ipcMain.handle('tareas:restaurar', (_e, id) => {
   publicar({ descartadas: preferencias.restaurar(id) });
@@ -1849,6 +1886,7 @@ ipcMain.handle('vista:mostrar', (_e, datos) => mostrarVistaPrevia(datos));
 ipcMain.handle('vista:calentar', () => estado.prefs.vistaPrevia && asegurarVistaPrevia());
 ipcMain.handle('vista:miniaturaPdf', (_e, archivo, src) => guardarMiniaturaPdf(archivo, src));
 ipcMain.handle('vista:soltar', () => soltarVistaPrevia());
+ipcMain.handle('vista:cerrar', () => cerrarVistaPrevia());
 ipcMain.handle('vista:mantener', () => clearTimeout(ocultarVista));
 // Dónde quedó la tarjeta (px de la página): para saber si el puntero está encima.
 ipcMain.handle('vista:tarjeta', (_e, r) => {

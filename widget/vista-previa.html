@@ -41,6 +41,10 @@
   }
   .tarjeta.visible { opacity: 1; pointer-events: auto; transform: translateY(var(--y, 0px)); }
   .tarjeta.quieta { transition: opacity .13s ease-out; }
+  .cerrar-vista { position: absolute; top: 9px; right: 10px; z-index: 2; width: 26px; height: 26px; border: 0; border-radius: 7px; background: var(--pieza); color: var(--suave); cursor: pointer; }
+  .cerrar-vista:hover { background: var(--pieza-hover); color: var(--texto); }
+  .cerrar-vista:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+  .tarjeta.fijada .curso { padding-right: 30px; }
   /* Al cambiar de tarea, el contenido nuevo entra con un fundido corto. */
   .contenido { transition: opacity .12s ease-out; }
   .contenido.entrando { opacity: .25; transition: none; }
@@ -122,7 +126,7 @@
 </style>
 </head>
 <body>
-<div class="tarjeta" id="tarjeta"><div class="contenido" id="contenido"></div></div>
+<div class="tarjeta" id="tarjeta" role="dialog" aria-label="Detalle de la tarea" tabindex="-1"><button type="button" class="cerrar-vista" id="cerrar-vista" aria-label="Cerrar detalle" hidden>✕</button><div class="contenido" id="contenido"></div></div>
 
 <script type="module">
 import * as pdfjs from '../node_modules/pdfjs-dist/build/pdf.min.mjs';
@@ -353,6 +357,7 @@ function aplicarTema(p) {
 
 vista.alDatos((datos) => {
   aplicarTema(datos.prefs);
+  const fijarFoco = datos.fijada && !actual?.fijada;
   const nueva = !actual || datos.n !== actual.n;
   const visible = $tarjeta.classList.contains('visible');
   if (nueva) {
@@ -360,6 +365,9 @@ vista.alDatos((datos) => {
     menuRutas = false;
   }
   actual = datos;
+  $tarjeta.classList.toggle('fijada', !!datos.fijada);
+  document.getElementById('cerrar-vista').hidden = !datos.fijada;
+  if (fijarFoco) document.getElementById('cerrar-vista').focus({ preventScroll: true });
   if (nueva && visible) {
     // Cambio de tarea con la tarjeta ya abierta: fundido corto y se desliza.
     $contenido.classList.add('entrando');
@@ -397,6 +405,13 @@ vista.alCerrar(() => {
 });
 
 // ---- Ratón ----
+document.getElementById('cerrar-vista').addEventListener('click', () => vista.cerrar());
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    vista.cerrar();
+  }
+});
 
 $tarjeta.addEventListener('mouseenter', () => {
   vista.raton(true);

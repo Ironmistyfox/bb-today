@@ -864,7 +864,7 @@ $('detalle-pendiente').addEventListener('click', async (e) => {
   }
   if (e.target.closest('[data-blackboard]')) return window.agenda.abrir(t.enlace);
   if (e.target.closest('[data-quitar]')) {
-    await window.agenda.tareas.descartar({ id: t.id, titulo: t.titulo, curso: t.curso });
+    if (!(await window.agenda.tareas.descartar({ id: t.id, titulo: t.titulo, curso: t.curso }))) return;
     tareaSel = null;
     $('detalle-pendiente').innerHTML = '<div class="vacio">La quitaste de la lista. Se devuelve en Ajustes → Tareas quitadas.</div>';
     return;
