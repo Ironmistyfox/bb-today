@@ -104,3 +104,9 @@ Antes de publicar, el responsable corrigió el estilo de las imágenes:
 apunte digital imperfecto, como captura de GoodNotes/Notability, sin foto
 ni papel físico. Conservar la exactitud del contenido; la imperfección es
 sólo visual. No reemplazar los pedidos personalizados guardados.
+
+La etiqueta v1.2.0 conserva la primera compilación: su ejecución se canceló
+antes de crear el release al recibir la corrección del estilo. No mover esa
+etiqueta. La versión corregida usa v1.2.1. El paquete local 1.2.1 volvió a
+superar arranque, vista previa, MCP y migración de datos de ejemplo; el
+pedido generado para Codex y Claude incluye el apunte digital imperfecto.
