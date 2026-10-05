@@ -1,6 +1,8 @@
 const esMac = /mac/i.test(navigator.userAgentData?.platform || navigator.platform || '');
 if (esMac) {
   document.documentElement.classList.add('es-mac');
+  const enlace = document.querySelector('.aviso-version a');
+  if (enlace.href.includes('/releases/download/')) enlace.href = enlace.href.replace('BB-Today-Instalador.exe', 'BB-Today-Mac-arm64.dmg');
 }
 
 const tareas = [

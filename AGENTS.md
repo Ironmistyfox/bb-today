@@ -111,17 +111,38 @@ etiqueta. La versión corregida usa v1.2.1. El paquete local 1.2.1 volvió a
 superar arranque, vista previa, MCP y migración de datos de ejemplo; el
 pedido generado para Codex y Claude incluye el apunte digital imperfecto.
 
-La ejecución de v1.2.1 es
-https://github.com/Ironmistyfox/bb-today/actions/runs/37366222688 .
-Al registrar este estado, Windows y Mac siguen en cola por una incidencia
-de GitHub Actions al asignar equipos. Todavía no se ha creado el release.
-El responsable pidió desplegar la web de inmediato: ya está publicada en
-https://bb-today.pages.dev (despliegue fb3dd010, 2026-10-05). El aviso muestra
-«Próximamente» mientras falta el release; recorrido.js activa la descarga
-exacta para Windows/Mac cuando detecta una versión >=1.2.1 y su instalador.
-Se verificaron en producción siete tamaños, temas, animaciones, teclado,
-contador de 29 descargas y ambos estados del aviso mediante respuestas de
-GitHub simuladas. Tras aprobar la ejecución, verificar assets y manifiestos.
+La versión **1.2.1 ya está publicada** (2026-10-05):
+https://github.com/Ironmistyfox/bb-today/releases/tag/v1.2.1 .
+Es estable, no es borrador y está marcada como la última versión. Tiene
+13 archivos: instaladores Windows, DMG/ZIP Mac arm64 y x64, blockmaps y
+manifiestos latest.yml/latest-mac.yml.
+
+La incidencia de asignación de equipos de GitHub se evitó usando
+windows-2022 y macos-14 en la ejecución
+https://github.com/Ironmistyfox/bb-today/actions/runs/37369768966 .
+Ambas plataformas compilaron el commit 2bdd07866621bfb9bf8ab0eb4ea937e7402827b7
+de v1.2.1 y aprobaron arranque/vista previa y MCP. El paso Linux para publicar
+quedó en cola; se descargaron esos mismos artefactos, se verificaron tamaños
+y SHA-512 y se creó el release desde el CLI. Después se canceló únicamente
+el paso pendiente: las pruebas Windows/Mac siguen registradas como aprobadas.
+
+Se descargaron de nuevo el instalador Windows y los ZIP Mac públicos:
+coinciden en tamaño y SHA-512 con los manifiestos y en SHA-256 con GitHub.
+Ambos enlaces DMG responden correctamente. No confundir estas verificaciones
+con una entrega real, pruebas de IA en cada plan o uso en un Mac Intel real.
+
+La web está en https://bb-today.pages.dev (despliegue 85e0a692, 2026-10-05).
+El aviso ofrece directamente 1.2.1 y elige Mac cuando corresponde; sigue
+actualizándose con versiones posteriores desde GitHub. Se verificaron siete
+tamaños, temas, animaciones, teclado y contador (29 descargas verificadas).
+Después del release se comprobó la web con GitHub real, ambas plataformas
+simuladas, privacidad actualizada y resistencia a una respuesta antigua
+de la API que no debe quitar la descarga ya publicada.
+
+El reintento antiguo de 37366222688 quedó pendiente en GitHub durante su
+incidencia. La API rechazó cancelarlo porque aún no se había puesto en cola
+el reintento. Si reaparece, cancelarlo para evitar compilaciones duplicadas;
+la publicación 1.2.1 ya está terminada. No mover ni borrar las etiquetas.
 
 El flujo Publicar permite ejecución manual con etiqueta existente y equipos
 alternativos (windows-2022, macos-14/15 arm64). Compila el checkout de esa
