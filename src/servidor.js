@@ -15,15 +15,29 @@ import {
   usuarioActual,
 } from './cliente.js';
 import { urlBase } from './sesion.js';
+import { configurarTransporte } from './cliente.js';
+import { registrarHerramientasBBToday } from './herramientas-bbtoday.js';
+
+// Arrancado por la app de Claude desde BB Today (BB_MCP_APP=1): la sesión la
+// mantiene BB Today; si caducó, no se puede renovar desde aquí.
+if (process.env.BB_MCP_APP) {
+  configurarTransporte({
+    renovar: () => null,
+    mensajeSesion: 'La sesión de Blackboard se cerró. Abre BB Today e inicia sesión de nuevo.',
+  });
+}
 
 const API = '/learn/api/public';
-const servidor = new McpServer({ name: 'blackboard', version: '0.1.0' });
+const servidor = new McpServer({ name: 'bb-today', version: '1.2.0' });
 
 const curso = z
   .string()
   .describe('Id interno del curso (_1234_1) o su código visible (p. ej. MAT101-2026). Sale de listar_cursos.');
 
+// Desde BB Today sólo existen las herramientas de sus tareas: Claude no puede
+// recorrer otros cursos ni ver calificaciones, como promete su privacidad.
 function herramienta(nombre, descripcion, esquema, fn) {
+  if (process.env.BB_MCP_APP) return;
   servidor.registerTool(
     nombre,
     { description: descripcion, inputSchema: esquema, annotations: { readOnlyHint: true } },
@@ -211,6 +225,8 @@ herramienta(
     });
   },
 );
+
+registrarHerramientasBBToday(servidor);
 
 await servidor.connect(new StdioServerTransport());
 console.error('blackboard-mcp listo');

@@ -1,496 +1,70 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BB Today · Tus pendientes de Blackboard en el escritorio</title>
-<meta name="description" content="Un widget para Windows y Mac que te muestra lo que vence hoy en Blackboard, con las instrucciones y los archivos de cada tarea a un vistazo.">
-<link rel="icon" href="favicon.png">
-<meta property="og:title" content="BB Today">
-<meta property="og:description" content="Tus pendientes de Blackboard, en el escritorio de Windows y Mac.">
-<meta property="og:image" content="img/icono-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --azul-noche: #06102e;
-    --azul: #0b1a44;
-    --azul-2: #13286a;
-    --turquesa: #1fe0c4;
-    --celeste: #1aa7e0;
-    --texto: #eef2ff;
-    --suave: #aab6d8;
-    --tenue: #7383ad;
-    --borde: rgb(140 170 255 / .14);
-    --tarjeta: rgb(255 255 255 / .04);
-  }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    background: radial-gradient(1200px 600px at 75% -10%, rgb(31 224 196 / .14), transparent 60%),
-                radial-gradient(900px 500px at 0% 10%, rgb(26 167 224 / .12), transparent 60%),
-                var(--azul-noche);
-    color: var(--texto);
-    font: 16px/1.6 Inter, "Segoe UI", system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-  a { color: var(--turquesa); }
-  .contenedor { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
-  h1, h2, h3 { font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif; letter-spacing: -.02em; }
-
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
-  .marca { display: flex; align-items: center; gap: 10px; color: var(--texto); text-decoration: none; font: 700 18px "Plus Jakarta Sans", sans-serif; }
-  .marca img { width: 34px; height: 34px; border-radius: 9px; }
-  nav .enlaces { display: flex; align-items: center; gap: 22px; font-size: 14px; }
-  nav .enlaces .github { display: grid; place-items: center; }
-  nav .enlaces a { color: var(--suave); text-decoration: none; }
-  nav .enlaces a:hover { color: var(--texto); }
-
-  .portada { text-align: center; padding: 56px 0 44px; }
-  h1 { font-size: clamp(40px, 6.4vw, 76px); line-height: 1.02; margin: 0 auto 22px; font-weight: 800; text-wrap: balance; max-width: 17ch; }
-  h1 em { font-style: normal; background: linear-gradient(90deg, var(--turquesa), var(--celeste)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .lema { color: var(--suave); font-size: 18px; max-width: 46ch; margin: 0 auto 30px; text-wrap: pretty; }
-  .acciones { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
-  .descargar {
-    display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #04122e; font: 700 16px "Plus Jakarta Sans", sans-serif;
-    background: linear-gradient(90deg, var(--turquesa), var(--celeste)); padding: 14px 22px; border-radius: 12px;
-    box-shadow: 0 10px 30px rgb(26 167 224 / .3); transition: transform .15s ease, box-shadow .15s ease;
-  }
-  .descargar:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgb(26 167 224 / .4); }
-  .descargar svg { width: 18px; height: 18px; }
-  .detalle-descarga { color: var(--tenue); font-size: 13px; margin: 14px 0 0; }
-  .otros-sistemas { color: var(--tenue); font-size: 13px; margin: 8px 0 0; }
-  .otros-sistemas a { color: var(--suave); }
-  .es-mac .descargar.mac { order: -1; }
-  /* Los dos botones del mismo ancho, también apilados en el celular. */
-  .acciones .descargar { min-width: 250px; justify-content: center; }
-  .solo-mac, .es-mac .solo-windows { display: none; }
-  .es-mac .solo-mac { display: block; }
-  .contador { display: inline-flex; align-items: center; gap: 7px; margin: 12px 0 0; padding: 5px 12px; border-radius: 999px; font-size: 13px; color: var(--suave); background: rgb(255 255 255 / .04); border: 1px solid var(--borde); }
-  .contador[hidden] { display: none; }
-  .contador svg { color: var(--turquesa); }
-  .contador b { color: var(--texto); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .secundario { color: var(--suave); text-decoration: none; font-size: 15px; padding: 12px 6px; }
-  .secundario:hover { color: var(--texto); }
-
-  /* ---- Réplica del widget ----
-     Mismo diseño que la app (tema Medianoche), con tareas de ejemplo
-     fechadas respecto a hoy. Pasar el ratón por una tarea abre su vista
-     previa al lado, como en el escritorio. */
-  .escritorio {
-    position: relative; height: 560px; border-radius: 18px; overflow: hidden; isolation: isolate;
-    border: 1px solid rgb(140 170 255 / .16);
-    background:
-      radial-gradient(60% 80% at 22% 18%, rgb(31 224 196 / .38), transparent 60%),
-      radial-gradient(55% 70% at 70% 85%, rgb(80 90 255 / .42), transparent 62%),
-      radial-gradient(45% 60% at 92% 10%, rgb(26 167 224 / .35), transparent 60%),
-      linear-gradient(160deg, #0d1d52, #0a1233 55%, #140f3a);
-    box-shadow: 0 50px 100px rgb(0 0 0 / .55), 0 0 0 8px rgb(255 255 255 / .02);
-  }
-  /* Iconos de escritorio, para que se lea como un escritorio. */
-  .iconos { position: absolute; left: 22px; top: 22px; display: grid; gap: 18px; }
-  .icono-esc { width: 70px; text-align: center; color: #e8ecff; font: 11px/1.25 "Segoe UI", Inter, sans-serif; text-shadow: 0 1px 2px rgb(0 0 0 / .6); }
-  .icono-esc span { display: grid; place-items: center; width: 42px; height: 42px; margin: 0 auto 5px; border-radius: 9px; }
-  .barra-tareas {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 46px; display: flex; align-items: center; justify-content: center; gap: 6px;
-    background: rgb(18 22 40 / .72); backdrop-filter: blur(24px) saturate(1.3); border-top: 1px solid rgb(255 255 255 / .08);
-  }
-  .barra-tareas .app { width: 34px; height: 34px; border-radius: 7px; display: grid; place-items: center; }
-  .barra-tareas .app:first-child { background: rgb(255 255 255 / .07); }
-  .barra-tareas .buscar { width: 150px; height: 30px; border-radius: 15px; background: rgb(255 255 255 / .08); margin: 0 6px; }
-  .bandeja { position: absolute; right: 14px; top: 0; bottom: 0; display: flex; align-items: center; gap: 12px; color: #e8ecff; font: 11px/1.25 "Segoe UI", Inter, sans-serif; text-align: right; }
-  .bandeja img { width: 18px; height: 18px; border-radius: 4px; }
-  .demo { position: absolute; inset: 0; }
-  .w, .vp {
-    --texto-w: #f3f2ee; --suave-w: #b0ada6; --tenue-w: #75736d; --borde-w: rgb(255 255 255 / .08);
-    --hover-w: rgb(255 255 255 / .055); --neutro-w: rgb(255 255 255 / .07); --mal-w: #f07a6f; --pronto-w: #e7b04f; --bien-w: #5cc98d;
-    font-family: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif; color: var(--texto-w); -webkit-font-smoothing: antialiased;
-  }
-  .w {
-    position: absolute; top: 22px; right: 22px; z-index: 2; width: 300px; font-size: 12.5px; line-height: 1.35;
-    background: linear-gradient(180deg, rgb(35 35 39 / .94), rgb(22 22 26 / .95));
-    border: 1px solid var(--borde-w); border-radius: 14px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .06), 0 30px 60px rgb(0 0 0 / .45), 0 6px 16px rgb(0 0 0 / .3);
-    user-select: none; overflow: hidden;
-  }
-  .w header { display: flex; align-items: center; gap: 7px; padding: 10px 12px 8px 13px; }
-  .w h3 { margin: 0; font: 600 13.5px/1 "Segoe UI Variable Display", "Segoe UI", Inter, system-ui, sans-serif; letter-spacing: -.005em; }
-  .w .cuenta { font-size: 11px; font-weight: 700; line-height: 18px; height: 18px; min-width: 18px; padding: 0 6px; border-radius: 9px; text-align: center; background: color-mix(in srgb, var(--mal-w) 20%, transparent); color: var(--mal-w); }
-  .w .fecha { color: var(--tenue-w); font-size: 11px; margin-left: auto; }
-  .w .lista { padding: 0 5px 6px; }
-  .w .sep { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--suave-w); padding: 9px 9px 3px; }
-  .w .sep::after { content: ''; flex: 1; height: 1px; background: var(--borde-w); }
-  .w .sep.mal { color: var(--mal-w); }
-  .w .item { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; gap: 9px; align-items: center; padding: 7px 8px 7px 9px; border-radius: 9px; cursor: default; transition: background .12s; }
-  .w .item:hover, .w .item.activa { background: var(--hover-w); }
-  .w .punto { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent); }
-  .w .titulo { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .w .meta { font-size: 11px; color: var(--tenue-w); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
-  .w .meta svg { display: inline-block; vertical-align: -1px; margin-left: 4px; opacity: .8; }
-  .w .pastilla { font-size: 11px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; padding: 2px 7px; border-radius: 999px; background: var(--neutro-w); color: var(--suave-w); }
-  .w .pastilla.mal { background: color-mix(in srgb, var(--mal-w) 16%, transparent); color: var(--mal-w); }
-  .w .pastilla.pronto { background: color-mix(in srgb, var(--pronto-w) 16%, transparent); color: var(--pronto-w); }
-
-  .vp {
-    position: absolute; z-index: 3; right: 334px; width: 272px; font-size: 12px; line-height: 1.45;
-    background: rgb(28 28 31 / .98); border: 1px solid rgb(255 255 255 / .1); border-radius: 14px; overflow: hidden;
-    box-shadow: 0 18px 40px rgb(0 0 0 / .5), 0 2px 6px rgb(0 0 0 / .3);
-    opacity: 0; transform: translateX(6px); transition: opacity .16s ease-out, transform .16s ease-out, top .16s ease-out; pointer-events: none;
-  }
-  .vp.visible { opacity: 1; transform: none; }
-  .vp .franja { height: 3px; }
-  .vp .cuerpo { padding: 11px 13px 12px; }
-  .vp .curso { font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
-  .vp h4 { margin: 3px 0 7px; font: 600 14px/1.25 "Segoe UI Variable Display", "Segoe UI", Inter, system-ui, sans-serif; }
-  .vp .chips { display: flex; flex-wrap: wrap; gap: 5px; }
-  .vp .chip { font-size: 10.5px; font-weight: 600; border-radius: 999px; padding: 2px 8px; }
-  .vp .chip.mal { color: var(--mal-w); background: color-mix(in srgb, var(--mal-w) 14%, transparent); }
-  .vp .chip.pronto { color: var(--pronto-w); background: color-mix(in srgb, var(--pronto-w) 14%, transparent); }
-  .vp .chip.bien { color: var(--bien-w); background: color-mix(in srgb, var(--bien-w) 13%, transparent); }
-  .vp .seccion { font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--tenue-w); margin: 10px 0 5px; }
-  .vp .instr { color: var(--suave-w); }
-  .vp .archivo { border-radius: 9px; background: rgb(255 255 255 / .045); overflow: hidden; }
-  .vp .muestra { border-bottom: 1px solid rgb(255 255 255 / .07); }
-  .vp .hoja { background: #fff; color: #222; height: 96px; padding: 10px 14px; overflow: hidden; font-family: "Times New Roman", Georgia, serif; }
-  .vp .hoja b { display: block; text-align: center; font-size: 11px; letter-spacing: .02em; margin-bottom: 8px; }
-  .vp .hoja i { display: block; height: 4px; border-radius: 2px; background: #c9c9c9; margin: 6px 0; }
-  .vp .zip { padding: 7px 10px; font: 10.5px/1.6 "Cascadia Mono", Consolas, monospace; color: var(--suave-w); background: rgb(0 0 0 / .28); }
-  .vp .zip span { color: var(--tenue-w); }
-  .vp .texto { padding: 7px 10px; color: var(--suave-w); font-size: 11px; white-space: pre-line; background: rgb(0 0 0 / .28); }
-  .vp .fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 9px; }
-  .vp .tipo { font-size: 9px; font-weight: 700; letter-spacing: .04em; padding: 2px 5px; border-radius: 4px; color: #fff; }
-  .vp .nombre { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .vp .peso { font-size: 10px; color: var(--tenue-w); }
-  .vp .bajar { color: var(--tenue-w); }
-  .vp .pie { border-top: 1px solid rgb(255 255 255 / .07); padding: 8px 13px; display: flex; justify-content: flex-end; }
-  .vp .abrir { font-size: 11px; font-weight: 600; background: rgb(255 255 255 / .06); border-radius: 7px; padding: 4px 9px; }
-  .pista { text-align: center; color: var(--tenue); font-size: 13px; margin: 14px 0 0; }
-
-  @media (max-width: 760px) {
-    nav .enlaces a:not(:nth-last-child(-n+2)) { display: none; }
-    .portada { padding-top: 28px; }
-    .escritorio { height: auto; padding: 16px 16px 62px; }
-    .iconos, .barra-tareas .buscar, .barra-tareas .app:nth-child(n+5) { display: none; }
-    .demo { position: static; display: flex; flex-direction: column; gap: 12px; }
-    .w, .vp { position: static; width: 100%; }
-    .w { order: 1; }
-    .vp { order: 2; display: none; transform: none; }
-    .vp.visible { display: block; }
-  }
-
-  section { padding: 64px 0; }
-  .titulo-seccion { text-align: center; margin-bottom: 40px; }
-  .titulo-seccion h2 { font-size: clamp(26px, 3.6vw, 36px); margin: 0 0 10px; }
-  .titulo-seccion p { color: var(--suave); margin: 0 auto; max-width: 56ch; }
-  .rejilla { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  @media (max-width: 880px) { .rejilla { grid-template-columns: 1fr; } }
-  .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 16px; padding: 22px; }
-  .tarjeta .icono { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: rgb(31 224 196 / .1); color: var(--turquesa); margin-bottom: 14px; }
-  .tarjeta .icono svg { width: 20px; height: 20px; }
-  .tarjeta h3 { margin: 0 0 6px; font-size: 18px; }
-  .tarjeta p { margin: 0; color: var(--suave); font-size: 15px; }
-
-  .pasos { counter-reset: paso; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  @media (max-width: 880px) { .pasos { grid-template-columns: 1fr; } }
-  .paso { position: relative; padding: 22px 22px 22px 66px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 16px; }
-  .paso::before { counter-increment: paso; content: counter(paso); position: absolute; left: 20px; top: 20px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font: 700 15px "Plus Jakarta Sans", sans-serif; color: #04122e; background: linear-gradient(135deg, var(--turquesa), var(--celeste)); }
-  .paso h3 { margin: 0 0 6px; font-size: 17px; }
-  .paso p { margin: 0; color: var(--suave); font-size: 15px; }
-  .aviso { margin-top: 16px; background: rgb(255 199 107 / .06); border: 1px solid rgb(255 199 107 / .25); color: #ffd99a; border-radius: 14px; padding: 16px 18px; font-size: 15px; }
-  .aviso b { color: #ffe6bd; }
-
-  .preguntas { max-width: 760px; margin: 0 auto; }
-  details { border-bottom: 1px solid var(--borde); padding: 16px 4px; }
-  summary { cursor: pointer; font: 600 17px "Plus Jakarta Sans", sans-serif; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
-  summary::-webkit-details-marker { display: none; }
-  summary::after { content: '+'; color: var(--turquesa); font-size: 22px; line-height: 1; }
-  details[open] summary::after { content: '–'; }
-  details p { color: var(--suave); margin: 10px 0 0; }
-
-  .cierre { text-align: center; padding: 72px 0; }
-  .cierre h2 { font-size: clamp(26px, 3.6vw, 38px); margin: 0 0 22px; }
-  footer { border-top: 1px solid var(--borde); padding: 26px 0 40px; color: var(--tenue); font-size: 13px; }
-  footer .contenedor { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
-  footer a { color: var(--suave); }
-</style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BB Today · Tu día. Tus tareas. A la vista.</title>
+<meta name="description" content="Tus pendientes de Blackboard y un espacio para preparar tus tareas con IA. BB Today 1.2.0 para Windows y Mac, con ChatGPT o Claude y tu propia cuenta.">
+<meta property="og:title" content="BB Today · Tus tareas, a la vista"><meta property="og:description" content="Menos vueltas por Blackboard. Más espacio para tu día. Un widget para Windows y Mac."><meta property="og:image" content="https://bb-today.pages.dev/img/icono-192.png">
+<meta name="theme-color" content="#eef3f0"><link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css"><link rel="stylesheet" href="temas-app.css"><link rel="stylesheet" href="demo-app.css"><link rel="stylesheet" href="pintura.css"><script src="recorrido.js" defer></script>
 </head>
 <body>
-<div class="contenedor">
-  <nav>
-    <a class="marca" href="./"><img src="img/icono-192.png" alt="">BB Today</a>
-    <div class="enlaces"><a href="#que-hace">Qué hace</a><a href="#instalar">Instalar</a><a href="#preguntas">Preguntas</a><a href="privacidad.html">Privacidad</a><a class="github" href="https://github.com/Ironmistyfox" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a></div>
-  </nav>
+<a class="saltar" href="#contenido">Ir al contenido</a>
+<aside class="aviso-version" aria-label="Nueva versión"><span>Nueva versión: con IA integrada</span><a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">Descargar BB Today 1.2.0 ↗</a></aside>
+<header class="cabecera contenedor"><a class="marca" href="./" aria-label="BB Today, inicio"><img src="img/icono-192.png" width="34" height="34" alt="">BB Today<span class="marca-punto">.</span></a><nav aria-label="Navegación principal"><a href="#que-hace">El widget</a><a href="#preguntas">Preguntas</a><a class="nav-descarga" href="#descargar">Descargar <span aria-hidden="true">↗</span></a></nav></header>
+<main id="contenido">
+<div class="recorrido contenedor" id="recorrido">
+  <div class="escenario" id="escenario" aria-label="Demostración de BB Today con tareas de ejemplo">
+    <div class="ambiente" aria-hidden="true"><span class="pincelada"></span><span class="sello-funcion">Tus pendientes, juntos.</span></div>
+    <div class="objeto" id="objeto" data-tema="medianoche">
+      <div class="placa" id="placa">
 
-  <header class="portada">
-    <h1>Todas tus tareas <em>a solo un clic</em>.</h1>
-    <p class="lema">Un widget que vive en el fondo de tu escritorio, se actualiza solo y te enseña las instrucciones y los archivos de cada tarea sin abrir el navegador.</p>
-    <div class="acciones">
-      <a class="descargar windows" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
-        Descargar para Windows
-      </a>
-      <a class="descargar mac" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
-        Descargar para Mac
-      </a>
-    </div>
-    <p class="detalle-descarga" id="version">Versión 1.0.0 · ~100 MB · se actualiza sola</p>
-    <p class="otros-sistemas">¿Mac con Intel (de antes de 2021)? <a href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-x64.dmg">Descárgala aquí</a> · <a href="#instalar">Cómo se instala</a></p>
-    <p class="contador" id="contador" hidden><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg><b id="descargas"></b></p>
-  </header>
+        <div class="widget" id="widget">
+          <div class="widget-cabecera"><h3>Pendientes</h3><span class="cuenta">4</span><span class="fecha-demo">Hoy</span><span class="refrescar" aria-hidden="true">↻</span></div>
+          <div class="grupo">Hoy <span>2 tareas</span></div>
+          <button class="tarea" data-tarea="0"><i class="punto azul"></i><span><strong>Integrales dobles</strong><small>Cálculo en Varias Variables</small></span><span class="vence urgente">2 h</span></button>
+          <button class="tarea" data-tarea="1"><i class="punto verde"></i><span><strong>Práctica 6: árboles AVL</strong><small>Estructuras de Datos II</small></span><span class="vence">23:59</span></button>
+          <div class="grupo">Mañana <span>Con tiempo</span></div>
+          <button class="tarea" data-tarea="2"><i class="punto violeta"></i><span><strong>Dilemas éticos de la IA</strong><small>Ética</small></span><span class="vence">18:00</span></button>
+          <div class="grupo grupo-tardia">Aceptan entrega tardía</div>
+          <button class="tarea" data-tarea="3"><i class="punto naranja"></i><span><strong>Liderazgo situacional</strong><small>Liderazgo y Comunicación</small></span><span class="vence tardia">Hace 2 d</span></button>
+        </div>
 
-  <div class="escritorio" aria-label="Ejemplo de BB Today en un escritorio, con tareas de muestra">
-    <div class="iconos" aria-hidden="true">
-      <div class="icono-esc"><span style="background:linear-gradient(135deg,#ffd36b,#f0a630)"><svg width="24" height="24" viewBox="0 0 24 24" fill="#7a4b00" opacity=".55"><path d="M3 7h7l2 2h9v10H3z"/></svg></span>Tareas</div>
-      <div class="icono-esc"><span style="background:rgb(255 255 255 / .14)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dfe6ff" stroke-width="1.6"><path d="M5 7h14l-1 13H6zM9 7V4h6v3M3 7h18"/></svg></span>Papelera</div>
+      </div>
+      <div class="vista-previa" id="vista-previa" hidden>
+        <div class="franja"></div>
+        <button class="cerrar-vista" id="cerrar-vista" aria-label="Cerrar demostración de vista previa">×</button>
+        <div class="cuerpo">
+          <div class="curso" id="vista-curso">Cálculo en Varias Variables</div>
+          <h4 id="vista-titulo">Tarea 3.2 · Integrales dobles</h4>
+          <div class="chips" id="vista-fecha"></div>
+          <div class="seccion">Instrucciones</div>
+          <div class="instrucciones" id="vista-instrucciones"></div>
+          <div class="seccion">Archivos · 1</div>
+          <div class="archivos"><div class="archivo"><div class="muestra" id="archivo-muestra"></div><div class="fila"><span class="tipo" id="archivo-tipo">PDF</span><div><div class="nombre" id="archivo-nombre">Ejercicios 3.2.pdf</div><div class="peso" id="archivo-peso">214 KB</div></div><span class="bajar" aria-hidden="true">↓</span></div></div></div>
+        </div>
+        <div class="pie"><span class="abrir">Abrir en Blackboard ↗</span></div>
+      </div>
+      <div class="notificacion" id="notificacion" aria-hidden="true"><img src="img/icono-192.png" width="32" height="32" alt=""><div><span>BB Today <small>Ahora</small></span><strong>Un recordatorio, a tiempo.</strong><p>Integrales dobles vence en 2 horas.</p></div></div>
+
     </div>
-    <div class="demo" id="demo">
-      <div class="vp" id="vp" aria-hidden="true"></div>
-      <div class="w" id="w"></div>
-    </div>
-    <div class="barra-tareas" aria-hidden="true">
-      <span class="app"><svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4cc2ff" d="M3 3h8.5v8.5H3zM12.5 3H21v8.5h-8.5zM3 12.5h8.5V21H3zM12.5 12.5H21V21h-8.5z"/></svg></span>
-      <span class="buscar"></span>
-      <span class="app"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#ffc84a" d="M3 7h7l2 2h9v10H3z"/></svg></span>
-      <span class="app"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#fb542b"/><circle cx="12" cy="12" r="4" fill="#fff" opacity=".9"/></svg></span>
-      <span class="app"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3" fill="#7b83eb"/><path d="M8 9h8M8 13h5" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></span>
-      <div class="bandeja"><img src="img/icono-192.png" alt=""><span id="reloj"></span></div>
-    </div>
+    <div class="personalizacion" id="personalizacion" hidden><span>Tu escritorio. Tu estilo.</span><div class="temas" role="group" aria-label="Tema del widget de ejemplo"><button class="muestra-tema medianoche" data-tema="medianoche" aria-label="Tema medianoche" aria-pressed="true"></button><button class="muestra-tema papel" data-tema="papel" aria-label="Tema papel" aria-pressed="false"></button><button class="muestra-tema bosque" data-tema="bosque" aria-label="Tema bosque" aria-pressed="false"></button></div></div>
+    <div class="pie-escena"><span class="escena-nombre" id="escena-nombre">Un pequeño espacio para todo tu día</span><div class="indicadores" aria-hidden="true"><i class="activo"></i><i></i><i></i><i></i></div><small>Demostración · tareas de ejemplo</small></div>
   </div>
-  <p class="pista">Pasa el ratón por una tarea para ver su vista previa</p>
-</div>
-
-<section id="que-hace">
-  <div class="contenedor">
-    <div class="titulo-seccion">
-      <h2>Todo lo que importa, nada más</h2>
-      <p>BB Today revisa tus cursos por ti, carpeta por carpeta, y te deja sólo lo que tienes que entregar.</p>
-    </div>
-    <div class="rejilla">
-      <div class="tarjeta">
-        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-        <h3>Lo de hoy, primero</h3>
-        <p>Lo que vence hoy con su hora, y si quieres, lo de los próximos días. Lo que ya entregaste desaparece.</p>
-      </div>
-      <div class="tarjeta">
-        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h6l2 2h10v10H3z"/><path d="M12 13h5"/></svg></div>
-        <h3>Encuentra lo escondido</h3>
-        <p>Revisa todo el contenido de cada curso, también las tareas metidas en subcarpetas que se pasan por alto.</p>
-      </div>
-      <div class="tarjeta">
-        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 12h8M8 16h5"/></svg></div>
-        <h3>Vista previa al pasar el ratón</h3>
-        <p>Instrucciones, primera página de los PDF, fotos y lo que trae cada .zip. Un clic y el archivo se abre.</p>
-      </div>
-      <div class="tarjeta">
-        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div>
-        <h3>Vencidas que aún cuentan</h3>
-        <p>Si se te pasó algo, te lo muestra sólo si tu profesor todavía acepta entregas tardías.</p>
-      </div>
-      <div class="tarjeta">
-        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
-        <h3>Avisos antes de que venza</h3>
-        <p>Una notificación unas horas antes de cada entrega. Tú eliges cuántas.</p>
-      </div>
-      <div class="tarjeta">
-        <div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></div>
-        <h3>Nunca te estorba</h3>
-        <p>Vive en el fondo del escritorio, debajo de tus ventanas. Cinco estilos, opacidad y tamaño a tu gusto.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="instalar">
-  <div class="contenedor">
-    <div class="titulo-seccion">
-      <h2>Listo en un minuto</h2>
-      <p>No hay que configurar nada: inicias sesión una vez y ya.</p>
-    </div>
-    <div class="pasos">
-      <div class="paso"><h3>Descarga e instala</h3><p class="solo-windows">Abre <b>BB-Today-Instalador.exe</b>. Se instala solo, sin pedir permisos de administrador.</p><p class="solo-mac">Abre el <b>.dmg</b> y arrastra <b>BB Today</b> a Aplicaciones.</p></div>
-      <div class="paso"><h3>Inicia sesión</h3><p>El widget te pide entrar. Usas el inicio de sesión de tu escuela, como siempre.</p></div>
-      <div class="paso"><h3>Olvídate</h3><p class="solo-windows">Arranca con Windows, revisa Blackboard cada hora y se actualiza solo cuando hay versión nueva.</p><p class="solo-mac">Arranca al iniciar sesión, revisa Blackboard cada hora y te avisa cuando hay versión nueva.</p></div>
-    </div>
-    <div class="aviso solo-windows"><b>¿Windows dice «Windows protegió tu PC»?</b> Es porque BB Today todavía no tiene un certificado de firma de pago. Pulsa <b>Más información</b> y luego <b>Ejecutar de todos modos</b>. Sólo pasa la primera vez.</div>
-    <div class="aviso solo-mac"><b>¿Tu Mac dice que no puede verificar BB Today?</b> Es porque no tiene la firma de pago de Apple. Ve a <b>Ajustes del Sistema → Privacidad y seguridad</b>, baja hasta el aviso de BB Today y pulsa <b>Abrir de todas formas</b>. Sólo pasa la primera vez.</div>
-  </div>
-</section>
-
-<section id="preguntas">
-  <div class="contenedor preguntas">
-    <div class="titulo-seccion"><h2>Preguntas</h2></div>
-    <details><summary>¿Es seguro darle mi cuenta?</summary><p>BB Today no ve tu contraseña: inicias sesión en la página de tu escuela dentro de una ventana, igual que en el navegador. La app sólo guarda la sesión en tu computadora, no tiene servidor y no manda tus datos a ningún lado. Lee el <a href="privacidad.html">aviso de privacidad</a>.</p></details>
-    <details><summary>¿Puede entregar tareas o cambiar algo?</summary><p>No. Sólo lee. Para entregar, el botón «Abrir en Blackboard» te lleva a la tarea.</p></details>
-    <details><summary>¿Funciona con mi escuela?</summary><p>Con cualquier escuela que use Blackboard Learn con la experiencia Ultra. Viene listo para la Universidad Panamericana; para otra, en la primera pantalla eliges «cambiar» y escribes la dirección de tu Blackboard.</p></details>
-    <details><summary>¿Funciona en Mac?</summary><p>Sí: en Mac con Apple Silicon (M1 en adelante) y con Intel. Vive en el escritorio y su icono está en la barra de menús. Como no tiene la firma de pago de Apple, no se puede actualizar sola: te avisa cuando hay versión nueva y la bajas de esta página. No hay versión para celular.</p></details>
-    <details><summary>¿Es oficial?</summary><p>No. BB Today es un proyecto independiente y no está afiliado a Blackboard, Anthology ni a ninguna universidad. «Blackboard» es marca de sus dueños y se menciona sólo para decir con qué funciona.</p></details>
-    <details><summary>¿Cómo lo quito?</summary><p>Antes puedes cerrar sesión desde su icono en la bandeja (en Mac, en la barra de menús). En Windows: Configuración → Aplicaciones → BB Today → Desinstalar. En Mac: sal de la app y arrastra BB Today de Aplicaciones a la Papelera.</p></details>
-  </div>
-</section>
-
-<div class="contenedor cierre">
-  <h2>Deja de abrir Blackboard para ver qué toca.</h2>
-  <div class="acciones">
-      <a class="descargar windows" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
-        Descargar para Windows
-      </a>
-      <a class="descargar mac" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
-        Descargar para Mac
-      </a>
+  <div class="relato">
+    <section class="escena hero" data-escena="0"><div class="texto-escena"><p class="entrada"><span></span> Menos vueltas por Blackboard</p><h1>Tu día.<br>Tus tareas.<br><em>A la vista.</em></h1><p class="lema">Lo que tienes que entregar, justo en tu escritorio. Sin abrir cada curso. Sin perderte entre carpetas.</p><div class="acciones"><a class="boton boton-principal descarga-windows" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">Descargar para Windows <span aria-hidden="true">↗</span></a><a class="boton boton-secundario descarga-mac" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg">Descargar para Mac <span aria-hidden="true">↗</span></a><a class="enlace-recorrido" href="#que-hace">Conoce el widget <span aria-hidden="true">↓</span></a></div><p class="compatibilidad">Gratis y de código abierto <span>·</span> Windows y Mac</p><a class="otra-descarga" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-x64.dmg">Mac con Intel ↗</a><div class="invitacion" aria-hidden="true"><span>↓</span> Sigue bajando. Todo encaja.</div></div></section>
+    <section class="escena" data-escena="1" id="que-hace"><div class="texto-escena"><span class="numero">01 / A un vistazo</span><h2>Menos pestañas.<br>Más claridad.</h2><p>Pasa el ratón por una tarea. Ahí están las instrucciones, la primera página del PDF y los archivos que dejó tu profesor.</p><p class="nota">También encuentra las tareas escondidas en las subcarpetas de tus cursos.</p><span class="detalle-funcion"><span aria-hidden="true">↗</span> Prueba una tarea en el widget</span></div></section>
+    <section class="escena" data-escena="2"><div class="texto-escena"><span class="numero">02 / A tiempo</span><h2>Que la fecha<br>no te sorprenda.</h2><p>Primero, lo que vence hoy. Después, lo que viene. Y si todavía aceptan una entrega tardía, también lo ves.</p><p class="nota">BB Today revisa tus pendientes y te avisa antes de que venza una entrega. Tú eliges con cuánta anticipación.</p><span class="detalle-funcion"><span aria-hidden="true">◷</span> Lo que ya entregaste sale de la lista</span></div></section>
+    <section class="escena" data-escena="3"><div class="texto-escena"><span class="numero">03 / A tu manera</span><h2>En tu escritorio.<br>A tu estilo.</h2><p>Un pequeño espacio para tus pendientes, debajo de tus ventanas. Está ahí cuando lo necesitas y te deja seguir con lo tuyo.</p><p class="nota">Elige el tema, el tamaño y la opacidad que mejor van contigo.</p><span class="detalle-funcion"><span aria-hidden="true">↗</span> Prueba los temas de la demostración</span></div></section>
   </div>
 </div>
-
-<footer>
-  <div class="contenedor">
-    <span>BB Today · <a href="https://github.com/Ironmistyfox/bb-today">código abierto (MIT)</a></span>
-    <span><a href="privacidad.html">Privacidad</a> · <a href="https://github.com/Ironmistyfox/bb-today/releases">Versiones</a> · <a href="https://github.com/Ironmistyfox/bb-today/issues">Reportar un problema</a></span>
-  </div>
-</footer>
-
-<script>
-  // ---- Réplica del widget con tareas de ejemplo ----
-  (() => {
-    const H = 3_600_000, DIA = 24 * H;
-    const ahora = Date.now();
-    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-    const finDeHoy = hoy.getTime() + DIA - 60_000;
-    // Siempre parecen "de hoy": una vence en un par de horas, otra en la noche.
-    const pronto = Math.min(ahora + 2.4 * H, finDeHoy);
-    const noche = Math.max(finDeHoy, ahora + 5 * H);
-    const fmtHora = new Intl.DateTimeFormat('es-MX', { hour: 'numeric', minute: '2-digit' });
-    const fmtHoy = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
-    const CLIP = '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10.5 4.5 5.6 9.4a1.5 1.5 0 0 0 2.1 2.1l5-5a3 3 0 0 0-4.2-4.2l-5 5a4.5 4.5 0 0 0 6.4 6.4l4.4-4.4"/></svg>';
-    const BAJAR = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7.5 8 11l3.5-3.5M3 13.5h10"/></svg>';
-
-    const tareas = [
-      { titulo: 'Tarea 3.2 · Integrales dobles', curso: 'Cálculo en Varias Variables', color: '#7d9cf0', cuando: pronto,
-        instr: 'Del archivo «Ejercicios 3.2» resuelve los problemas 2, 7, 11 y 15. Sube un solo PDF con tu procedimiento.',
-        archivos: [{ tipo: 'pdf', nombre: 'Ejercicios 3.2.pdf', peso: '214 KB', hoja: 'EJERCICIOS 3.2 (INTEGRALES DOBLES)' }] },
-      { titulo: 'Práctica 6: árboles AVL', curso: 'Estructuras de Datos II', color: '#4cc9a0', cuando: noche,
-        instr: 'Implementa la inserción y las cuatro rotaciones de un árbol AVL. No uses la STL.',
-        archivos: [{ tipo: 'zip', nombre: 'practica-6.zip', peso: '3 KB', lista: ['practica-6/avl.h', 'practica-6/avl.cpp', 'practica-6/main.cpp'] }] },
-      { titulo: 'Ensayo: dilemas éticos de la IA', curso: 'Ética', color: '#b48cf2', cuando: hoy.getTime() + 2 * DIA - 60_000, manana: true,
-        instr: 'Entre 800 y 1 000 palabras. Cita al menos a dos autores vistos en clase.',
-        archivos: [{ tipo: 'docx', nombre: 'Rúbrica del ensayo.docx', peso: '18 KB', texto: 'Rúbrica del ensayo\nArgumentación · 40 %\nUso de fuentes · 30 %…' }] },
-      { titulo: 'Lectura 4: liderazgo situacional', curso: 'Liderazgo y Comunicación', color: '#f08a5d', cuando: hoy.getTime() - 2 * DIA + 23.98 * H, vencida: true,
-        instr: 'Responde las cinco preguntas al final de la lectura.',
-        archivos: [{ tipo: 'pdf', nombre: 'Lectura 4.pdf', peso: '1.2 MB', hoja: 'LIDERAZGO SITUACIONAL' }] },
-    ];
-
-    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-    function pastilla(t) {
-      if (t.vencida) return ['hace 2 d', ''];
-      const ms = t.cuando - ahora;
-      if (t.manana) return [fmtHora.format(t.cuando), ''];
-      if (ms < 6 * H) return [`${Math.max(1, Math.floor(ms / H))} h`, 'mal'];
-      return [fmtHora.format(t.cuando), 'pronto'];
-    }
-    const fila = (t, i) => {
-      const [txt, clase] = pastilla(t);
-      return `<div class="item" data-i="${i}"><i class="punto" style="background:${t.color};color:${t.color}"></i>
-        <div style="min-width:0"><div class="titulo">${esc(t.titulo)}</div><div class="meta">${esc(t.curso)}${CLIP}</div></div>
-        <span class="pastilla ${clase}">${txt}</span></div>`;
-    };
-    const w = document.getElementById('w');
-    w.innerHTML = `<header><h3>Pendientes</h3><span class="cuenta">${tareas.length}</span><span class="fecha">${fmtHoy.format(new Date())}</span></header>
-      <div class="lista">
-        <div class="sep">Hoy</div>${fila(tareas[0], 0)}${fila(tareas[1], 1)}
-        <div class="sep">Mañana</div>${fila(tareas[2], 2)}
-        <div class="sep mal">Vencidas · aceptan tardía</div>${fila(tareas[3], 3)}
-      </div>`;
-
-    const TIPOS = { pdf: ['PDF', '#d9473b'], zip: ['ZIP', '#6b6760'], docx: ['DOCX', '#2f6fd6'] };
-    function vista(t) {
-      let chips;
-      if (t.vencida) chips = '<span class="chip mal">Venció hace 2 días</span><span class="chip bien">Acepta entrega tardía</span>';
-      else {
-        const h = Math.max(1, Math.floor((t.cuando - ahora) / H));
-        chips = `<span class="chip ${h < 3 ? 'mal' : 'pronto'}">${t.manana ? 'Mañana' : 'Hoy'} · ${fmtHora.format(t.cuando)} · faltan ${h} h</span>`;
-      }
-      const archivos = t.archivos.map((a) => {
-        const [et, color] = TIPOS[a.tipo];
-        let muestra = '';
-        if (a.hoja) muestra = `<div class="hoja"><b>${esc(a.hoja)}</b><i style="width:92%"></i><i style="width:84%"></i><i style="width:88%"></i><i style="width:60%"></i><i style="width:80%"></i></div>`;
-        if (a.lista) muestra = `<div class="zip">${a.lista.map((n) => { const p = n.split('/'); const b = p.pop(); return `<div><span>${esc(p.join('/'))}/</span>${esc(b)}</div>`; }).join('')}</div>`;
-        if (a.texto) muestra = `<div class="texto">${esc(a.texto)}</div>`;
-        return `<div class="archivo"><div class="muestra">${muestra}</div><div class="fila"><span class="tipo" style="background:${color}">${et}</span>
-          <div style="min-width:0"><div class="nombre">${esc(a.nombre)}</div><div class="peso">${a.peso}</div></div><span class="bajar">${BAJAR}</span></div></div>`;
-      }).join('');
-      return `<div class="franja" style="background:${t.color}"></div><div class="cuerpo">
-        <div class="curso" style="color:${t.color}">${esc(t.curso)}</div><h4>${esc(t.titulo)}</h4><div class="chips">${chips}</div>
-        <div class="seccion">Instrucciones</div><div class="instr">${esc(t.instr)}</div>
-        <div class="seccion">Archivos · ${t.archivos.length}</div>${archivos}</div>
-        <div class="pie"><span class="abrir">Abrir en Blackboard ↗</span></div>`;
-    }
-
-    const vp = document.getElementById('vp');
-    const demo = document.getElementById('demo');
-    function mostrar(item) {
-      w.querySelectorAll('.item.activa').forEach((x) => x.classList.remove('activa'));
-      item.classList.add('activa');
-      vp.innerHTML = vista(tareas[Number(item.dataset.i)]);
-      // A la altura de la fila, sin salirse de la escena.
-      const y = item.getBoundingClientRect().top - demo.getBoundingClientRect().top - 10;
-      // Dentro del escritorio, sin pisar la barra de tareas.
-      vp.style.top = `${Math.max(22, Math.min(y, demo.offsetHeight - 58 - vp.offsetHeight))}px`;
-      vp.classList.add('visible');
-    }
-    w.addEventListener('mouseover', (e) => { const it = e.target.closest('.item'); if (it) mostrar(it); });
-    w.addEventListener('click', (e) => { const it = e.target.closest('.item'); if (it) mostrar(it); });
-    const reloj = document.getElementById('reloj');
-    const fmtReloj = new Intl.DateTimeFormat('es-MX', { hour: 'numeric', minute: '2-digit' });
-    const fmtFechaCorta = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const tic = () => { const d = new Date(); reloj.innerHTML = `${fmtReloj.format(d)}<br>${fmtFechaCorta.format(d)}`; };
-    tic();
-    setInterval(tic, 30_000);
-    // Al cargar ya se ve una, para que se entienda sin tocar nada.
-    // (setTimeout y no requestAnimationFrame: éste no corre si la pestaña
-    // abre en segundo plano.)
-    setTimeout(() => mostrar(w.querySelector('.item')), 0);
-  })();
-</script>
-<script>
-  // Desde una Mac: el botón de Mac va primero y las instrucciones son las de Mac.
-  if (/mac/i.test(navigator.userAgentData?.platform || navigator.platform || '')) {
-    document.documentElement.classList.add('es-mac');
-  }
-</script>
-<script>
-  // Versión, tamaño y descargas, de los Releases de GitHub; si GitHub no
-  // responde, se queda el texto de arriba y el contador no aparece.
-  // Las descargas cuentan sólo BB-Today-Instalador.exe, la copia que enlaza
-  // esta página: las actualizaciones automáticas bajan BB-Today-Setup.exe y
-  // no deben inflar el número.
-  // Hasta la 1.0.0 los instaladores vivían en bb-today-descargas; desde la
-  // 1.0.1, en el repo del código. Se suman ambos.
-  const releases = (repo) => fetch(`https://api.github.com/repos/Ironmistyfox/${repo}/releases?per_page=100`).then((r) => (r.ok ? r.json() : []));
-  Promise.all([releases('bb-today'), releases('bb-today-descargas')])
-    .then(([actual, antiguo]) => {
-      if (!Array.isArray(actual) || !Array.isArray(antiguo)) return;
-      const publicadas = [...actual, ...antiguo]
-        .filter((r) => !r.draft && !r.prerelease)
-        .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at));
-      const ultima = publicadas[0];
-      if (ultima) {
-        const exe = ultima.assets.find((a) => a.name === 'BB-Today-Instalador.exe') || ultima.assets.find((a) => a.name.endsWith('.exe'));
-        const mb = exe ? ` · ${Math.round(exe.size / 1048576)} MB` : '';
-        const fecha = new Date(ultima.published_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
-        document.getElementById('version').textContent = `Versión ${ultima.tag_name.replace(/^v/, '')}${mb} · ${fecha} · se actualiza sola`;
-      }
-      const total = publicadas
-        .flatMap((r) => r.assets)
-        .filter((a) => a.name === 'BB-Today-Instalador.exe' || /^BB-Today-Mac-.*\.dmg$/.test(a.name))
-        .reduce((suma, a) => suma + a.download_count, 0);
-      document.getElementById('descargas').textContent = total > 0
-        ? `${total.toLocaleString('es-MX')} ${total === 1 ? 'descarga' : 'descargas'}`
-        : 'Sé de los primeros en descargarlo';
-      document.getElementById('contador').hidden = false;
-    })
-    .catch(() => {});
-</script>
+<section class="confianza"><div class="contenedor confianza-interior"><p>Un widget pequeño.<br><strong>Una cosa menos en la cabeza.</strong></p><div><span>Tu sesión, en tu computadora.</span><span>Sin servidor propio ni analítica.</span><a href="privacidad.html">Así cuidamos tus datos ↗</a></div></div></section>
+<section class="preparar contenedor" id="con-ia"><div class="titulo-seccion"><span class="numero">Ahora, con IA integrada</span><h2>De pendiente<br>a preparado.</h2><p>Abre BB Today completo para trabajar en cada tarea con ChatGPT o Claude, usando tu cuenta. Tus archivos también tienen su lugar.</p></div><ol class="pasos"><li><span>01</span><div><h3>Resolver</h3><p>La IA recibe las instrucciones y los materiales de la tarea que elijas. Con Codex o Claude Code disponible trabaja en segundo plano; también puedes continuar en el navegador o en Claude Desktop.</p></div></li><li><span>02</span><div><h3>Revisar tus entregables</h3><p>Abre la respuesta, comprueba los resultados y añade tus archivos. Elige lo que vas a adjuntar y conserva tus originales.</p></div></li><li><span>03</span><div><h3>Abrir la entrega</h3><p>BB Today abre la página oficial y te ayuda a colocar los archivos, o deja una ventana para arrastrarlos. Revisa que estén cargados: el botón final lo pulsas tú en Blackboard.</p></div></li></ol><p class="nota-ia">La disponibilidad de las herramientas depende de tu cuenta y tu plan. La guía de inicio te muestra las opciones detectadas.</p></section>
+<section class="instalacion contenedor" id="instalar"><div class="titulo-seccion"><span class="numero">Para empezar</span><h2>Una sesión.<br>Y listo.</h2><p>Conecta tu Blackboard una vez.<br>BB Today se encarga de mantener la lista al día.</p></div><ol class="pasos"><li><span>01</span><div><h3>Descarga e instala</h3><p class="solo-windows">Abre el instalador. No necesitas permisos de administrador.</p><p class="solo-mac">Abre el .dmg y arrastra BB Today a Aplicaciones.</p></div></li><li><span>02</span><div><h3>Entra como siempre</h3><p>Inicia sesión en la página de tu escuela, dentro de la app. Compatible con Blackboard Learn Ultra.</p></div></li><li><span>03</span><div><h3>Vuelve a tu día</h3><p>Tus pendientes aparecen en el escritorio. La lista se revisa automáticamente.</p></div></li></ol><details class="aviso-instalacion"><summary>¿Aparece un aviso de seguridad al instalar?</summary><p class="solo-windows">BB Today todavía no tiene certificado de firma. Si Windows muestra «Windows protegió tu PC», pulsa «Más información» y «Ejecutar de todos modos».</p><p class="solo-mac">BB Today todavía no tiene firma de Apple. Ve a Ajustes del Sistema → Privacidad y seguridad y pulsa «Abrir de todas formas» junto al aviso de BB Today.</p></details></section>
+<section class="preguntas contenedor" id="preguntas"><div class="titulo-seccion"><span class="numero">Por si te lo preguntas</span><h2>Todo claro.</h2><p>Sin letra pequeña.</p></div><div class="lista-preguntas"><details><summary>¿Es seguro iniciar sesión?</summary><p>Inicias sesión en la página de tu escuela. BB Today no ve tu contraseña y guarda la sesión en tu computadora. No tiene servidor propio ni analítica. Lee el <a href="privacidad.html">aviso de privacidad</a>.</p></details><details><summary>¿Funciona con mi escuela?</summary><p>Está diseñado para Blackboard Learn Ultra. Viene preparado para la Universidad Panamericana. Para otra escuela, elige «cambiar» al iniciar sesión y escribe la dirección de tu Blackboard.</p></details><details><summary>¿Puede entregar o cambiar mis tareas?</summary><p>La app lee tus pendientes y te ayuda a preparar una entrega. Puede colocar los archivos elegidos en la página oficial o dejar una ventana para arrastrarlos. Comprueba la carga y pulsa tú el envío final en Blackboard. No envía mensajes por su cuenta.</p></details><details><summary>¿Qué necesito para usar la IA?</summary><p>Tu cuenta de ChatGPT o Claude. BB Today detecta Codex y Claude Code para trabajar en segundo plano; también ofrece respaldo con chatgpt.com o Claude Desktop. Las herramientas y los límites dependen de tu plan. La guía inicial te muestra lo disponible y puedes usar tus propios archivos sin IA.</p></details><details><summary>¿Qué información recibe la IA?</summary><p>Las instrucciones y los materiales de la tarea que elijas. En el respaldo de chatgpt.com, lo que copies mientras la app espera puede guardarse como respuesta; Cancelar detiene la espera. Consulta el <a href="privacidad.html">aviso de privacidad</a> para ver las conexiones y carpetas locales.</p></details><details><summary>¿También funciona en Mac?</summary><p>Sí, con Apple Silicon e Intel. Su icono aparece en la barra de menús. En Windows se actualiza automáticamente; en Mac te avisa cuando hay una versión nueva para que la descargues. No hay versión para celular.</p></details><details><summary>¿Es una app oficial de Blackboard?</summary><p>Es un proyecto independiente, sin afiliación con Blackboard, Anthology ni ninguna universidad. Blackboard es marca de sus respectivos dueños.</p></details><details><summary>¿Cómo la desinstalo?</summary><p>Puedes cerrar sesión desde su icono. En Windows, ve a Configuración → Aplicaciones → BB Today → Desinstalar. En Mac, sal de la app y arrástrala desde Aplicaciones a la Papelera.</p></details></div></section>
+<section class="descarga-final contenedor" id="descargar"><div class="cierre"><div><span class="numero">Haz espacio para lo que sigue</span><h2>Tu próximo día,<br>un poco más simple.</h2><p>Empieza con tus pendientes a la vista.</p></div><div class="descargas"><a class="boton boton-oscuro" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Instalador.exe">Descargar para Windows <span aria-hidden="true">↗</span></a><a class="boton boton-contorno" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-arm64.dmg">Descargar para Mac <span aria-hidden="true">↗</span></a><a class="intel" href="https://github.com/Ironmistyfox/bb-today/releases/latest/download/BB-Today-Mac-x64.dmg">Mac con Intel ↗</a><small id="version">Gratis · Windows 10/11 y macOS</small><small id="contador" class="contador-descargas">29 descargas</small></div><span class="cierre-decoracion" aria-hidden="true">↗</span></div></section>
+</main>
+<footer class="contenedor"><a class="marca" href="./"><img src="img/icono-192.png" width="28" height="28" alt="">BB Today<span class="marca-punto">.</span></a><p>Hecho por un estudiante, para estudiantes.</p><div><a href="privacidad.html">Privacidad</a><a href="https://github.com/Ironmistyfox/bb-today">Código abierto</a><a href="https://github.com/Ironmistyfox/bb-today/issues">Ayuda ↗</a></div></footer>
 </body>
 </html>

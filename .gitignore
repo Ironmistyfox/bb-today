@@ -2,3 +2,4 @@ node_modules/
 dist/
 sesion*.json
 *.log
+widget/mcp/

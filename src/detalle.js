@@ -40,10 +40,14 @@ function textoSinArchivos(html) {
   return htmlATexto(limpio).texto;
 }
 
-async function adjuntosDe(cursoId, item, origen) {
+// En modo estricto (preparar material para la IA) un fallo detiene todo: no
+// se resuelve con material incompleto. En la vista previa se enseña lo que haya.
+const tolerar = (promesa, estricto, valor) => (estricto ? promesa : promesa.catch(() => valor));
+
+async function adjuntosDe(cursoId, item, origen, estricto) {
   const tipo = item.contentHandler?.id || '';
   if (tipo === 'resource/x-bb-file' || item.contentHandler?.file) {
-    const adjuntos = await paginar(`${API}/courses/${cursoId}/contents/${item.id}/attachments`).catch(() => []);
+    const adjuntos = await tolerar(paginar(`${API}/courses/${cursoId}/contents/${item.id}/attachments`), estricto, []);
     return adjuntos.map((a) => ({
       nombre: a.fileName,
       mime: a.mimeType,
@@ -54,16 +58,16 @@ async function adjuntosDe(cursoId, item, origen) {
   return archivosIncrustados(item.body, origen);
 }
 
-async function archivosRelacionados(cursoId, relacionados = []) {
+async function archivosRelacionados(cursoId, relacionados = [], estricto = false) {
   const listas = await Promise.all(
     relacionados.map(async (r) => {
       if (r.carpeta) {
-        const hijos = await paginar(`${API}/courses/${cursoId}/contents/${r.id}/children`).catch(() => []);
-        const dentro = await Promise.all(hijos.map((h) => adjuntosDe(cursoId, h, r.titulo)));
+        const hijos = await tolerar(paginar(`${API}/courses/${cursoId}/contents/${r.id}/children`), estricto, []);
+        const dentro = await Promise.all(hijos.map((h) => adjuntosDe(cursoId, h, r.titulo, estricto)));
         return dentro.flat();
       }
-      const item = await pedir(`${API}/courses/${cursoId}/contents/${r.id}`).catch(() => null);
-      return item ? adjuntosDe(cursoId, item, 'Misma carpeta') : [];
+      const item = await tolerar(pedir(`${API}/courses/${cursoId}/contents/${r.id}`), estricto, null);
+      return item ? adjuntosDe(cursoId, item, 'Misma carpeta', estricto) : [];
     }),
   );
   return listas.flat();
@@ -72,22 +76,53 @@ async function archivosRelacionados(cursoId, relacionados = []) {
 // Las muestras se piden aparte y llegan cuando están: una presentación de
 // varios MB no debe retrasar las instrucciones. Se guardan por archivo, sin
 // la firma de la URL, que cambia en cada consulta.
+// Las muestras de PDF llegan con el archivo entero (para dibujar su primera
+// página); en cuanto la vista previa la dibuja, se cambian por esa imagen.
+// Además todo tiene tope: lo más viejo sale primero.
 const cacheMuestras = new Map();
+const TOPE_MUESTRAS = 24 * 1024 * 1024; // caracteres en base64, ~18 MB
+const TOPE_DETALLES = 60;
+const claveMuestra = (archivo) => `${archivo.nombre}|${String(archivo.url).split('?')[0]}`;
+const pesoMuestra = (m) => (m?.datos?.length || 0) + (m?.src?.length || 0) + 512;
+
+function recortarCaches() {
+  const ahora = Date.now();
+  for (const [k, v] of cacheMuestras) if (ahora - v.cuando > 6 * CACHE_MS) cacheMuestras.delete(k);
+  let total = 0;
+  for (const v of cacheMuestras.values()) total += pesoMuestra(v.muestra);
+  for (const [k, v] of cacheMuestras) {
+    if (total <= TOPE_MUESTRAS) break;
+    total -= pesoMuestra(v.muestra);
+    cacheMuestras.delete(k);
+  }
+  for (const [k, v] of cache) if (ahora - v.cuando > CACHE_MS) cache.delete(k);
+  while (cache.size > TOPE_DETALLES) cache.delete(cache.keys().next().value);
+}
+
+export function guardarMiniaturaPdf(archivo, src) {
+  const guardada = cacheMuestras.get(claveMuestra(archivo));
+  if (!guardada || typeof src !== 'string' || !src.startsWith('data:image/')) return;
+  guardada.muestra = { tipo: 'pdf', src, bytes: guardada.muestra.bytes };
+}
+
 export async function muestraDe(archivo, miniatura) {
-  const clave = `${archivo.nombre}|${String(archivo.url).split('?')[0]}`;
+  const clave = claveMuestra(archivo);
   const guardada = cacheMuestras.get(clave);
   if (guardada && Date.now() - guardada.cuando < 6 * CACHE_MS) return guardada.muestra;
   const resultado = await Promise.race([
     muestra(archivo, miniatura).catch(() => null),
     new Promise((ok) => setTimeout(() => ok(null), 45_000)),
   ]);
-  if (resultado) cacheMuestras.set(clave, { cuando: Date.now(), muestra: { ...resultado, bytes: archivo.bytes } });
+  if (resultado) {
+    cacheMuestras.set(clave, { cuando: Date.now(), muestra: { ...resultado, bytes: archivo.bytes } });
+    recortarCaches();
+  }
   return resultado && { ...resultado, bytes: archivo.bytes };
 }
 
 // Lector mínimo de ZIP: el directorio central da los nombres y, si hace
 // falta, se descomprime una entrada concreta (para leer .docx y .pptx).
-function leerZip(buf) {
+export function leerZip(buf) {
   let fin = -1;
   for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65_557); i--) {
     if (buf.readUInt32LE(i) === 0x06054b50) { fin = i; break; }
@@ -118,7 +153,7 @@ function leerZip(buf) {
   return { entradas, extraer };
 }
 
-function textoXml(xml, etiquetaParrafo) {
+export function textoXml(xml, etiquetaParrafo) {
   return xml
     .replace(new RegExp(`</${etiquetaParrafo}>`, 'g'), '\n')
     .replace(/<[^>]+>/g, '')
@@ -164,22 +199,29 @@ async function muestra(archivo, miniatura) {
   return { tipo: 'zip', archivos: archivos.slice(0, 8), resto: Math.max(0, archivos.length - 8) };
 }
 
-export async function detalle(cursoId, tarea) {
-  const guardado = cache.get(tarea.id);
+export async function detalle(cursoId, tarea, { estricto = false } = {}) {
+  // La tarea de prueba de BB Today no existe en Blackboard.
+  if (cursoId === 'bbtoday-prueba') return { instrucciones: tarea.instrucciones || '', archivos: [] };
+  const clave = `${urlBase()}|${cursoId}|${tarea.id}`;
+  const guardado = !estricto && cache.get(clave);
   if (guardado && Date.now() - guardado.cuando < CACHE_MS) return guardado.datos;
 
-  const item = await pedir(`${API}/courses/${cursoId}/contents/${tarea.id}`).catch(() => null);
+  const item = await pedir(`${API}/courses/${cursoId}/contents/${tarea.id}`).catch((e) => {
+    if (e.estado === 404 || !estricto) return null;
+    throw e;
+  });
   const html = item?.contentHandler?.instructions || item?.body || '';
   const propios = archivosIncrustados(html, 'De la tarea');
-  const deCarpeta = await archivosRelacionados(cursoId, tarea.relacionados);
+  const deCarpeta = await archivosRelacionados(cursoId, tarea.relacionados, estricto);
 
   // Sin duplicados por nombre, primero los de la tarea.
   const vistos = new Set();
   const archivos = [...propios, ...deCarpeta]
-    .filter((a) => a.nombre && !vistos.has(a.nombre) && vistos.add(a.nombre))
-    .slice(0, MAX_ARCHIVOS);
+    .filter((a) => a.nombre && !vistos.has(a.url) && vistos.add(a.url))
+    .slice(0, estricto ? undefined : MAX_ARCHIVOS);
 
   const datos = { instrucciones: item ? textoSinArchivos(html) : tarea.instrucciones || '', archivos };
-  cache.set(tarea.id, { cuando: Date.now(), datos });
+  if (!estricto) cache.set(clave, { cuando: Date.now(), datos });
+  recortarCaches();
   return datos;
 }

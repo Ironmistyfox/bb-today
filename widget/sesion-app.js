@@ -288,6 +288,7 @@ export function abrirEnBlackboard(url) {
   }
   navegador.loadURL(destino.href);
   alFrente(navegador);
+  return navegador;
 }
 
 // Un archivo se descarga con la sesión de la app a Descargas\BB Today\<curso>

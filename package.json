@@ -1,6 +1,6 @@
 {
   "name": "bb-today",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Tus pendientes de Blackboard en el escritorio de Windows y Mac.",
   "type": "module",
@@ -12,12 +12,14 @@
     "login": "node src/login.js",
     "probar": "node src/probar.js",
     "widget": "electron .",
-    "empaquetar": "electron-builder --win --publish never -c.directories.output=%LOCALAPPDATA%/bb-today-build",
+    "empaquetar": "node tools/empaquetar-mcp.mjs && electron-builder --win --publish never -c.directories.output=%LOCALAPPDATA%/bb-today-build",
     "publicar": "node tools/publicar.mjs",
-    "desplegar-sitio": "node tools/desplegar-sitio.mjs"
+    "desplegar-sitio": "node tools/desplegar-sitio.mjs",
+    "mcp": "node tools/empaquetar-mcp.mjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
+    "katex": "^0.19.0",
     "koffi": "^3.3.2",
     "pdfjs-dist": "^6.3.289"
   },
@@ -25,6 +27,7 @@
     "@modelcontextprotocol/sdk": "^1.31.0",
     "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
     "playwright-core": "^1.63.0",
     "sharp": "^0.35.5",
     "zod": "^3.25.0"
@@ -46,11 +49,16 @@
       "widget/**/*",
       "!widget/icono/original.webp",
       "src/agenda.js",
-      "src/cliente.js",
+    "src/cliente.js",
+    "src/red.js",
       "src/datos.js",
       "src/detalle.js",
       "src/sesion.js",
+      "src/contenido.js",
+      "src/mensajes.js",
       "!node_modules/pdfjs-dist/legacy/**",
+      "node_modules/pdfjs-dist/legacy/build/pdf.mjs",
+      "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
       "!node_modules/pdfjs-dist/types/**",
       "!node_modules/pdfjs-dist/web/**",
       "!node_modules/pdfjs-dist/image_decoders/**",
@@ -59,7 +67,8 @@
     ],
     "asarUnpack": [
       "node_modules/koffi/**",
-      "node_modules/@koromix/**"
+      "node_modules/@koromix/**",
+      "widget/mcp/**"
     ],
     "win": {
       "target": [

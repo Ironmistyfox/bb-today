@@ -1,5 +1,26 @@
 # Cambios
 
+## 1.2.0 · 2026-10-05
+
+- **BB Today completo:** pendientes, respuestas, archivos propios, ajustes y
+  cuenta en una sola ventana, junto al widget de escritorio.
+- **Asistencia con IA:** ChatGPT o Claude con tu cuenta. Si tienes Codex o
+  Claude Code disponibles, trabajan en segundo plano; también hay respaldo
+  mediante chatgpt.com o Claude Desktop. Revisa las respuestas antes de usarlas.
+- **Un espacio por tarea:** lee instrucciones, prepara texto y archivos,
+  revisa los entregables y abre la página oficial. El envío final lo haces
+  tú en Blackboard; si no se pueden colocar archivos, puedes arrastrarlos.
+- **Materiales completos:** si un archivo no pudo descargarse, lo indica y
+  detiene la preparación. La app conserva originales y prepara copias.
+- **Mensajes y anuncios:** nuevos mensajes de tus cursos en el widget;
+  si la consulta falla, lo indica. Marcar visto sólo cambia BB Today.
+- **Guía de inicio:** también al actualizar desde 1.1.0; disponible desde
+  Cuenta → Ayuda. En Mac, aviso de actualización con enlace a la descarga.
+- **Menos carga de consultas:** máximo cuatro a la vez y pausa cuando
+  Blackboard pide esperar.
+- **Nueva identidad y web:** iconos renovados, demo con profundidad y temas,
+  pintura sólida, texto nítido y contador de descargas para Windows y Mac.
+
 ## 1.1.0 · 2026-10-01
 
 - **BB Today para Mac**, con Apple Silicon (M1 en adelante) e Intel. Vive en

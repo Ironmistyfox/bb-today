@@ -1,15 +1,22 @@
-// Genera los iconos del widget desde la imagen original (webp).
+// Una fuente vectorial mantiene la marca nítida en web, Windows y Mac.
 import sharp from 'sharp';
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+process.chdir(raiz);
 // La imagen original trae las esquinas en blanco: se recorta con un
 // rectángulo redondeado (radio medido sobre el original, ~23 % del lado) y
 // un par de píxeles hacia dentro para no dejar borde claro.
-const original = sharp(process.argv[2]);
+const fuente = process.argv[2] || 'widget/icono/icono.svg';
+const original = sharp(fuente);
 const { width: lado } = await original.metadata();
 const margen = Math.round(lado * 0.003);
 const radio = Math.round(lado * 0.229);
 const mascara = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${lado}" height="${lado}"><rect x="${margen}" y="${margen}" width="${lado - 2 * margen}" height="${lado - 2 * margen}" rx="${radio}" ry="${radio}" fill="#fff"/></svg>`);
-const origen = await original.ensureAlpha().composite([{ input: mascara, blend: 'dest-in' }]).png().toBuffer();
+const origen = /\.svg$/i.test(fuente)
+  ? await original.ensureAlpha().png().toBuffer()
+  : await original.ensureAlpha().composite([{ input: mascara, blend: 'dest-in' }]).png().toBuffer();
 const tamanos = [16, 20, 24, 32, 40, 48, 64, 128, 256];
 const pngs = {};
 for (const t of tamanos) pngs[t] = await sharp(origen).resize(t, t, { kernel: 'lanczos3' }).png().toBuffer();
@@ -36,14 +43,19 @@ await sharp({ create: { width: 1024, height: 1024, channels: 4, background: { r:
   .png()
   .toFile('widget/icono/icono-mac.png');
 
-// Mac: icono de plantilla para la barra de menús (negro con transparencia;
-// macOS lo tiñe según el modo claro u oscuro). Las dos tarjetas del logo: la
-// de delante rellena y la de atrás en contorno.
+// La silueta de tarjetas y su marca siguen siendo legibles a 16 píxeles.
 const plantilla = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-  <path d="M15.6 12.6 19 5.4h9.6l-3.4 7.2z" fill="none" stroke="#000" stroke-width="2.4" stroke-linejoin="round"/>
-  <path d="M4.2 26.4 8.6 17h13l-4.4 9.4z" fill="#000" stroke="#000" stroke-width="2.4" stroke-linejoin="round"/>
+  <rect x="10" y="3" width="18" height="23" rx="3" fill="none" stroke="#000" stroke-width="2"/>
+  <defs><mask id="marca"><rect x="4" y="7" width="19" height="23" rx="3" fill="#fff"/><path d="m8 17 4 4 7-8" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></mask></defs>
+  <rect x="4" y="7" width="19" height="23" rx="3" fill="#000" mask="url(#marca)"/>
 </svg>`);
 await sharp(plantilla).resize(16, 16).png().toFile('widget/icono/bandejaTemplate.png');
 await sharp(plantilla).resize(32, 32).png().toFile('widget/icono/bandejaTemplate@2x.png');
+await sharp(origen).resize(192, 192).png().toFile('sitio/img/icono-192.png');
+await sharp(origen).resize(48, 48).png().toFile('sitio/favicon.png');
+fs.copyFileSync('widget/icono/icono.svg', 'sitio/img/icono.svg');
+const simbolo = fs.readFileSync('widget/icono/icono.svg', 'utf8').replace('width="1024" height="1024"', 'width="64" height="64"');
+const logotipo = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="64" viewBox="0 0 300 64">${simbolo}<text x="80" y="45" fill="#172c27" font-family="Manrope, Segoe UI, sans-serif" font-size="38" font-weight="700" letter-spacing="-1.5">BB Today</text></svg>`;
+fs.writeFileSync('sitio/img/logotipo.svg', logotipo);
 
 console.log('ok', fs.readdirSync('widget/icono').join(', '));

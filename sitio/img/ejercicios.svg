@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="360" viewBox="0 0 560 360">
+  <rect width="560" height="360" fill="#fdfcf9"/>
+  <g fill="#292b29" font-family="Georgia, serif">
+    <text x="280" y="45" font-size="15" text-anchor="middle" font-weight="bold">EJERCICIOS 3.2 · INTEGRALES DOBLES</text>
+    <text x="36" y="86" font-size="12">Evalúa las siguientes integrales. Incluye tu procedimiento.</text>
+    <text x="36" y="135" font-size="14">2.</text><text x="72" y="138" font-size="25">∫₀¹ ∫₀² (x + y) dy dx</text>
+    <text x="36" y="198" font-size="14">7.</text><text x="72" y="201" font-size="25">∫₀² ∫₀ˣ xy dy dx</text>
+    <text x="36" y="261" font-size="14">11.</text><text x="72" y="264" font-size="25">∫₀¹ ∫₀¹ (x² + y²) dx dy</text>
+    <text x="36" y="324" font-size="14">15.</text><text x="72" y="327" font-size="25">∫₀¹ ∫₀² eˣ dy dx</text>
+  </g>
+</svg>

@@ -16,6 +16,10 @@ const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const aislado = path.join(process.env.LOCALAPPDATA, 'bb-today-sitio');
 const publico = path.join(aislado, 'publico');
 
+// La copia pública debe usar siempre los mismos colores que el widget.
+execFileSync(process.execPath, [path.join(raiz, 'tools', 'sincronizar-temas-sitio.mjs')], { stdio: 'inherit' });
+execFileSync(process.execPath, [path.join(raiz, 'tools', 'actualizar-contador.mjs')], { stdio: 'inherit' });
+
 fs.rmSync(publico, { recursive: true, force: true });
 fs.mkdirSync(publico, { recursive: true });
 fs.cpSync(path.join(raiz, 'sitio'), publico, { recursive: true });

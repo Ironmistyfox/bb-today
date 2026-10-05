@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; font-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>BB Today</title>
+<link rel="stylesheet" href="temas.css">
+<link rel="stylesheet" href="../node_modules/katex/dist/katex.min.css">
+<script src="../node_modules/katex/dist/katex.min.js"></script>
+<script src="../node_modules/katex/dist/contrib/auto-render.min.js"></script>
+<script src="markdown.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--fondo-b); }
+  body { color: var(--texto); font: 13px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; display: flex; overflow: hidden; }
+  button, select, input, textarea { font: inherit; }
+
+  /* Barra lateral */
+  nav { width: 212px; flex: none; display: flex; flex-direction: column; background: var(--fondo-a); border-right: 1px solid var(--linea); padding: 16px 10px 12px; }
+  .marca { display: flex; align-items: center; gap: 10px; padding: 0 6px 16px; }
+  .marca img { width: 32px; height: 32px; border-radius: 8px; }
+  .marca b { display: block; font: 600 15px/1.2 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; }
+  .marca span { color: var(--tenue); font-size: 11px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; color: var(--suave); padding: 8px 10px; border-radius: 8px; cursor: pointer; text-align: left; font-size: 13px; }
+  .nav-item svg { width: 16px; height: 16px; flex: none; }
+  .nav-item:hover { background: var(--hover); color: var(--texto); }
+  .nav-item.activo { background: var(--pieza); color: var(--texto); font-weight: 600; }
+  .nav-item .num { margin-left: auto; font-size: 11px; font-weight: 700; min-width: 20px; height: 18px; line-height: 18px; text-align: center; padding: 0 6px; border-radius: 9px; background: var(--neutro); color: var(--suave); }
+  .nav-item .num.urge { background: color-mix(in srgb, var(--mal) 20%, transparent); color: var(--mal); }
+  .nav-sep { height: 1px; background: var(--linea); margin: 10px 6px; }
+  .nav-pie { margin-top: auto; padding: 10px 6px 0; border-top: 1px solid var(--linea); }
+  .nav-pie .estado { font-size: 11.5px; color: var(--tenue); margin-bottom: 8px; }
+  .nav-pie .estado b { color: var(--suave); font-weight: 600; }
+
+  main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .seccion { display: none; flex: 1; min-height: 0; }
+  .seccion.activa { display: flex; }
+  .desplazable { flex: 1; overflow-y: auto; }
+  .pagina { max-width: 640px; margin: 0 auto; padding: 22px 24px 36px; }
+  h1 { margin: 0 0 4px; font: 600 20px/1.2 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; }
+  .sub { color: var(--tenue); font-size: 12px; }
+
+  /* Pendientes y respuestas: lista a la izquierda, detalle a la derecha */
+  .columnas { display: flex; flex: 1; min-height: 0; }
+  .lista-col { width: 330px; flex: none; display: flex; flex-direction: column; border-right: 1px solid var(--linea); min-height: 0; }
+  .filtros { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 14px 10px; border-bottom: 1px solid var(--linea); }
+  .filtros input[type=search] { flex: 1 1 100%; color: var(--texto); background: var(--pieza); border: 1px solid var(--borde); border-radius: 8px; padding: 7px 10px; }
+  .filtros select { flex: 1; min-width: 0; }
+  .chips { display: flex; gap: 4px; flex-wrap: wrap; width: 100%; }
+  .chip { border: 1px solid var(--borde); background: var(--pieza); color: var(--suave); border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+  .chip.activo { background: var(--acento); border-color: var(--acento); color: #fff; }
+  .filas { flex: 1; overflow-y: auto; padding: 4px 8px 16px; }
+  .grupo-titulo { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--tenue); padding: 12px 8px 4px; }
+  .grupo-titulo.mal { color: var(--mal); }
+  .fila { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; }
+  .fila:hover { background: var(--hover); }
+  .fila.sel { background: var(--pieza); }
+  .fila .punto { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .fila .info { min-width: 0; flex: 1; }
+  .fila .titulo { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fila .meta { color: var(--tenue); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fila .meta .lista-ok { color: var(--bien); }
+  .fila img.mini-img { width: 38px; height: 38px; object-fit: cover; border-radius: 6px; background: #fff; flex: none; }
+  .pastilla { flex: none; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--neutro); color: var(--suave); white-space: nowrap; }
+  .pastilla.mal { background: color-mix(in srgb, var(--mal) 18%, transparent); color: var(--mal); }
+  .pastilla.pronto { background: color-mix(in srgb, var(--pronto) 18%, transparent); color: var(--pronto); }
+  .vacio { color: var(--tenue); padding: 30px 16px; text-align: center; }
+
+  .detalle-col { flex: 1; min-width: 0; overflow-y: auto; }
+  .detalle { padding: 20px 24px 40px; max-width: 820px; }
+  .detalle .curso { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+  .detalle h2 { margin: 4px 0 6px; font: 600 19px/1.3 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; }
+  .detalle .ruta { color: var(--tenue); font-size: 12px; margin-bottom: 10px; }
+  .detalle .acciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
+  .detalle h3 { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--tenue); margin: 22px 0 8px; }
+  .detalle .instrucciones { white-space: pre-wrap; color: var(--suave); line-height: 1.55; user-select: text; }
+  .archivo { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 9px; background: var(--fondo-a); cursor: pointer; margin-bottom: 6px; }
+  .archivo:hover { background: var(--pieza); }
+  .archivo .tipo { width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; font-size: 9.5px; font-weight: 800; color: #fff; flex: none; }
+  .archivo .nombre { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .archivo .peso { color: var(--tenue); font-size: 11.5px; }
+  .nota { margin-top: 10px; padding: 9px 11px; border-radius: 8px; background: var(--pieza); color: var(--suave); font-size: 12.5px; }
+  .respuesta-md { user-select: text; line-height: 1.6; }
+  .respuesta-md h1, .respuesta-md h2, .respuesta-md h3 { font-size: 15px; margin: 16px 0 6px; }
+  .respuesta-md pre { background: var(--codigo, var(--pieza)); border: 1px solid var(--linea); border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
+  .respuesta-md code { font: 12.5px "Cascadia Mono", Consolas, monospace; }
+  .respuesta-md blockquote { margin: 8px 0; padding: 2px 12px; border-left: 3px solid var(--borde); color: var(--suave); }
+  .respuesta-md .katex-display { overflow-x: auto; overflow-y: hidden; }
+  .imagenes { display: grid; gap: 12px; margin-bottom: 14px; }
+  .imagenes figure { margin: 0; }
+  .imagenes img { display: block; max-width: 100%; max-height: 460px; object-fit: contain; border-radius: 8px; border: 1px solid var(--linea); background: #fff; cursor: zoom-in; }
+  .imagenes figcaption { display: flex; gap: 6px; margin-top: 6px; }
+
+  /* Ajustes (lo que era Configuración) */
+  h2.titulo-grupo { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--tenue); margin: 22px 0 8px 2px; }
+  .grupo { background: var(--fondo-a); border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; }
+  .opcion { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; }
+  .opcion + .opcion { border-top: 1px solid var(--linea); }
+  .opcion .texto b { display: block; font-weight: 500; }
+  .opcion .texto span { color: var(--tenue); font-size: 12px; }
+  .opcion .texto .apps { display: block; margin-top: 3px; font-size: 11.5px; }
+  .opcion.columna { flex-direction: column; align-items: stretch; }
+  select {
+    color: var(--texto); background: var(--pieza); border: 1px solid var(--borde); border-radius: 8px;
+    padding: 6px 28px 6px 10px; min-width: 170px; appearance: none; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--suave) 50%), linear-gradient(135deg, var(--suave) 50%, transparent 50%);
+    background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat;
+  }
+  select option { background: var(--fondo-a); color: var(--texto); }
+  .boton { color: var(--texto); background: var(--pieza); border: 1px solid var(--borde); border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .boton:hover { background: var(--pieza-hover); }
+  .boton.primario { background: var(--acento); border-color: var(--acento); color: #fff; }
+  .boton.peligro { color: var(--mal); }
+  .boton.chico { padding: 4px 10px; font-size: 12px; }
+  /* ChatGPT: blanco y con su logo. */
+  .boton.chatgpt { background: #fff; color: #0d0d0d; border-color: rgb(0 0 0 / .15); font-weight: 600; }
+  .boton.chatgpt:hover { background: #f2f2f2; }
+  .boton.chatgpt img { width: 15px; height: 15px; }
+  .boton svg { width: 13px; height: 13px; }
+  .boton:disabled { opacity: .55; cursor: default; }
+  .interruptor { position: relative; width: 40px; height: 22px; flex: none; }
+  .interruptor input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .interruptor i { position: absolute; inset: 0; border-radius: 11px; background: var(--neutro); border: 1px solid var(--borde); transition: background .15s; pointer-events: none; }
+  .interruptor i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--suave); transition: transform .15s, background .15s; }
+  .interruptor input:checked + i { background: var(--acento); border-color: var(--acento); }
+  .interruptor input:checked + i::after { transform: translateX(18px); background: #fff; }
+  .temas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px 14px; }
+  .tema { border: 2px solid transparent; border-radius: 12px; padding: 0; background: none; cursor: pointer; text-align: left; color: var(--texto); }
+  .tema.activo { border-color: var(--acento); }
+  .mini { height: 74px; border-radius: 10px; padding: 8px 9px; display: flex; flex-direction: column; gap: 5px; background: linear-gradient(180deg, color-mix(in srgb, var(--fondo-a) calc(var(--alfa-tema) * 100%), transparent), color-mix(in srgb, var(--fondo-b) calc(var(--alfa-tema) * 100%), transparent)); border: 1px solid var(--borde); color: var(--texto); }
+  .mini.vidrio-fondo { background-color: transparent; background-image: linear-gradient(180deg, rgb(27 29 36 / .5), rgb(17 18 24 / .5)), linear-gradient(135deg, #3a7bd5, #b06ab3 60%, #e4a663); }
+  .mini b { font-size: 10.5px; font-weight: 600; text-shadow: var(--sombra-texto); }
+  .mini .renglon { display: flex; align-items: center; gap: 5px; }
+  .mini .renglon i { width: 6px; height: 6px; border-radius: 50%; }
+  .mini .renglon span { height: 5px; border-radius: 3px; background: var(--suave); opacity: .55; flex: 1; }
+  .mini .renglon em { width: 20px; height: 9px; border-radius: 5px; background: color-mix(in srgb, var(--pronto) 30%, transparent); }
+  .tema .nombre { display: block; font-size: 12px; padding: 5px 2px 0; }
+  input[type=range] { width: 170px; accent-color: var(--acento); }
+  .segmentos { display: inline-flex; background: var(--pieza); border: 1px solid var(--borde); border-radius: 8px; padding: 2px; }
+  .segmentos button { white-space: nowrap; border: 0; background: none; color: var(--suave); padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+  .segmentos button.activo { background: var(--fondo-a); color: var(--texto); box-shadow: 0 1px 2px rgb(0 0 0 / .15); }
+  .materias, .quitadas { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+  .quitada { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--linea); }
+  .quitada:first-child { border-top: 0; }
+  .quitada .texto { min-width: 0; flex: 1; }
+  .quitada .texto b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .quitada .texto span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .todas { margin-top: 8px; align-self: flex-start; }
+  .materia { display: flex; align-items: center; gap: 10px; padding: 6px 2px; cursor: pointer; }
+  .materia input { width: 16px; height: 16px; accent-color: var(--acento); cursor: pointer; }
+  .cuenta { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: #fff; background: var(--acento); flex: none; }
+  textarea, input[type=text] { color: var(--texto); background: var(--pieza); border: 1px solid var(--borde); border-radius: 8px; padding: 7px 9px; font-size: 13px; }
+  textarea { width: 100%; resize: vertical; margin-top: 8px; line-height: 1.45; }
+  input[type=text] { width: 140px; }
+  textarea:focus, input:focus { outline: 2px solid color-mix(in srgb, var(--acento) 55%, transparent); outline-offset: -1px; }
+  .cuentas-ia { display: grid; gap: 6px; margin-top: 8px; }
+  .cuenta-ia { display: flex; align-items: flex-start; gap: 9px; padding: 8px 10px; border-radius: 8px; background: var(--pieza); font-size: 12.5px; }
+  .cuenta-ia i { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; }
+  .cuenta-ia b { font-weight: 600; }
+  .cuenta-ia span { color: var(--suave); }
+  .botones-campo { display: flex; justify-content: flex-end; margin-top: 6px; }
+  .privacidad p { margin: 0 0 6px; color: var(--suave); }
+  .privacidad ul { margin: 0 0 10px; padding-left: 18px; color: var(--suave); font-size: 12.5px; }
+  .privacidad li { margin: 5px 0; }
+  .privacidad b { color: var(--texto); font-weight: 600; }
+  .privacidad code { font: 11.5px "Cascadia Mono", Consolas, monospace; background: var(--pieza); padding: 1px 4px; border-radius: 4px; }
+  .pie { color: var(--tenue); font-size: 11.5px; text-align: center; margin-top: 22px; }
+  /* Espacio de entrega de una tarea */
+  .paso { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--linea); }
+  .paso-titulo { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+  .paso-titulo .num { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11.5px; background: var(--acento); color: #fff; flex: none; }
+  .acciones-paso { margin-left: auto; display: flex; gap: 6px; font-weight: 400; }
+  .sub-titulo { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--tenue); margin: 14px 0 6px; }
+  .entregables { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .entregable { border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--fondo-a); display: flex; flex-direction: column; }
+  .entregable.adjuntado { border-color: var(--bien); box-shadow: 0 0 0 1px var(--bien) inset; }
+  .entregable .vista { height: 96px; display: grid; place-items: center; background: var(--pieza); cursor: pointer; overflow: hidden; }
+  .entregable .vista img { width: 100%; height: 100%; object-fit: cover; object-position: top; background: #fff; }
+  .entregable .vista .tipo { width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; }
+  .pie-entregable { padding: 8px 9px 9px; display: flex; flex-direction: column; gap: 3px; }
+  .pie-entregable .nombre { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pie-entregable .meta { font-size: 11.5px; color: var(--tenue); }
+  .pie-entregable .origen { color: var(--acento); font-weight: 600; }
+  .pie-entregable .origen.tuyo { color: var(--pronto); }
+  .pie-entregable .botones { display: flex; gap: 5px; margin-top: 5px; }
+  .pie-entregable .botones [data-adjuntar] { flex: 1; justify-content: center; }
+  .boton.listo { background: color-mix(in srgb, var(--bien) 18%, transparent); border-color: var(--bien); color: var(--bien); }
+  .soltar { border: 1.5px dashed var(--borde); border-radius: 10px; padding: 14px; text-align: center; color: var(--tenue); font-size: 12.5px; cursor: pointer; }
+  .soltar:hover, .soltando .soltar { border-color: var(--acento); color: var(--texto); background: color-mix(in srgb, var(--acento) 8%, transparent); }
+  .respuesta-plegable { margin-top: 12px; border: 1px solid var(--borde); border-radius: 10px; padding: 8px 12px; background: var(--fondo-a); }
+  .respuesta-plegable summary { cursor: pointer; font-weight: 600; }
+  .respuesta-plegable .acciones { margin: 8px 0; }
+  .entrega-paso textarea { margin-top: 0; }
+  .barra-entrega { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+  .boton.grande { padding: 9px 18px; font-weight: 700; }
+  .estado-entrega { margin-top: 10px; padding: 8px 11px; border-radius: 8px; background: var(--pieza); font-size: 12.5px; color: var(--suave); }
+  .estado-entrega b { color: var(--texto); }
+  .estado-entrega.colocados { background: color-mix(in srgb, var(--bien) 14%, transparent); }
+  .estado-entrega.colocados b { color: var(--bien); }
+  .estado-entrega.error b, .estado-entrega.cancelada b { color: var(--mal); }
+  .estado-entrega.manual b { color: var(--pronto); }
+  .modal-fondo { position: fixed; inset: 0; background: rgb(0 0 0 / .45); display: grid; place-items: center; z-index: 50; }
+  .modal { width: min(460px, 92vw); background: var(--fondo-a); border: 1px solid var(--borde); border-radius: 14px; padding: 18px 20px; box-shadow: 0 20px 50px rgb(0 0 0 / .4); }
+  .modal h3 { margin: 0 0 4px; font-size: 16px; }
+  .modal ul { margin: 4px 0 10px; padding-left: 18px; color: var(--suave); }
+  .no-mostrar { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--suave); font-size: 12.5px; cursor: pointer; }
+  .no-mostrar input { width: 15px; height: 15px; accent-color: var(--acento); }
+  .modal .acciones { display: flex; gap: 8px; }
+  .modal .acciones.derecha { justify-content: flex-end; margin-top: 14px; }
+  /* Guía del primer arranque */
+  .guia { width: min(520px, 92vw); }
+  .guia .puntos { display: flex; gap: 6px; margin-bottom: 12px; }
+  .guia .puntos i { flex: 1; height: 3px; border-radius: 2px; background: var(--borde); }
+  .guia .puntos i.hecho { background: var(--acento); }
+  .guia p, .guia li { line-height: 1.5; }
+  .guia ol, .guia ul { margin: 8px 0 4px; padding-left: 20px; color: var(--suave); }
+  .guia li b { color: var(--texto); }
+  .guia .estado-paso { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0 4px; padding: 10px 12px; border-radius: 10px; background: var(--pieza); }
+  .guia .estado-paso .ok { color: var(--bien); font-weight: 600; }
+  .guia .estado-paso .sub { color: var(--suave); }
+  .guia .acciones.entre { justify-content: space-between; margin-top: 16px; }
+  .menu-rutas { position: relative; display: inline-flex; gap: 1px; }
+  .menu-rutas > .boton:first-child:not(:last-child) { border-radius: 8px 0 0 8px; }
+  .menu-rutas > [data-mas] { border-radius: 0 8px 8px 0; }
+  .menu-rutas .lista-rutas { position: absolute; top: calc(100% + 4px); left: 0; min-width: 220px; display: flex; flex-direction: column; padding: 4px; border-radius: 9px; background: var(--fondo-a); border: 1px solid var(--borde); box-shadow: 0 8px 24px rgb(0 0 0 / .3); z-index: 5; }
+  .menu-rutas .lista-rutas button { border: 0; background: none; color: var(--texto); text-align: left; padding: 6px 9px; border-radius: 6px; cursor: pointer; }
+  .menu-rutas .lista-rutas button:hover { background: var(--pieza-hover); }
+</style>
+</head>
+<body>
+<nav>
+  <div class="marca"><img src="icono/icono.png" alt=""><div><b>BB Today</b><span id="version"></span></div></div>
+  <button class="nav-item" data-ir="pendientes"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><circle cx="2.5" cy="4" r=".8" fill="currentColor"/><circle cx="2.5" cy="8" r=".8" fill="currentColor"/><circle cx="2.5" cy="12" r=".8" fill="currentColor"/></svg>Pendientes<span class="num" id="num-pendientes"></span></button>
+  <button class="nav-item" data-ir="respuestas"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>Respuestas<span class="num" id="num-respuestas"></span></button>
+  <div class="nav-sep"></div>
+  <button class="nav-item" data-ir="ia"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="10" height="9" rx="2"/><path d="M8 4V2M6 8h.01M10 8h.01M6 11h4"/></svg>IA</button>
+  <button class="nav-item" data-ir="ajustes"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 4h6M12 4h1M3 8h1M7 8h6M3 12h7M13 12h0"/><circle cx="10.5" cy="4" r="1.5"/><circle cx="5.5" cy="8" r="1.5"/><circle cx="11.5" cy="12" r="1.5"/></svg>Ajustes</button>
+  <button class="nav-item" data-ir="cuenta"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.8-2.6 2.8-4 5.2-4s4.4 1.4 5.2 4"/></svg>Cuenta</button>
+  <div class="nav-pie">
+    <div class="estado" id="estado-revision"></div>
+    <button class="boton chico" id="actualizar"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 2.5v3h-3"/></svg>Revisar Blackboard</button>
+  </div>
+</nav>
+
+<main>
+  <!-- PENDIENTES -->
+  <section class="seccion" id="s-pendientes">
+    <div class="columnas">
+      <div class="lista-col">
+        <div class="filtros">
+          <input type="search" id="buscar" placeholder="Buscar tarea o materia…">
+          <select id="filtro-materia"><option value="">Todas las materias</option></select>
+          <div class="chips" id="chips-cuando">
+            <button class="chip activo" data-cuando="activas">Por entregar</button>
+            <button class="chip" data-cuando="vencidas">Vencidas</button>
+            <button class="chip" data-cuando="sinfecha">Sin fecha</button>
+            <button class="chip" data-cuando="todas">Todas</button>
+          </div>
+        </div>
+        <div class="filas" id="filas-pendientes"></div>
+      </div>
+      <div class="detalle-col" id="detalle-pendiente"><div class="vacio">Elige una tarea para ver sus instrucciones, sus archivos y resolverla.</div></div>
+    </div>
+  </section>
+
+  <!-- RESPUESTAS -->
+  <section class="seccion" id="s-respuestas">
+    <div class="columnas">
+      <div class="lista-col">
+        <div class="filtros"><input type="search" id="buscar-respuestas" placeholder="Buscar en las respuestas…"></div>
+        <div class="filas" id="filas-respuestas"></div>
+      </div>
+      <div class="detalle-col" id="detalle-respuesta"><div class="vacio">Elige una respuesta.</div></div>
+    </div>
+  </section>
+
+  <!-- IA -->
+  <section class="seccion" id="s-ia"><div class="desplazable"><div class="pagina">
+    <h1>IA</h1><div class="sub">Con qué se resuelven las tareas y qué se les pide.</div>
+    <h2 class="titulo-grupo">Resolver</h2>
+    <div class="grupo">
+      <div class="opcion">
+        <div class="texto"><b>Resolver con</b><span id="ia-explica"></span><span id="ia-apps" class="apps"></span></div>
+        <div class="segmentos" data-pref="iaResolver"><button data-valor="chatgpt">ChatGPT</button><button data-valor="claude">Claude</button></div>
+      </div>
+      <div class="opcion columna">
+        <div class="texto"><b>Tus cuentas</b><span>Lo que BB Today comprobó en esta computadora. Si algo no está disponible, usa solo la vía de respaldo.</span></div>
+        <div class="cuentas-ia" id="ia-cuentas"></div>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Tarea de prueba</b><span>Agrega «Tarea de prueba · Derivadas parciales» a tu lista (vence hoy) para probar Resolver sin tocar tus tareas.</span></div>
+        <label class="interruptor"><input type="checkbox" id="tareaPrueba"><i></i></label>
+      </div>
+      <div class="opcion columna">
+        <div class="texto"><b>Qué le pides al resolver</b><span>Va junto con la tarea, sus instrucciones y sus archivos.</span></div>
+        <textarea id="iaPedido" rows="2"></textarea>
+        <div class="botones-campo"><button class="boton chico" data-restaurar-campo="iaPedido">Restaurar</button></div>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Modelo de ChatGPT en el navegador</b><span>Sólo si no está Codex («auto» deja que elija). Codex y Claude usan el modelo que tengas elegido en ellos.</span></div>
+        <input type="text" id="chatgptModelo" spellcheck="false" maxlength="40">
+      </div>
+    </div>
+    <h2 class="titulo-grupo">Imágenes</h2>
+    <div class="grupo">
+      <div class="opcion">
+        <div class="texto"><b>Hoja resuelta en imagen</b><span>Si la tarea son ejercicios para entregar en papel, la IA también dibuja la hoja resuelta</span></div>
+        <label class="interruptor"><input type="checkbox" id="iaImagenes"><i></i></label>
+      </div>
+      <div class="opcion" id="fila-imagen-auto">
+        <div class="texto"><b>Sin preguntar</b><span>Si lo quitas, la respuesta trae un botón «Imagen» y la pides tú</span></div>
+        <label class="interruptor"><input type="checkbox" id="iaImagenAuto"><i></i></label>
+      </div>
+      <div class="opcion columna" id="fila-estilo">
+        <div class="texto"><b>Cómo se ve la hoja</b><span>El estilo; el contenido lo escribe la IA que resolvió.</span></div>
+        <textarea id="iaPedidoImagen" rows="5"></textarea>
+        <div class="botones-campo"><button class="boton chico" data-restaurar-campo="iaPedidoImagen">Restaurar</button></div>
+      </div>
+    </div>
+    <h2 class="titulo-grupo">App de Claude (respaldo)</h2>
+    <div class="grupo">
+      <div class="opcion">
+        <div class="texto"><b>App de escritorio de Claude</b><span id="claude-estado"></span></div>
+        <button class="boton" id="claude-boton"></button>
+      </div>
+    </div>
+  </div></div></section>
+
+  <!-- AJUSTES -->
+  <section class="seccion" id="s-ajustes"><div class="desplazable"><div class="pagina">
+    <h1>Ajustes</h1><div class="sub">Qué enseña el widget, cómo se ve y cómo se comporta.</div>
+    <h2 class="titulo-grupo">En el widget</h2>
+    <div class="grupo">
+      <div class="opcion">
+        <div class="texto"><b>Tareas por entregar</b><span>Hasta qué día mirar hacia adelante</span></div>
+        <select id="diasAdelante">
+          <option value="0">Sólo hoy</option><option value="1">Hoy y mañana</option><option value="2">Próximos 3 días</option><option value="6">Próxima semana</option><option value="13">Próximas 2 semanas</option>
+        </select>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Tareas vencidas</b><span>Las que se te pasaron y no entregaste</span></div>
+        <select id="diasAtras">
+          <option value="0">No mostrarlas</option><option value="1">Del último día</option><option value="3">De los últimos 3 días</option><option value="7">De la última semana</option><option value="14">De las últimas 2 semanas</option>
+        </select>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Sólo si aún se pueden entregar</b><span>Oculta las vencidas que no aceptan entrega tardía</span></div>
+        <label class="interruptor"><input type="checkbox" id="soloTardias"><i></i></label>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Tareas sin fecha de entrega</b><span>Las que no tienen fecha y aún no entregas, al final de la lista</span></div>
+        <label class="interruptor"><input type="checkbox" id="sinFecha"><i></i></label>
+      </div>
+      <div class="opcion" id="fila-sin-fecha-dias">
+        <div class="texto"><b>Quitar solas las sin fecha viejas</b><span>Según cuándo las publicó el profesor</span></div>
+        <select id="sinFechaDias">
+          <option value="7">De más de 1 semana</option><option value="14">De más de 2 semanas</option><option value="30">De más de 1 mes</option><option value="60">De más de 2 meses</option><option value="0">Nunca</option>
+        </select>
+      </div>
+      <div class="opcion columna">
+        <div class="texto"><b>Materias</b><span>Desmarca las que no quieras ver (ni aquí ni en el widget)</span></div>
+        <div class="materias" id="materias"></div>
+      </div>
+    </div>
+    <h2 class="titulo-grupo">Tareas quitadas</h2>
+    <div class="grupo">
+      <div class="opcion columna">
+        <div class="texto"><b>Las que quitaste con la ✕</b><span>No vuelven a salir hasta que las devuelvas</span></div>
+        <div class="quitadas" id="quitadas"></div>
+      </div>
+    </div>
+    <h2 class="titulo-grupo">Estilo del widget</h2>
+    <div class="grupo">
+      <div class="temas" id="temas"></div>
+      <div class="opcion">
+        <div class="texto"><b>Opacidad del fondo</b><span id="opacidad-valor"></span></div>
+        <input type="range" id="opacidad" min="40" max="100" step="2">
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Tamaño</b></div>
+        <div class="segmentos" id="tamano"><button data-valor="0.9">Compacto</button><button data-valor="1">Normal</button><button data-valor="1.15">Grande</button></div>
+      </div>
+    </div>
+    <h2 class="titulo-grupo">Comportamiento</h2>
+    <div class="grupo">
+      <div class="opcion">
+        <div class="texto"><b>Quitar metadatos de lo que genera la IA</b><span>Al entregar, las imágenes, documentos de Office y PDF generados van en una copia sin credenciales de contenido (C2PA), EXIF/XMP, autor, programa ni propiedades; el original se queda como está. Las imágenes se vuelven a guardar (las JPEG con calidad alta) y la marca de agua invisible SynthID, que va en los píxeles, no se quita.</span></div>
+        <label class="interruptor"><input type="checkbox" id="limpiarMetadatos"><i></i></label>
+      </div>
+      <div class="opcion" id="fila-aviso-metadatos">
+        <div class="texto"><b>Avisar al adjuntar archivos de la IA</b><span>Un recordatorio de que se les quitan los metadatos.</span></div>
+        <label class="interruptor"><input type="checkbox" id="avisoMetadatos"><i></i></label>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Vista previa al pasar el ratón</b><span>Instrucciones y archivos de cada tarea</span></div>
+        <label class="interruptor"><input type="checkbox" id="vistaPrevia"><i></i></label>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b id="t-avisos">Avisos de Windows</b><span>Cuando una tarea está por vencer</span></div>
+        <label class="interruptor"><input type="checkbox" id="avisos"><i></i></label>
+      </div>
+      <div class="opcion" id="fila-aviso">
+        <div class="texto"><b>Avisarme con</b></div>
+        <select id="avisoHoras">
+          <option value="1">1 hora de anticipación</option><option value="2">2 horas de anticipación</option><option value="3">3 horas de anticipación</option><option value="6">6 horas de anticipación</option><option value="12">12 horas de anticipación</option>
+        </select>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Revisar Blackboard cada</b><span id="actualizado"></span></div>
+        <select id="intervaloMin"><option value="30">30 minutos</option><option value="60">1 hora</option><option value="120">2 horas</option></select>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b id="t-inicio">Abrir al iniciar Windows</b></div>
+        <label class="interruptor"><input type="checkbox" id="alIniciar"><i></i></label>
+      </div>
+      <div class="opcion">
+        <div class="texto"><b>Posición del widget</b><span>Si lo perdiste de vista</span></div>
+        <button class="boton" id="esquina">Regresarlo a la esquina</button>
+      </div>
+    </div>
+    <div class="pie">Los cambios se guardan solos.</div>
+  </div></div></section>
+
+  <!-- CUENTA -->
+  <section class="seccion" id="s-cuenta"><div class="desplazable"><div class="pagina">
+    <h1>Cuenta</h1><div class="sub">Tu sesión de Blackboard, actualizaciones y privacidad.</div>
+    <h2 class="titulo-grupo">Blackboard</h2>
+    <div class="grupo"><div class="opcion" id="cuenta"></div></div>
+    <h2 class="titulo-grupo">Actualizaciones</h2>
+    <div class="grupo">
+      <div class="opcion">
+        <div class="texto"><b id="version-larga"></b><span id="estado-actualizacion"></span></div>
+        <button class="boton" id="boton-actualizacion"></button>
+      </div>
+    </div>
+    <h2 class="titulo-grupo">Ayuda</h2>
+    <div class="grupo">
+      <div class="opcion">
+        <div class="texto"><b>Guía de inicio</b><span>Iniciar sesión, conectar tus IA y cómo se usa.</span></div>
+        <button class="boton" id="ver-guia">Ver la guía</button>
+      </div>
+    </div>
+    <h2 class="titulo-grupo">Privacidad</h2>
+    <div class="grupo">
+      <div class="opcion columna privacidad">
+        <p><b>Tu sesión y tus archivos se guardan localmente.</b> BB Today no tiene servidor propio. Al usar IA, compartes los materiales elegidos con el proveedor y tu cuenta; al adjuntar en Blackboard pueden empezar a subirse allí.</p>
+        <ul>
+          <li><b>Tu contraseña nunca pasa por BB Today.</b> Inicias sesión en la página de tu escuela dentro de una ventana; la app sólo guarda la cookie de sesión que Blackboard le da, en esta computadora.</li>
+          <li><b>Lee; entregar es cosa tuya.</b> BB Today no escribe mensajes ni cambia nada en Blackboard por su cuenta. «Entregar» abre la página oficial de la tarea con tus archivos a la mano; el botón final lo pulsas tú allí.</li>
+          <li><b>Lo que guarda</b> está en <code id="t-carpeta">%APPDATA%\blackboard-mcp</code>: la sesión, tus preferencias, la última lista de tareas y las respuestas de IA. Los archivos que abres se bajan a <code id="t-descargas">Descargas\BB Today</code>.</li>
+          <li><b>Nada de analítica ni publicidad.</b> La app se conecta con Blackboard, el inicio de sesión de tu escuela y GitHub para actualizaciones; cuando usas IA, también con OpenAI o Anthropic a través de sus herramientas.</li>
+          <li><b>IA, sólo si tú lo pides.</b> Claude lee la tarea que elegiste con tu cuenta (bajo las condiciones de Anthropic) y sólo puede leer las tareas de tu lista. ChatGPT y Codex reciben la tarea con tu cuenta (bajo las condiciones de OpenAI); con chatgpt.com, BB Today mira lo que copias mientras espera la respuesta. Las tareas que van a un agente se copian a Documentos/BB Today.</li>
+          <li><b>Portapapeles:</b> mientras esperas a chatgpt.com, el texto o imagen que copies puede guardarse como respuesta. Cancela desde el widget para detener la espera.</li>
+          <li><b>Copias para entregar:</b> si activas quitar metadatos, se prepara una copia y se conserva el original. No se garantiza quitar toda marca en todos los formatos.</li>
+          <li><b>Para borrar los datos:</b> «Cerrar sesión» elimina la sesión, la agenda y las respuestas de la app. Tus carpetas en Documentos/BB Today y Descargas/BB Today se conservan; puedes borrarlas manualmente junto con la carpeta de datos si quieres eliminar todo.</li>
+        </ul>
+        <div><button class="boton" id="ver-privacidad">Aviso de privacidad completo</button></div>
+      </div>
+    </div>
+  </div></div></section>
+</main>
+
+<script>
+// BB Today completo: la lista entera de pendientes, las respuestas de IA y
+// todos los ajustes. El widget y la bandeja la abren.
+const api = window.agenda.config;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const DIA = 86_400_000;
+const COLORES = ['#7d9cf0', '#f08a5d', '#4cc9a0', '#b48cf2', '#e7b04f', '#f07aa8', '#56b8d6', '#9ccc65'];
+const TIPOS = { pdf: '#e5534b', docx: '#2f6fd8', doc: '#2f6fd8', pptx: '#d2692b', ppt: '#d2692b', xlsx: '#2e9a5a', zip: '#8a6cd4', png: '#3aa0a8', jpg: '#3aa0a8', jpeg: '#3aa0a8' };
+const fmtHora = new Intl.DateTimeFormat('es-MX', { hour: 'numeric', minute: '2-digit' });
+const fmtDia = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
+const fmtLargo = new Intl.DateTimeFormat('es-MX', { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
+const inicioDia = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const mayus = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const CHISPA = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>';
+
+let datos = null;
+let seccion = new URLSearchParams(location.search).get('seccion') || 'pendientes';
+let filtroCuando = 'activas';
+let tareaSel = null;
+let respuestaSel = null;
+let menuAbierto = false;
+let detalleActual = null; // instrucciones y archivos de la tarea elegida
+
+const oscuroSistema = matchMedia('(prefers-color-scheme: dark)');
+const temaSistema = () => (oscuroSistema.matches ? 'medianoche' : 'claro');
+oscuroSistema.addEventListener('change', () => pintar());
+
+// ---------- Navegación ----------
+function ir(s) {
+  seccion = s;
+  for (const b of document.querySelectorAll('.nav-item')) b.classList.toggle('activo', b.dataset.ir === s);
+  for (const el of document.querySelectorAll('.seccion')) el.classList.toggle('activa', el.id === `s-${s}`);
+  if (s === 'ia') window.agenda.claude.agentes().then((d) => { datos = d; pintar(); }).catch(() => {});
+}
+document.querySelector('nav').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ir]');
+  if (b) ir(b.dataset.ir);
+});
+window.agenda.app.alIr((s, tareaId, guia) => {
+  ir(s);
+  if (tareaId) abrirTarea(tareaId);
+  if (guia) abrirGuia();
+});
+
+// ---------- Guía del primer arranque ----------
+// Cuatro pasos cortos. Sale sola hasta que se termina o se salta, y se
+// vuelve a abrir desde Cuenta.
+let guia = null; // { paso, fondo }
+const GUIA_PASOS = 4;
+function abrirGuia() {
+  if (guia) return;
+  const fondo = document.createElement('div');
+  fondo.className = 'modal-fondo';
+  document.body.appendChild(fondo);
+  guia = { paso: 0, fondo };
+  fondo.addEventListener('click', async (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const g = b.dataset.g;
+    if (g === 'sig') {
+      guia.paso = Math.min(GUIA_PASOS - 1, guia.paso + 1);
+      // Al llegar a «tus IA», se comprueba otra vez qué hay instalado y con sesión.
+      if (guia.paso === 1) window.agenda.claude.agentes().then((d) => { datos = d; pintar(); });
+    }
+    else if (g === 'ant') guia.paso = Math.max(0, guia.paso - 1);
+    else if (g === 'entrar') return api.entrar();
+    else if (g === 'web') return window.agenda.abrir(b.dataset.url);
+    else if (g === 'ia') return guardar({ iaResolver: b.dataset.valor });
+    else if (g === 'fin' || g === 'prueba') return cerrarGuia(g === 'prueba');
+    else if (g === 'comprobar') {
+      b.disabled = true;
+      b.textContent = 'Comprobando…';
+      datos = await window.agenda.claude.agentes();
+      pintar();
+      return;
+    }
+    pintarGuia();
+  });
+  pintarGuia();
+}
+async function cerrarGuia(conPrueba) {
+  guia?.fondo.remove();
+  guia = null;
+  await guardar({ tutorialVisto: true, ...(conPrueba ? { tareaPrueba: true } : {}) });
+  if (conPrueba) ir('pendientes');
+}
+function pintarGuia() {
+  if (!guia || !datos) return;
+  const p = datos.prefs;
+  const m = datos.motores || {};
+  const c = datos.claude || {};
+  const listo = (x) => m[x] && m.sesion?.[x] && !m.bloqueos?.[x];
+  const nombreIa = p.iaResolver === 'claude' ? 'Claude' : 'ChatGPT';
+  const fila = (ok, nombre, texto, boton = '') => `<div class="estado-paso"><div><b>${nombre}</b><br><span class="${ok ? 'ok' : 'sub'}">${texto}</span></div>${boton}</div>`;
+  const textoCodex = listo('codex') ? '✓ Lista, con tu cuenta de ChatGPT'
+    : m.bloqueos?.codex ? `${esc(m.bloqueos.codex.texto)}. Mientras, se usa chatgpt.com`
+    : m.codex ? 'Abre Codex e inicia sesión con tu cuenta de ChatGPT'
+    : 'Instala la app de Codex e inicia sesión con ChatGPT';
+  const textoClaude = listo('claude') ? '✓ Claude Code listo'
+    : c.instalado ? (c.conectado ? '✓ App de Claude conectada' : 'App de Claude instalada: conéctala en IA')
+    : 'Instala la app de Claude e inicia sesión';
+  const pasos = [
+    () => `<h3>1 · Inicia sesión en Blackboard</h3>
+      <p class="sub">Entras en la página de tu escuela, como siempre. BB Today no ve tu contraseña: sólo guarda la sesión en esta computadora.</p>
+      ${datos.cuenta ? fila(true, esc(datos.cuenta), '✓ Sesión iniciada') : fila(false, 'Blackboard', 'Todavía no has iniciado sesión', '<button class="boton primario" data-g="entrar">Iniciar sesión</button>')}`,
+    () => `<h3>2 · Inicia sesión en tus IA</h3>
+      <p class="sub">BB Today usa tus propias cuentas, sin claves ni pagos aparte. Elige con cuál resolver (se cambia en IA):</p>
+      <div class="segmentos" style="margin:8px 0"><button class="${p.iaResolver !== 'claude' ? 'activo' : ''}" data-g="ia" data-valor="chatgpt">ChatGPT</button><button class="${p.iaResolver === 'claude' ? 'activo' : ''}" data-g="ia" data-valor="claude">Claude</button></div>
+      ${fila(listo('codex'), 'ChatGPT · app de Codex', textoCodex, listo('codex') ? '' : '<button class="boton" data-g="web" data-url="https://openai.com/codex/">Codex</button>')}
+      ${fila(listo('claude') || (c.instalado && c.conectado), 'Claude', textoClaude, listo('claude') || c.instalado ? '' : '<button class="boton" data-g="web" data-url="https://claude.ai/download">Claude</button>')}
+      <div class="acciones" style="margin-top:8px"><button class="boton chico" data-g="comprobar">Volver a comprobar</button></div>`,
+    () => `<h3>3 · Así funciona</h3>
+      <ol>
+        <li><b>Resolver con ${nombreIa}:</b> un clic en la tarea. La IA lee las instrucciones y los archivos, y decide si hace falta texto, una imagen, un documento o código.</li>
+        <li><b>Entregables:</b> lo que genera aparece en la tarea. Puedes añadir tus propios archivos y elegir qué se adjunta.</li>
+        <li><b>Entregar:</b> abre la página oficial de la tarea con tus archivos listos. El botón final lo pulsas tú en Blackboard.</li>
+      </ol>
+      <p class="sub">Te aviso cuando termina; mientras, sigue con lo tuyo.</p>`,
+    () => `<h3>4 · Según tu plan de IA</h3>
+      <ul>
+        <li><b>Con sesión y acceso</b>, ${nombreIa} trabaja en segundo plano y todo llega solo a BB Today.</li>
+        <li><b>Si no hay sesión, se acabó tu límite o tu plan no lo incluye</b>, BB Today lo detecta y usa el respaldo: abre chatgpt.com (arrastras los archivos y copias la respuesta) o la app de Claude (pulsas Enter).</li>
+        <li><b>Las imágenes</b> las hace ChatGPT y dependen de que tu plan permita generarlas.</li>
+        <li>Cómo está cada cuenta lo ves en <b>IA → Tus cuentas</b>.</li>
+      </ul>
+      <p class="sub">¿Quieres probar sin tocar tus tareas reales? Añade una tarea de prueba a la lista (se quita en IA).</p>`,
+  ];
+  const n = guia.paso;
+  guia.fondo.innerHTML = `<div class="modal guia">
+    <div class="puntos">${Array.from({ length: GUIA_PASOS }, (_, i) => `<i class="${i <= n ? 'hecho' : ''}"></i>`).join('')}</div>
+    ${pasos[n]()}
+    <div class="acciones entre">
+      ${n ? '<button class="boton" data-g="ant">Atrás</button>' : '<button class="boton" data-g="fin">Saltar</button>'}
+      <div class="acciones">${n < GUIA_PASOS - 1 ? '<button class="boton primario" data-g="sig">Siguiente</button>' : '<button class="boton" data-g="prueba">Probar con una tarea de prueba</button><button class="boton primario" data-g="fin">Empezar</button>'}</div>
+    </div>
+  </div>`;
+}
+// Abre una tarea aunque el filtro no la enseñe.
+function abrirTarea(id) {
+  const t = todasLasTareas().find((x) => x.id === id);
+  if (!t) return;
+  const ahora = Date.now();
+  const visible = filtroCuando === 'todas' || (filtroCuando === 'activas' && t.cuando && (t.cuando >= ahora || t.tardia));
+  if (!visible) {
+    filtroCuando = 'todas';
+    for (const c of document.querySelectorAll('[data-cuando]')) c.classList.toggle('activo', c.dataset.cuando === 'todas');
+  }
+  verTarea(id);
+}
+
+// ---------- Pendientes ----------
+function todasLasTareas() {
+  const quitadas = new Set((datos.descartadas || []).map((t) => t.id));
+  const lista = [];
+  (datos.agenda?.cursos || []).forEach((c, i) => {
+    for (const t of c.tareas) {
+      if (t.estado !== 'pendiente' || quitadas.has(t.id)) continue;
+      lista.push({ ...t, curso: c.nombre, cursoId: c.id, color: COLORES[i % COLORES.length], cuando: t.entrega ? Date.parse(t.entrega) : null });
+    }
+  });
+  return lista;
+}
+
+function pastilla(t) {
+  if (!t.cuando) return ['sin fecha', ''];
+  const ahora = Date.now();
+  if (t.cuando < ahora) {
+    const d = Math.round((inicioDia(ahora) - inicioDia(t.cuando)) / DIA);
+    return [d === 0 ? 'hoy, tarde' : d === 1 ? 'ayer' : `hace ${d} d`, t.tardia ? 'pronto' : 'mal'];
+  }
+  const h = (t.cuando - ahora) / 3_600_000;
+  if (h < 6) return [h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : `${Math.floor(h)} h`, 'mal'];
+  if (inicioDia(t.cuando) === inicioDia(ahora)) return [fmtHora.format(t.cuando), 'pronto'];
+  return [fmtHora.format(t.cuando), ''];
+}
+
+function grupoDe(t) {
+  if (!t.cuando) return 'Sin fecha de entrega';
+  const dif = Math.round((inicioDia(t.cuando) - inicioDia(Date.now())) / DIA);
+  if (t.cuando < Date.now()) return t.tardia ? 'Vencidas · aceptan tardía' : 'Vencidas · ya no aceptan';
+  if (dif === 0) return 'Hoy';
+  if (dif === 1) return 'Mañana';
+  if (dif < 7) return mayus(fmtDia.format(t.cuando));
+  return 'Más adelante';
+}
+
+function pintarPendientes() {
+  const texto = $('buscar').value.trim().toLowerCase();
+  const materia = $('filtro-materia').value;
+  let lista = todasLasTareas().filter((t) => (!materia || t.curso === materia) && (!texto || `${t.titulo} ${t.curso}`.toLowerCase().includes(texto)));
+  const ahora = Date.now();
+  if (filtroCuando === 'activas') lista = lista.filter((t) => t.cuando && (t.cuando >= ahora || (t.tardia && ahora - t.cuando < 14 * DIA)));
+  if (filtroCuando === 'vencidas') lista = lista.filter((t) => t.cuando && t.cuando < ahora);
+  if (filtroCuando === 'sinfecha') lista = lista.filter((t) => !t.cuando);
+  lista.sort((a, b) => {
+    if (!a.cuando || !b.cuando) return (a.cuando ? 0 : 1) - (b.cuando ? 0 : 1) || a.curso.localeCompare(b.curso, 'es');
+    const va = a.cuando < ahora;
+    const vb = b.cuando < ahora;
+    if (va !== vb) return va ? -1 : 1;
+    return va ? b.cuando - a.cuando : a.cuando - b.cuando;
+  });
+  let html = '';
+  let grupo = null;
+  for (const t of lista) {
+    const g = grupoDe(t);
+    if (g !== grupo) {
+      grupo = g;
+      html += `<div class="grupo-titulo ${g.startsWith('Vencidas') ? 'mal' : ''}">${esc(g)}</div>`;
+    }
+    const [p, clase] = pastilla(t);
+    const resuelta = datos.respuestas?.some((r) => r.id === t.id) ? ' · <span class="lista-ok">respuesta lista</span>' : '';
+    html += `<div class="fila ${tareaSel?.id === t.id ? 'sel' : ''}" data-tarea="${esc(t.id)}"><i class="punto" style="background:${t.color}"></i><div class="info"><div class="titulo">${esc(t.titulo)}</div><div class="meta">${esc(t.curso)}${resuelta}</div></div><span class="pastilla ${clase}">${esc(p)}</span></div>`;
+  }
+  $('filas-pendientes').innerHTML = html || `<div class="vacio">${datos.agenda ? 'Nada por aquí.' : 'Inicia sesión para ver tus tareas.'}</div>`;
+}
+
+// ---------- La tarea: resolver, entregables y entrega ----------
+// Pasos: la tarea (instrucciones y archivos) → resolver → entregables (lo que
+// generó la IA y lo que subes tú; cada uno se adjunta o no) → tu entrega
+// (adjuntos y texto) → «Entregar», que abre la página oficial de Blackboard.
+let entregaActual = null;
+let notaTarea = '';
+
+async function verTarea(id) {
+  const t = todasLasTareas().find((x) => x.id === id);
+  if (!t) return;
+  tareaSel = t;
+  notaTarea = '';
+  entregaActual = null;
+  pintarPendientes();
+  pintarDetalleTarea(null);
+  const [d, en] = await Promise.all([window.agenda.app.detalle(t.cursoId, t.id).catch(() => null), window.agenda.entrega.obtener(t.id).catch(() => null)]);
+  if (tareaSel?.id !== id) return;
+  entregaActual = en;
+  pintarDetalleTarea(d || { error: true });
+}
+
+async function refrescarEntrega() {
+  if (!tareaSel) return;
+  const id = tareaSel.id;
+  const en = await window.agenda.entrega.obtener(id).catch(() => null);
+  if (tareaSel?.id !== id) return;
+  entregaActual = en;
+  pintarDetalleTarea(detalleActual);
+}
+
+const pesoLegible = (b) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
+const iconoArchivo = (nombre) => {
+  const ext = (nombre.split('.').pop() || '').toLowerCase();
+  return `<span class="tipo" style="background:${TIPOS[ext] || '#5d6b82'}">${esc(ext.toUpperCase().slice(0, 4) || 'ARCH')}</span>`;
+};
+
+function pintarDetalleTarea(d) {
+  const t = tareaSel;
+  if (!t) return;
+  detalleActual = d;
+  const ruta = datos.rutas?.[t.id] || { resolverCon: 'ChatGPT' };
+  const fecha = t.cuando ? `${mayus(fmtLargo.format(t.cuando))}${t.cuando < Date.now() ? (t.tardia ? ' · venció, acepta entrega tardía' : ' · venció') : ''}` : 'Sin fecha de entrega';
+  const trabajando = datos.trabajo?.tareaId === t.id && ['preparando', 'trabajando', 'dibujando', 'esperando'].includes(datos.trabajo.fase);
+  const instrucciones = d === null ? '<div class="sub">Cargando…</div>' : d.error ? '<div class="sub">No se pudo leer el detalle de Blackboard.</div>' : `<div class="instrucciones">${esc(d.instrucciones || 'La tarea no trae instrucciones escritas.')}</div>`;
+  const archivosTarea = d && !d.error && d.archivos?.length
+    ? `<div class="sub-titulo">Archivos de la tarea</div>${d.archivos.map((a, i) => `<div class="archivo" data-archivo="${i}" title="Abrir">${iconoArchivo(a.nombre)}<span class="nombre">${esc(a.nombre)}</span>${a.bytes ? `<span class="peso">${pesoLegible(a.bytes)}</span>` : ''}</div>`).join('')}`
+    : '';
+
+  const en = entregaActual || { entregables: [], texto: '' };
+  const lista = en.entregables || [];
+  const adjuntos = lista.filter((x) => x.adjuntado);
+  const tarjetas = lista.map((x) => `<div class="entregable ${x.adjuntado ? 'adjuntado' : ''}" data-ruta="${esc(x.ruta)}">
+      <div class="vista" data-abrir-entregable>${x.imagen ? `<img src="${esc(x.url)}" alt="">` : iconoArchivo(x.nombre)}</div>
+      <div class="pie-entregable">
+        <div class="nombre" title="${esc(x.nombre)}">${esc(x.nombre)}</div>
+        <div class="meta"><span class="origen ${x.origen === 'Tuyo' ? 'tuyo' : ''}">${esc(x.origen === 'Tuyo' ? 'Tuyo' : `De ${x.origen}`)}</span> · ${pesoLegible(x.peso)}</div>
+        <div class="botones">
+          <button class="boton chico ${x.adjuntado ? 'listo' : 'primario'}" data-adjuntar>${x.adjuntado ? '✓ Adjuntado' : 'Adjuntar'}</button>
+          <button class="boton chico" data-mostrar-entregable title="Mostrar en la carpeta">📁</button>
+          ${x.origen === 'Tuyo' ? '<button class="boton chico peligro" data-quitar-tuyo title="Quitar">✕</button>' : ''}
+        </div>
+      </div>
+    </div>`).join('');
+  const prueba = t.cursoId === 'bbtoday-prueba';
+  const resumenEntrega = adjuntos.length || en.texto
+    ? `${adjuntos.length ? `${adjuntos.length} ${adjuntos.length === 1 ? 'archivo adjunto' : 'archivos adjuntos'}` : 'Sin archivos'}${en.texto ? ' · con texto' : ''}`
+    : 'Aún no adjuntas nada.';
+
+  const foco = document.activeElement?.id === 'texto-entrega' ? { inicio: document.activeElement.selectionStart, fin: document.activeElement.selectionEnd } : null;
+  $('detalle-pendiente').innerHTML = `<div class="detalle">
+    <div class="curso" style="color:${t.color}">${esc(t.curso)}</div>
+    <h2>${esc(t.titulo)}</h2>
+    ${t.ruta?.length ? `<div class="ruta">${esc(t.ruta.join(' › '))}</div>` : ''}
+    <div class="sub">${esc(fecha)}</div>
+    <div class="acciones">
+      <button class="boton ${ruta.resolverCon === 'ChatGPT' ? 'chatgpt' : 'primario'}" data-resolver ${trabajando ? 'disabled' : ''}>${ruta.resolverCon === 'ChatGPT' ? '<img src="icono/chatgpt.png" alt="">' : CHISPA}${trabajando ? `${esc(ruta.resolverCon)} está trabajando…` : `Resolver con ${esc(ruta.resolverCon)}`}</button>
+      <button class="boton" data-blackboard>Abrir en Blackboard ↗</button>
+      <button class="boton" data-quitar>Quitar de la lista</button>
+    </div>
+    ${notaTarea ? `<div class="nota">${notaTarea}</div>` : ''}
+
+    <section class="paso">
+      <div class="paso-titulo"><span class="num">1</span>La tarea</div>
+      ${instrucciones}
+      ${archivosTarea}
+    </section>
+
+    <section class="paso" id="zona-entregables">
+      <div class="paso-titulo"><span class="num">2</span>Entregables
+        <span class="acciones-paso">
+          ${lista.length > 1 && adjuntos.length < lista.length ? '<button class="boton chico" data-adjuntar-todo>Adjuntar todo</button>' : ''}
+          <button class="boton chico" data-subir>＋ Subir tus archivos</button>
+        </span>
+      </div>
+      ${lista.length ? `<div class="entregables">${tarjetas}</div>` : ''}
+      <div class="soltar" data-subir>${lista.length ? 'Arrastra aquí más fotos o archivos tuyos' : `Aquí aparece lo que genere ${esc(ruta.resolverCon)} (hojas, documentos, código) y lo que subas tú. Arrastra tus fotos o archivos aquí, o pulsa «Subir tus archivos».`}</div>
+      ${en.respuesta ? `<details class="respuesta-plegable"><summary>Respuesta escrita de ${esc(en.respuesta.ia)}</summary><div class="acciones"><button class="boton chico" data-copiar-respuesta>Copiar</button><button class="boton chico" data-usar-respuesta>Usar como texto de la entrega</button></div><div class="respuesta-md" id="md-tarea"></div></details>` : ''}
+    </section>
+
+    <section class="paso entrega-paso">
+      <div class="paso-titulo"><span class="num">3</span>Tu entrega</div>
+      <textarea id="texto-entrega" rows="3" placeholder="Texto de la entrega (opcional): un comentario para el profesor o tu respuesta escrita.">${esc(en.texto || '')}</textarea>
+      <div class="barra-entrega">
+        <span class="sub">${resumenEntrega}${en.abierta ? ` · abriste la entrega ${esc(haceCuanto(en.abierta))}` : ''}</span>
+        <button class="boton primario grande" data-entregar ${prueba ? 'disabled title="La tarea de prueba no existe en Blackboard"' : ''}>Entregar en Blackboard</button>
+      </div>
+      ${en.estado ? `<div class="estado-entrega ${esc(en.estado.fase)}"><b>${esc({ preparando: 'Preparando', colocados: 'Archivos colocados', manual: 'Hazlo a mano', cancelada: 'Cancelada', error: 'Error', abierta: 'Página abierta' }[en.estado.fase] || en.estado.fase)}</b> · ${esc(en.estado.texto || '')} <span class="sub">${esc(haceCuanto(en.estado.cuando))}</span>${en.estado.fase === 'preparando' ? ' <button class="boton chico" data-cancelar-entrega>Cancelar</button>' : ''}</div>` : ''}
+      ${prueba ? '<div class="sub">La tarea de prueba no existe en Blackboard: aquí puedes probar todo menos entregar.</div>' : ''}
+    </section>
+  </div>`;
+  if (en.respuesta && $('md-tarea')) {
+    $('md-tarea').innerHTML = formatoRespuesta.markdown(en.respuesta.texto);
+    formatoRespuesta.formulas($('md-tarea'));
+  }
+  if (foco) {
+    $('texto-entrega').focus();
+    $('texto-entrega').setSelectionRange(foco.inicio, foco.fin);
+  }
+}
+
+// Al adjuntar algo de la IA: aviso de que se le quitan los metadatos, con
+// «No volver a mostrar» (se vuelve a activar en Ajustes).
+function avisoMetadatos(nombres) {
+  if (datos.prefs.limpiarMetadatos === false || datos.prefs.avisoMetadatos === false) return Promise.resolve();
+  return new Promise((ok) => {
+    const fondo = document.createElement('div');
+    fondo.className = 'modal-fondo';
+    fondo.innerHTML = `<div class="modal">
+      <h3>Se quitan los metadatos de IA</h3>
+      <p class="sub">${nombres.length === 1 ? `«${esc(nombres[0])}» lo generó la IA.` : `${nombres.length} de estos archivos los generó la IA.`} Al entregarlos, BB Today manda una copia sin los datos que lo indican: credenciales de contenido (C2PA), EXIF/XMP, autor, programa y propiedades del documento. El original no se toca. La marca de agua invisible SynthID de las imágenes va en los píxeles y no se quita.</p>
+      <label class="no-mostrar"><input type="checkbox" id="no-mostrar-metadatos"> No volver a mostrar</label>
+      <div class="acciones derecha"><button class="boton primario" data-ok>Entendido</button></div>
+    </div>`;
+    document.body.appendChild(fondo);
+    fondo.addEventListener('click', async (e) => {
+      if (!e.target.closest('[data-ok]') && e.target !== fondo) return;
+      const noMostrar = fondo.querySelector('#no-mostrar-metadatos').checked;
+      fondo.remove();
+      if (noMostrar) datos = await api.guardar({ avisoMetadatos: false });
+      ok();
+    });
+  });
+}
+
+// Confirmación antes de abrir la entrega: dice exactamente qué se va.
+function confirmarEntrega(t, en) {
+  const adjuntos = (en.entregables || []).filter((x) => x.adjuntado);
+  return new Promise((ok) => {
+    const fondo = document.createElement('div');
+    fondo.className = 'modal-fondo';
+    fondo.innerHTML = `<div class="modal">
+      <h3>Entregar «${esc(t.titulo)}»</h3>
+      <p class="sub">Se abre la página de entrega de Blackboard con tu sesión.</p>
+      ${adjuntos.length ? `<div class="sub-titulo">Archivos (${adjuntos.length})</div><ul>${adjuntos.map((x) => `<li>${esc(x.nombre)}</li>`).join('')}</ul>` : '<p>No adjuntaste archivos.</p>'}
+      ${en.texto ? '<div class="sub-titulo">Texto</div><p class="sub">Queda copiado: pégalo en el cuadro de la entrega.</p>' : ''}
+      <p class="sub">BB Today pone los archivos en la página si encuentra dónde y te deja una ventanita para arrastrarlos. <b>El botón final «Entregar» lo pulsas tú en Blackboard</b>, para que revises qué se va.</p>
+      <div class="acciones derecha"><button class="boton" data-no>Cancelar</button><button class="boton primario" data-si>Abrir la entrega</button></div>
+    </div>`;
+    document.body.appendChild(fondo);
+    fondo.addEventListener('click', (e) => {
+      const si = e.target.closest('[data-si]');
+      if (si || e.target.closest('[data-no]') || e.target === fondo) {
+        fondo.remove();
+        ok(!!si);
+      }
+    });
+  });
+}
+
+$('detalle-pendiente').addEventListener('click', async (e) => {
+  const t = tareaSel;
+  if (!t) return;
+  const ruta = datos.rutas?.[t.id] || { resolverCon: 'ChatGPT' };
+  if (e.target.closest('[data-resolver]')) {
+    const r = await window.agenda.claude.resolver({ tareaId: t.id });
+    notaTarea = r?.primeraVez
+      ? '<b>BB Today ya está conectado con Claude.</b> Cierra Claude por completo y ábrelo otra vez; después vuelve a pulsar Resolver. Sólo pasa esta vez.'
+      : r?.error === 'sin-claude' ? 'Hace falta la app de escritorio de Claude (claude.ai/download).'
+      : r?.error ? esc(r.error)
+      : r?.fondo ? `${esc(ruta.resolverCon)} la está resolviendo en segundo plano. Te aviso al terminar y lo que genere aparece aquí, en <b>Entregables</b>.`
+      : 'Sigue en la app que se abrió; el widget te dice en qué va.';
+    pintarDetalleTarea(detalleActual);
+    return;
+  }
+  if (e.target.closest('[data-blackboard]')) return window.agenda.abrir(t.enlace);
+  if (e.target.closest('[data-quitar]')) {
+    await window.agenda.tareas.descartar({ id: t.id, titulo: t.titulo, curso: t.curso });
+    tareaSel = null;
+    $('detalle-pendiente').innerHTML = '<div class="vacio">La quitaste de la lista. Se devuelve en Ajustes → Tareas quitadas.</div>';
+    return;
+  }
+  const a = e.target.closest('[data-archivo]');
+  if (a) {
+    const archivo = detalleActual?.archivos?.[Number(a.dataset.archivo)];
+    if (archivo) window.agenda.abrirArchivo({ url: archivo.url, nombre: archivo.nombre, curso: t.curso });
+    return;
+  }
+  // Entregables.
+  const tarjeta = e.target.closest('.entregable');
+  const rutaArchivo = tarjeta?.dataset.ruta;
+  if (rutaArchivo && e.target.closest('[data-adjuntar]')) {
+    const actual = (entregaActual?.entregables || []).find((x) => x.ruta === rutaArchivo);
+    if (!actual?.adjuntado && actual?.origen !== 'Tuyo') await avisoMetadatos([actual.nombre]);
+    entregaActual = await window.agenda.entrega.adjuntar(t.id, rutaArchivo, !actual?.adjuntado);
+    return pintarDetalleTarea(detalleActual);
+  }
+  if (rutaArchivo && e.target.closest('[data-mostrar-entregable]')) return window.agenda.entrega.mostrarArchivo(t.id, rutaArchivo);
+  if (rutaArchivo && e.target.closest('[data-quitar-tuyo]')) {
+    entregaActual = await window.agenda.entrega.quitarTuyo(t.id, rutaArchivo);
+    return pintarDetalleTarea(detalleActual);
+  }
+  if (rutaArchivo && e.target.closest('[data-abrir-entregable]')) return window.agenda.entrega.abrirArchivo(t.id, rutaArchivo);
+  if (e.target.closest('[data-adjuntar-todo]')) {
+    const generados = (entregaActual?.entregables || []).filter((x) => !x.adjuntado && x.origen !== 'Tuyo');
+    if (generados.length) await avisoMetadatos(generados.map((x) => x.nombre));
+    entregaActual = await window.agenda.entrega.adjuntarTodo(t.id);
+    return pintarDetalleTarea(detalleActual);
+  }
+  if (e.target.closest('[data-subir]')) {
+    entregaActual = await window.agenda.entrega.subir(t.id);
+    return pintarDetalleTarea(detalleActual);
+  }
+  if (e.target.closest('[data-copiar-respuesta]')) {
+    await window.agenda.respuesta.copiar(t.id);
+    e.target.textContent = 'Copiada';
+    return;
+  }
+  if (e.target.closest('[data-usar-respuesta]') && entregaActual?.respuesta) {
+    entregaActual = await window.agenda.entrega.texto(t.id, entregaActual.respuesta.texto);
+    return pintarDetalleTarea(detalleActual);
+  }
+  if (e.target.closest('[data-cancelar-entrega]')) {
+    entregaActual = await window.agenda.entrega.cancelar(t.id);
+    return pintarDetalleTarea(detalleActual);
+  }
+  if (e.target.closest('[data-entregar]')) {
+    const texto = $('texto-entrega')?.value ?? '';
+    entregaActual = await window.agenda.entrega.texto(t.id, texto);
+    if (!(await confirmarEntrega(t, entregaActual))) return;
+    const r = await window.agenda.entrega.entregar(t.id);
+    notaTarea = r?.error
+      ? esc(r.error)
+      : `Se abrió la entrega en Blackboard${r.archivos ? ` con tus ${r.archivos} ${r.archivos === 1 ? 'archivo' : 'archivos'} a la mano` : ''}${r.texto ? ' y el texto copiado' : ''}. Revisa y pulsa <b>Entregar</b> allí; al volver a revisar Blackboard, la tarea sale como entregada.`;
+    entregaActual = await window.agenda.entrega.obtener(t.id);
+    pintarDetalleTarea(detalleActual);
+  }
+});
+
+// El texto de la entrega se guarda solo.
+$('detalle-pendiente').addEventListener('change', async (e) => {
+  if (e.target.id === 'texto-entrega' && tareaSel) entregaActual = await window.agenda.entrega.texto(tareaSel.id, e.target.value);
+});
+
+// Soltar fotos o archivos propios en la tarea.
+for (const evento of ['dragenter', 'dragover']) {
+  $('detalle-pendiente').addEventListener(evento, (e) => {
+    if (!tareaSel || !e.dataTransfer?.types.includes('Files')) return;
+    e.preventDefault();
+    $('zona-entregables')?.classList.add('soltando');
+  });
+}
+$('detalle-pendiente').addEventListener('dragleave', (e) => {
+  if (!e.currentTarget.contains(e.relatedTarget)) $('zona-entregables')?.classList.remove('soltando');
+});
+$('detalle-pendiente').addEventListener('drop', async (e) => {
+  if (!tareaSel || !e.dataTransfer?.files.length) return;
+  e.preventDefault();
+  const rutas = [...e.dataTransfer.files].map((f) => window.agenda.entrega.rutaDe(f)).filter(Boolean);
+  if (rutas.length) entregaActual = await window.agenda.entrega.subir(tareaSel.id, rutas);
+  pintarDetalleTarea(detalleActual);
+});
+
+$('filas-pendientes').addEventListener('click', (e) => {
+  const f = e.target.closest('[data-tarea]');
+  if (f) verTarea(f.dataset.tarea);
+});
+$('buscar').addEventListener('input', pintarPendientes);
+$('filtro-materia').addEventListener('change', pintarPendientes);
+$('chips-cuando').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-cuando]');
+  if (!b) return;
+  filtroCuando = b.dataset.cuando;
+  for (const c of document.querySelectorAll('[data-cuando]')) c.classList.toggle('activo', c === b);
+  pintarPendientes();
+});
+
+// ---------- Respuestas ----------
+const haceCuanto = (iso) => {
+  const min = Math.round((Date.now() - Date.parse(iso)) / 60_000);
+  if (min < 1) return 'hace un momento';
+  if (min < 60) return `hace ${min} min`;
+  if (min < 24 * 60) return `hace ${Math.round(min / 60)} h`;
+  return mayus(fmtDia.format(Date.parse(iso)));
+};
+
+function pintarRespuestas() {
+  const texto = $('buscar-respuestas').value.trim().toLowerCase();
+  const lista = (datos.respuestas || []).filter((r) => !texto || `${r.titulo} ${r.curso || ''} ${r.ia}`.toLowerCase().includes(texto));
+  $('filas-respuestas').innerHTML = lista.length
+    ? lista.map((r) => `<div class="fila ${respuestaSel === r.id ? 'sel' : ''}" data-respuesta="${esc(r.id)}">${r.primera ? `<img class="mini-img" src="${esc(r.primera)}" alt="">` : ''}<div class="info"><div class="titulo">${esc(r.titulo)}</div><div class="meta">${esc(r.ia)} · ${esc(haceCuanto(r.cuando))}${r.imagenes ? ` · ${r.imagenes} ${r.imagenes === 1 ? 'imagen' : 'imágenes'}` : ''}</div></div></div>`).join('')
+    : `<div class="vacio">${texto ? 'Nada coincide.' : 'Cuando resuelvas una tarea con IA, su respuesta aparece aquí.'}</div>`;
+}
+
+async function verRespuesta(id) {
+  respuestaSel = id;
+  pintarRespuestas();
+  const r = await window.agenda.respuesta.obtener(id);
+  if (respuestaSel !== id) return;
+  if (!r) {
+    $('detalle-respuesta').innerHTML = '<div class="vacio">Esta respuesta ya no existe.</div>';
+    return;
+  }
+  const imagenes = (r.imagenes || []).map((u, i) => `<figure><img src="${esc(u)}" alt=""><figcaption><button class="boton chico primario" data-bajar-imagen="${i}">Descargar</button><button class="boton chico" data-copiar-imagen="${i}">Copiar imagen</button></figcaption></figure>`).join('');
+  $('detalle-respuesta').innerHTML = `<div class="detalle">
+    <div class="curso" style="color:var(--tenue)">${esc(r.curso || '')}</div>
+    <h2>${esc(r.titulo)}</h2>
+    <div class="sub">Respuesta de ${esc(r.ia === 'chatgpt' ? 'ChatGPT' : r.ia || 'Claude')} · ${esc(haceCuanto(r.cuando))}</div>
+    <div class="acciones">
+      ${r.texto ? '<button class="boton primario" data-copiar>Copiar respuesta</button>' : ''}
+      ${(r.imagenes || []).length > 1 ? '<button class="boton" data-bajar-todas>Descargar imágenes</button>' : ''}
+      ${r.imagenConChatGPT ? '<button class="boton" data-imagen>Hacer la hoja en imagen</button>' : ''}
+      ${r.carpeta ? '<button class="boton" data-carpeta>Abrir carpeta</button>' : ''}
+      ${r.enlace ? '<button class="boton" data-blackboard>Abrir en Blackboard ↗</button>' : ''}
+      <button class="boton" data-ventana>Abrir en ventana</button>
+      <button class="boton peligro" data-borrar>Borrar</button>
+    </div>
+    ${imagenes ? `<h3>Imágenes</h3><div class="imagenes">${imagenes}</div>` : ''}
+    ${(r.archivos || []).length ? `<h3>Archivos entregados</h3>${r.archivos.map((a, i) => {
+      const ext = (a.nombre.split('.').pop() || '').toLowerCase();
+      return `<div class="archivo" data-abrir-archivo="${i}" title="Abrir"><span class="tipo" style="background:${TIPOS[ext] || '#5d6b82'}">${esc(ext.toUpperCase().slice(0, 4) || 'ARCH')}</span><span class="nombre">${esc(a.nombre)}</span><button class="boton chico" data-mostrar-archivo="${i}">Mostrar en carpeta</button></div>`;
+    }).join('')}` : ''}
+    ${r.texto ? `<h3>Respuesta</h3><div class="respuesta-md" id="md"></div>` : ''}
+  </div>`;
+  $('detalle-respuesta').dataset.enlace = r.enlace || '';
+  if (r.texto) {
+    $('md').innerHTML = formatoRespuesta.markdown(r.texto);
+    formatoRespuesta.formulas($('md'));
+  }
+}
+
+$('filas-respuestas').addEventListener('click', (e) => {
+  const f = e.target.closest('[data-respuesta]');
+  if (f) verRespuesta(f.dataset.respuesta);
+});
+$('buscar-respuestas').addEventListener('input', pintarRespuestas);
+$('detalle-respuesta').addEventListener('click', async (e) => {
+  const id = respuestaSel;
+  if (!id) return;
+  const abrir = e.target.closest('[data-abrir-archivo]');
+  const mostrar = e.target.closest('[data-mostrar-archivo]');
+  if (mostrar) return window.agenda.respuesta.mostrarArchivo(id, Number(mostrar.dataset.mostrarArchivo));
+  if (abrir) return window.agenda.respuesta.abrirArchivo(id, Number(abrir.dataset.abrirArchivo));
+  const b = e.target.closest('button');
+  if (!b) return;
+  const avisar = (texto) => { const antes = b.textContent; b.textContent = texto; setTimeout(() => (b.textContent = antes), 1500); };
+  if (b.dataset.copiar !== undefined) { await window.agenda.respuesta.copiar(id); avisar('Copiada'); }
+  else if (b.dataset.bajarTodas !== undefined) { await window.agenda.respuesta.descargarImagen(id); avisar('Descargadas'); }
+  else if (b.dataset.bajarImagen !== undefined) { await window.agenda.respuesta.descargarImagen(id, Number(b.dataset.bajarImagen)); avisar('Descargada'); }
+  else if (b.dataset.copiarImagen !== undefined) { await window.agenda.respuesta.copiarImagen(id, Number(b.dataset.copiarImagen)); avisar('Copiada'); }
+  else if (b.dataset.imagen !== undefined) { await window.agenda.respuesta.imagen(id); avisar('Abriendo…'); }
+  else if (b.dataset.carpeta !== undefined) window.agenda.respuesta.carpeta(id);
+  else if (b.dataset.blackboard !== undefined) window.agenda.abrir($('detalle-respuesta').dataset.enlace);
+  else if (b.dataset.ventana !== undefined) window.agenda.respuesta.ver(id);
+  else if (b.dataset.borrar !== undefined) {
+    await window.agenda.respuesta.borrar(id);
+    respuestaSel = null;
+    $('detalle-respuesta').innerHTML = '<div class="vacio">Respuesta borrada.</div>';
+  }
+});
+
+// ---------- Ajustes, IA y cuenta ----------
+const TEMAS = [['medianoche', 'Medianoche'], ['marca', 'BB Today'], ['claro', 'Claro'], ['papel', 'Papel'], ['vidrio', 'Vidrio'], ['bosque', 'Bosque'], ['oceano', 'Océano'], ['lavanda', 'Lavanda'], ['cereza', 'Cereza'], ['contraste', 'Alto contraste'], ['sistema', 'Automático']];
+function mini(tema, nombre) {
+  const real = tema === 'sistema' ? temaSistema() : tema;
+  const activo = datos.prefs.tema === tema;
+  return `<button class="tema ${activo ? 'activo' : ''}" data-tema="${tema}" aria-pressed="${activo}">
+    <div class="mini ${real === 'vidrio' ? 'vidrio-fondo' : ''}" data-muestra="${real}"><b>Pendientes</b>
+      <div class="renglon"><i style="background:#f07aa8"></i><span></span><em></em></div>
+      <div class="renglon"><i style="background:#4cc9a0"></i><span style="max-width:60%"></span></div></div>
+    <span class="nombre">${nombre}</span></button>`;
+}
+
+function pintarAjustes() {
+  const p = datos.prefs;
+  if (window.agenda.plataforma === 'darwin') {
+    $('t-avisos').textContent = 'Notificaciones';
+    $('t-inicio').textContent = 'Abrir al iniciar sesión';
+    $('t-carpeta').textContent = '~/Library/Application Support/BB Today';
+    $('t-descargas').textContent = 'Descargas/BB Today';
+  }
+  for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin', 'sinFechaDias']) $(id).value = String(p[id] ?? 14);
+  for (const id of ['soloTardias', 'sinFecha', 'vistaPrevia', 'avisos']) $(id).checked = p[id] !== false;
+  $('limpiarMetadatos').checked = p.limpiarMetadatos !== false;
+  $('avisoMetadatos').checked = p.avisoMetadatos !== false;
+  $('fila-aviso-metadatos').style.display = p.limpiarMetadatos === false ? 'none' : '';
+  $('alIniciar').checked = !!datos.alIniciar;
+  $('fila-aviso').style.display = p.avisos ? '' : 'none';
+  $('soloTardias').disabled = p.diasAtras === 0;
+  $('fila-sin-fecha-dias').style.display = p.sinFecha === false ? 'none' : '';
+  const quitadas = datos.descartadas || [];
+  $('quitadas').innerHTML = quitadas.length
+    ? quitadas.map((t) => `<div class="quitada"><div class="texto"><b>${esc(t.titulo)}</b><span>${esc(t.curso || '')}</span></div><button class="boton chico" data-restaurar="${esc(t.id)}">Devolver</button></div>`).join('')
+      + (quitadas.length > 1 ? '<button class="boton chico todas" data-restaurar="">Devolver todas</button>' : '')
+    : '<div class="sub">No has quitado ninguna.</div>';
+  $('opacidad').value = p.opacidad;
+  $('opacidad-valor').textContent = `${p.opacidad} %`;
+  for (const b of $('tamano').querySelectorAll('button')) b.classList.toggle('activo', Number(b.dataset.valor) === p.tamano);
+  $('temas').innerHTML = TEMAS.map(([t, n]) => mini(t, n)).join('');
+  $('actualizado').textContent = datos.cargando ? 'Revisando ahora…' : datos.actualizado ? `Última revisión: ${fmtHora.format(new Date(datos.actualizado))}` : '';
+  const ocultas = datos.ocultas.map((t) => t.toLowerCase());
+  $('materias').innerHTML = datos.materias.length
+    ? datos.materias.map((m) => {
+        const oculta = m.oculta || ocultas.some((t) => m.nombre.toLowerCase().includes(t));
+        return `<label class="materia"><input type="checkbox" data-materia="${esc(m.nombre)}" ${oculta ? '' : 'checked'}> ${esc(m.nombre)}</label>`;
+      }).join('')
+    : '<div class="sub">Aparecen cuando inicies sesión.</div>';
+}
+
+function pintarIA() {
+  const p = datos.prefs;
+  for (const seg of document.querySelectorAll('.segmentos[data-pref]')) {
+    for (const b of seg.querySelectorAll('button')) b.classList.toggle('activo', b.dataset.valor === p[seg.dataset.pref]);
+  }
+  const apps = datos.apps || {};
+  const motores = datos.motores || {};
+  const enFondo = (m) => motores[m] && motores.sesion?.[m] && !motores.bloqueos?.[m];
+  $('ia-explica').textContent = p.iaResolver === 'chatgpt'
+    ? enFondo('codex')
+      ? 'Pulsas Resolver y Codex (con tu cuenta de ChatGPT) lo hace en segundo plano: decide si hace falta texto, la hoja en imagen, un documento o código, y todo aparece aquí.'
+      : 'Ahora mismo Codex no está disponible (mira «Tus cuentas»): se abre chatgpt.com, arrastras los archivos y copias su respuesta.'
+    : enFondo('claude')
+      ? 'Pulsas Resolver y Claude Code lo hace en segundo plano: texto, documentos o código; si hace falta la hoja en imagen, la dibuja Codex. Todo aparece aquí.'
+      : 'Ahora mismo Claude Code no está disponible (mira «Tus cuentas»): se abre la app de Claude con el mensaje escrito y pulsas Enter.';
+  const marca = (si) => (si ? '✓' : '✗');
+  $('ia-apps').textContent = `En esta computadora: Codex ${marca(apps.codex)} · Claude Code ${marca(apps.claudeCode)} · app de Claude ${marca(apps.claude)}`;
+  // Qué se puede usar ahora mismo, según lo que BB Today comprobó.
+  const fila = (color, nombre, texto) => `<div class="cuenta-ia"><i style="background:${color}"></i><div><b>${nombre}</b> · <span>${texto}</span></div></div>`;
+  const estadoMotor = (m, nombre, siNo) => {
+    const b = motores.bloqueos?.[m];
+    if (!motores[m]) return fila('var(--neutro)', nombre, `No está instalado. ${siNo}`);
+    if (b) return fila('var(--pronto)', nombre, `${b.texto}. Mientras, ${siNo.charAt(0).toLowerCase()}${siNo.slice(1)}`);
+    if (!motores.sesion?.[m]) return fila('var(--pronto)', nombre, `Sin sesión iniciada. ${siNo}`);
+    return fila('var(--bien)', nombre, 'Listo: resuelve en segundo plano con tu cuenta.');
+  };
+  $('ia-cuentas').innerHTML =
+    estadoMotor('codex', 'ChatGPT · Codex', 'Se usa chatgpt.com (arrastras los archivos y copias la respuesta).') +
+    estadoMotor('claude', 'Claude · Claude Code', 'Se usa la app de Claude (pulsas Enter allí).');
+  $('tareaPrueba').checked = !!p.tareaPrueba;
+  $('iaImagenes').checked = !!p.iaImagenes;
+  $('iaImagenAuto').checked = !!p.iaImagenAuto;
+  $('fila-imagen-auto').style.display = 'none'; // sólo cuenta en la vía de respaldo
+  $('fila-estilo').style.display = p.iaImagenes ? '' : 'none';
+  for (const id of ['iaPedido', 'iaPedidoImagen', 'chatgptModelo']) if (document.activeElement !== $(id)) $(id).value = p[id] ?? '';
+  const c = datos.claude || {};
+  const boton = $('claude-boton');
+  if (!c.instalado) {
+    $('claude-estado').textContent = 'Hace falta la app de escritorio de Claude (claude.ai/download).';
+    boton.textContent = 'Descargar Claude';
+    boton.className = 'boton';
+    boton.onclick = () => window.agenda.abrir('https://claude.ai/download');
+  } else if (c.conectado && !c.desactualizado) {
+    $('claude-estado').textContent = 'Conectado. Si acabas de conectarlo, reinicia Claude una vez.';
+    boton.textContent = 'Desconectar';
+    boton.className = 'boton';
+    boton.onclick = async () => { datos = await window.agenda.claude.desconectar(); pintar(); };
+  } else {
+    $('claude-estado').textContent = c.desactualizado ? 'BB Today cambió de sitio: vuelve a conectarlo.' : 'Claude está instalado pero BB Today no está conectado.';
+    boton.textContent = 'Conectar';
+    boton.className = 'boton primario';
+    boton.onclick = async () => { datos = await window.agenda.claude.conectar(); pintar(); };
+  }
+}
+
+function pintarCuenta() {
+  const host = new URL(datos.escuela).hostname;
+  $('cuenta').innerHTML = datos.cuenta
+    ? `<div class="cuenta"><span class="avatar">${esc(datos.cuenta[0].toUpperCase())}</span><div class="texto"><b>${esc(datos.cuenta)}</b><span>${esc(host)}</span></div></div><button class="boton peligro" id="salir">Cerrar sesión</button>`
+    : `<div class="texto"><b>No has iniciado sesión</b><span>${esc(host)}</span></div><button class="boton primario" id="entrar">Iniciar sesión</button>`;
+  if ($('salir')) $('salir').onclick = async () => { datos = await api.salirCuenta(); pintar(); };
+  if ($('entrar')) $('entrar').onclick = () => api.entrar();
+  const a = datos.actualizacion || {};
+  $('version-larga').textContent = `BB Today ${datos.version}`;
+  const textos = {
+    desarrollo: 'Versión de desarrollo: no se actualiza sola',
+    inicial: 'Buscando actualizaciones al arrancar…',
+    buscando: 'Buscando actualizaciones…',
+    'al-dia': 'Tienes la versión más reciente',
+    descargando: `Descargando la ${a.version || 'nueva versión'}… ${a.porcentaje || 0} %`,
+    lista: `La ${a.version} está lista. Se instala sola cuando no uses la computadora.`,
+    aviso: `Hay una versión nueva${a.version ? ` (${a.version})` : ''}. Descárgala desde la página.`,
+    error: 'No se pudo buscar actualizaciones',
+  };
+  $('estado-actualizacion').textContent = textos[a.estado] || '';
+  const boton = $('boton-actualizacion');
+  boton.className = a.estado === 'lista' ? 'boton primario' : 'boton';
+  boton.textContent = a.estado === 'lista' ? 'Reiniciar ahora' : a.estado === 'aviso' ? 'Ir a la página' : 'Buscar ahora';
+  boton.disabled = ['desarrollo', 'buscando', 'descargando'].includes(a.estado);
+  boton.onclick = () => (a.estado === 'lista' ? window.agenda.actualizacion.instalar() : a.estado === 'aviso' ? window.agenda.web('/') : window.agenda.actualizacion.buscar());
+}
+
+function pintarBarra() {
+  $('version').textContent = datos.version;
+  const tareas = todasLasTareas();
+  const ahora = Date.now();
+  const porEntregar = tareas.filter((t) => t.cuando && t.cuando >= ahora).length;
+  const urgentes = tareas.filter((t) => t.cuando && t.cuando >= ahora && t.cuando - ahora < DIA).length;
+  $('num-pendientes').textContent = porEntregar || '';
+  $('num-pendientes').className = `num ${urgentes ? 'urge' : ''}`;
+  $('num-pendientes').style.display = porEntregar ? '' : 'none';
+  const n = (datos.respuestas || []).length;
+  $('num-respuestas').textContent = n || '';
+  $('num-respuestas').style.display = n ? '' : 'none';
+  $('estado-revision').innerHTML = datos.cargando
+    ? '<b>Revisando Blackboard…</b>'
+    : datos.actualizado ? `Revisado a las <b>${fmtHora.format(new Date(datos.actualizado))}</b>` : 'Sin revisar todavía';
+  $('actualizar').disabled = !!datos.cargando;
+  // Materias del filtro.
+  const sel = $('filtro-materia');
+  const actual = sel.value;
+  const materias = (datos.agenda?.cursos || []).map((c) => c.nombre);
+  sel.innerHTML = '<option value="">Todas las materias</option>' + materias.map((m) => `<option ${m === actual ? 'selected' : ''}>${esc(m)}</option>`).join('');
+}
+
+function pintar() {
+  if (!datos) return;
+  // El mismo estilo que el widget.
+  document.documentElement.dataset.tema = !datos.prefs.tema || datos.prefs.tema === 'sistema' ? temaSistema() : datos.prefs.tema;
+  pintarBarra();
+  pintarPendientes();
+  pintarRespuestas();
+  pintarAjustes();
+  pintarIA();
+  pintarCuenta();
+  pintarGuia();
+}
+
+async function guardar(cambios) {
+  datos = await api.guardar(cambios);
+  pintar();
+}
+
+for (const id of ['diasAdelante', 'diasAtras', 'avisoHoras', 'intervaloMin', 'sinFechaDias']) $(id).addEventListener('change', () => guardar({ [id]: Number($(id).value) }));
+for (const id of ['soloTardias', 'sinFecha', 'vistaPrevia', 'avisos', 'iaImagenes', 'iaImagenAuto', 'tareaPrueba', 'limpiarMetadatos', 'avisoMetadatos']) $(id).addEventListener('change', () => guardar({ [id]: $(id).checked }));
+for (const seg of document.querySelectorAll('.segmentos[data-pref]')) {
+  seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) guardar({ [seg.dataset.pref]: b.dataset.valor });
+  });
+}
+for (const id of ['iaPedido', 'iaPedidoImagen', 'chatgptModelo']) $(id).addEventListener('change', () => guardar({ [id]: $(id).value }));
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-restaurar-campo]');
+  if (b) guardar({ [b.dataset.restaurarCampo]: '' });
+});
+$('opacidad').addEventListener('input', () => {
+  $('opacidad-valor').textContent = `${$('opacidad').value} %`;
+  guardar({ opacidad: Number($('opacidad').value) });
+});
+$('tamano').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) guardar({ tamano: Number(b.dataset.valor) }); });
+$('temas').addEventListener('click', (e) => { const b = e.target.closest('.tema'); if (b) guardar({ tema: b.dataset.tema }); });
+$('materias').addEventListener('change', async () => {
+  const ocultas = [...$('materias').querySelectorAll('input:not(:checked)')].map((i) => i.dataset.materia);
+  datos = await api.materias(ocultas);
+  pintar();
+});
+$('alIniciar').addEventListener('change', async () => { datos = await api.inicio($('alIniciar').checked); pintar(); });
+$('esquina').addEventListener('click', () => api.esquina());
+$('quitadas').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-restaurar]');
+  if (!b) return;
+  datos = await window.agenda.tareas.restaurar(b.dataset.restaurar || null);
+  pintar();
+});
+$('ver-guia').addEventListener('click', abrirGuia);
+$('ver-privacidad').addEventListener('click', () => window.agenda.web('/privacidad'));
+$('actualizar').addEventListener('click', () => window.agenda.actualizar());
+
+// El reloj de las fechas («faltan 2 h») sin redibujarlo todo.
+setInterval(() => datos && (pintarBarra(), pintarPendientes()), 60_000);
+
+api.alCambiar((nuevos) => {
+  const antes = JSON.stringify([datos?.respuestas?.find((r) => r.id === tareaSel?.id)?.cuando, datos?.trabajo?.fase, datos?.entregaCambio]);
+  datos = nuevos;
+  pintar();
+  // Llegó una respuesta (o cambió lo que se está haciendo) de la tarea abierta.
+  if (tareaSel && JSON.stringify([datos.respuestas?.find((r) => r.id === tareaSel.id)?.cuando, datos.trabajo?.fase, datos.entregaCambio]) !== antes) refrescarEntrega();
+});
+api.obtener().then((d) => {
+  datos = d;
+  ir(seccion);
+  pintar();
+  const inicial = new URLSearchParams(location.search).get('tarea');
+  if (inicial) abrirTarea(inicial);
+  if (new URLSearchParams(location.search).get('guia')) abrirGuia();
+});
+</script>
+</body>
+</html>

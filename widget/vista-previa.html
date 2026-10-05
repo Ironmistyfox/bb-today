@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <title>Vista previa</title>
 <link rel="stylesheet" href="temas.css">
+<link rel="stylesheet" href="../node_modules/katex/dist/katex.min.css">
+<script src="../node_modules/katex/dist/katex.min.js"></script>
+<script src="../node_modules/katex/dist/contrib/auto-render.min.js"></script>
+<script src="markdown.js"></script>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; background: transparent; overflow: hidden; }
@@ -81,7 +85,37 @@
   .pie { border-top: 1px solid var(--linea); padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; }
   .abrir { font: inherit; font-size: 12px; font-weight: 600; color: var(--texto); background: var(--pieza); border: 0; border-radius: 7px; padding: 5px 10px; cursor: pointer; }
   .abrir:hover { background: var(--pieza-hover); }
-  .ruta { font-size: 10.5px; color: var(--tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
+  .ruta { font-size: 10.5px; color: var(--tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: -4px 0 8px; }
+  .pie { gap: 8px; justify-content: flex-end; }
+  .resolver { font: inherit; font-size: 12px; font-weight: 600; color: #fff; background: var(--acento); border: 0; border-radius: 7px; padding: 5px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .resolver:hover { filter: brightness(1.1); }
+  /* ChatGPT: blanco y con su logo. */
+  .resolver.chatgpt { background: #fff; color: #0d0d0d; box-shadow: 0 0 0 1px rgb(0 0 0 / .12) inset; }
+  .resolver.chatgpt:hover { filter: none; background: #f2f2f2; }
+  .resolver.chatgpt img { width: 14px; height: 14px; }
+  .resolver-grupo { position: relative; display: flex; }
+  .resolver-fila { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .con-agente { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--tenue); white-space: nowrap; }
+  .pie button { white-space: nowrap; }
+  .pie { flex-wrap: wrap; row-gap: 6px; gap: 6px; }
+  .resolver-grupo .resolver:first-of-type { border-radius: 7px 0 0 7px; }
+  .resolver.mas { border-radius: 0 7px 7px 0; padding: 5px 7px; margin-left: 1px; font-size: 10px; }
+  .rutas { position: absolute; right: 0; bottom: calc(100% + 6px); display: flex; flex-direction: column; min-width: 190px; padding: 4px; border-radius: 9px; background: var(--fondo-a); border: 1px solid var(--borde); box-shadow: 0 8px 24px rgb(0 0 0 / .35); z-index: 5; }
+  .rutas button { font: inherit; font-size: 12px; text-align: left; color: var(--texto); background: none; border: 0; border-radius: 6px; padding: 6px 9px; cursor: pointer; }
+  .rutas button:hover { background: var(--pieza-hover); }
+  .resolver svg { width: 13px; height: 13px; }
+  .nota-claude { margin: 0 14px 10px; padding: 8px 10px; border-radius: 8px; font-size: 11.5px; color: var(--suave); background: var(--pieza); }
+  .nota-claude b { color: var(--texto); }
+  .respuesta { border-radius: 10px; background: color-mix(in srgb, var(--bien) 8%, var(--pieza)); border: 1px solid color-mix(in srgb, var(--bien) 25%, transparent); padding: 9px 11px; }
+  .respuesta .corta h1, .respuesta .corta h2, .respuesta .corta h3 { font-size: 12.5px; margin: 4px 0 2px; color: var(--texto); }
+  .respuesta .corta p, .respuesta .corta ul, .respuesta .corta ol { margin: 2px 0; }
+  .respuesta .corta ul, .respuesta .corta ol { padding-left: 18px; }
+  .respuesta .corta .katex-display { margin: 4px 0; }
+  .respuesta .corta { color: var(--suave); max-height: 104px; overflow: hidden; -webkit-mask-image: linear-gradient(#000 60%, transparent); user-select: text; }
+  .imagenes-resp { display: flex; gap: 6px; margin-bottom: 6px; }
+  .imagenes-resp img { height: 84px; max-width: 100%; object-fit: cover; border-radius: 6px; background: #fff; }
+  .respuesta .botones-resp { display: flex; gap: 6px; margin-top: 8px; }
+  .respuesta button { font: inherit; font-size: 11.5px; font-weight: 600; color: var(--texto); background: var(--pieza-hover); border: 0; border-radius: 6px; padding: 3px 9px; cursor: pointer; }
   .cargando-linea { height: 10px; border-radius: 5px; margin: 6px 0; }
   .esqueleto.alto-pdf { height: 118px; }
   .muestra canvas { height: 118px; object-fit: cover; }
@@ -142,6 +176,10 @@ function chipsEntrega(t) {
 }
 
 let actual = null;
+let notaClaude = '';
+let menuRutas = false;
+const CODIGO = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4.5L2 8l3.5 3.5M10.5 4.5L14 8l-3.5 3.5"/></svg>';
+const CHISPA = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>';
 const $contenido = document.getElementById('contenido');
 let esperaPrimera = null;
 
@@ -152,7 +190,12 @@ function pintar() {
   let html = `<div class="franja" style="background:${color}"></div><div class="cuerpo">
     <div class="curso" style="color:${color}">${esc(curso)}</div>
     <h2>${esc(tarea.titulo)}</h2>
+    ${(tarea.ruta || []).length ? `<div class="ruta" title="${esc(tarea.ruta.join(' › '))}">${esc(tarea.ruta.join(' › '))}</div>` : ''}
     ${chipsEntrega(tarea)}`;
+  if (actual.respuesta) {
+    html += `<div class="seccion">Respuesta de ${esc(actual.respuesta.ia === 'chatgpt' ? 'ChatGPT' : actual.respuesta.ia || 'Claude')}</div><div class="respuesta">${(actual.respuesta.imagenes || []).length ? `<div class="imagenes-resp">${actual.respuesta.imagenes.slice(-3).map((u) => `<img src="${esc(u)}" alt="">`).join('')}</div>` : ''}${actual.respuesta.texto ? `<div class="corta" data-respuesta-corta>${formatoRespuesta.markdown(actual.respuesta.texto.split(/\n\s*\n/).slice(0, 4).join('\n\n'))}</div>` : ''}
+      <div class="botones-resp"><button data-ver-respuesta>Ver completa</button>${actual.respuesta.texto ? '<button data-copiar-respuesta>Copiar</button>' : ''}${(actual.respuesta.imagenes || []).length ? `<button data-descargar-imagenes>Descargar ${actual.respuesta.imagenes.length > 1 ? 'imágenes' : 'imagen'}</button>` : ''}</div></div>`;
+  }
 
   const instrucciones = detalle?.instrucciones ?? tarea.instrucciones;
   if (cargando && !instrucciones) {
@@ -175,9 +218,10 @@ function pintar() {
     html += `<div class="seccion">Detalle</div><div class="vacio">${error ? 'No se pudo leer el detalle de Blackboard.' : 'Sin instrucciones ni archivos en Blackboard.'}</div>`;
   }
 
-  const ruta = (tarea.ruta || []).join(' › ');
-  html += `</div><div class="pie"><span class="ruta" title="${esc(ruta)}">${esc(ruta)}</span><button class="abrir" data-url="${esc(tarea.enlace)}">Abrir en Blackboard ↗</button></div>`;
+  html += `</div>${notaClaude ? `<div class="nota-claude">${notaClaude}</div>` : ''}<div class="pie"><button class="abrir" data-url="${esc(tarea.enlace)}" title="Abrir en Blackboard">Abrir en Blackboard ↗</button>${actual.resolverCon === 'Claude' ? `<button class="resolver" data-resolver>${CHISPA}Resolver con Claude</button>` : '<button class="resolver chatgpt" data-resolver><img src="icono/chatgpt.png" alt="">Resolver con ChatGPT</button>'}</div>`;
   $contenido.innerHTML = html;
+  const corta = $contenido.querySelector('[data-respuesta-corta]');
+  if (corta) formatoRespuesta.formulas(corta);
   for (const lienzo of $contenido.querySelectorAll('canvas[data-pdf]')) dibujarPdf(lienzo, Number(lienzo.dataset.pdf));
 }
 
@@ -185,6 +229,8 @@ const contenidoFoto = (a) => (a.muestra?.src ? `<img src="${a.muestra.src}" alt=
 
 function htmlMuestra(a, i) {
   const m = a.muestra;
+  // Ya dibujada antes: sólo la imagen de su primera página.
+  if (m?.tipo === 'pdf' && m.src) return `<img src="${m.src}" alt="">`;
   if (m?.tipo === 'pdf') return `<canvas data-pdf="${i}"></canvas>`;
   if (m?.tipo === 'zip') return `<div class="zip">${m.archivos.map((n) => {
     const partes = n.split('/');
@@ -241,18 +287,16 @@ function actualizarArchivo(i) {
   el.querySelector('.origen').innerHTML = htmlOrigen(a);
 }
 
-const pdfs = new Map();
+// La primera página se dibuja una sola vez: la imagen vuelve al proceso
+// principal, que la guarda en lugar del PDF entero, y el documento se suelta.
 async function dibujarPdf(lienzo, i) {
   const n = actual.n;
   const archivo = actual.detalle.archivos[i];
+  let doc = null;
   try {
-    let pagina = pdfs.get(archivo.url);
-    if (!pagina) {
-      const bytes = Uint8Array.from(atob(archivo.muestra.datos), (c) => c.charCodeAt(0));
-      const doc = await pdfjs.getDocument({ data: bytes }).promise;
-      pagina = await doc.getPage(1);
-      pdfs.set(archivo.url, pagina);
-    }
+    const bytes = Uint8Array.from(atob(archivo.muestra.datos), (c) => c.charCodeAt(0));
+    doc = await pdfjs.getDocument({ data: bytes }).promise;
+    const pagina = await doc.getPage(1);
     if (!actual || n !== actual.n || !lienzo.isConnected) return;
     const base = pagina.getViewport({ scale: 1 });
     const escala = (330 * devicePixelRatio) / base.width; // nítido en pantallas con escala
@@ -266,8 +310,13 @@ async function dibujarPdf(lienzo, i) {
     lienzo.width = fuera.width;
     lienzo.height = fuera.height;
     lienzo.getContext('2d').drawImage(fuera, 0, 0);
+    const src = fuera.toDataURL('image/jpeg', 0.82);
+    archivo.muestra = { tipo: 'pdf', src, bytes: archivo.muestra.bytes };
+    window.agenda.vista.miniaturaPdf({ nombre: archivo.nombre, url: archivo.url }, src);
   } catch {
     lienzo.closest('.muestra')?.remove();
+  } finally {
+    doc?.destroy();
   }
 }
 
@@ -306,7 +355,10 @@ vista.alDatos((datos) => {
   aplicarTema(datos.prefs);
   const nueva = !actual || datos.n !== actual.n;
   const visible = $tarjeta.classList.contains('visible');
-  if (nueva) pdfs.clear();
+  if (nueva) {
+    notaClaude = '';
+    menuRutas = false;
+  }
   actual = datos;
   if (nueva && visible) {
     // Cambio de tarea con la tarjeta ya abierta: fundido corto y se desliza.
@@ -371,6 +423,46 @@ $tarjeta.addEventListener('click', async (e) => {
     const r = await window.agenda.abrirArchivo({ url: a.url, nombre: a.nombre, curso: actual.curso });
     marcar(r?.error || 'Abierto');
     setTimeout(() => marcar(null), 4000);
+    return;
+  }
+  if (e.target.closest('[data-mas-rutas]') && actual) {
+    menuRutas = !menuRutas;
+    pintar();
+    return;
+  }
+  const ruta = e.target.closest('[data-ruta]')?.dataset.ruta;
+  if ((ruta || e.target.closest('[data-resolver]')) && actual) {
+    menuRutas = false;
+    const r = await window.agenda.claude.resolver({ tareaId: actual.tarea.id, forzar: ruta });
+    if (r?.primeraVez) {
+      notaClaude = '<b>BB Today ya está conectado con Claude.</b> Cierra Claude por completo (también desde la bandeja) y ábrelo otra vez; después vuelve a pulsar <b>Resolver con Claude</b>. Sólo pasa esta vez.';
+    } else if (r?.error === 'sin-agente') {
+      notaClaude = `<b>${esc(r.agente)} no está instalado.</b> Instálalo (${esc(r.instalar)}) o cambia de IA en BB Today → IA.`;
+    } else if (r?.error === 'sin-claude') {
+      notaClaude = 'Para resolver hace falta la app de escritorio de <b>Claude</b>. Descárgala en claude.ai/download, inicia sesión y vuelve a intentarlo.';
+    } else if (r?.error) {
+      notaClaude = esc(r.error);
+    } else if (r?.fondo) {
+      notaClaude = '';
+    }
+    if (notaClaude) pintar();
+    return;
+  }
+  const bajar = e.target.closest('[data-descargar-imagenes]');
+  if (bajar && actual) {
+    window.agenda.respuesta.descargarImagen(actual.tarea.id);
+    bajar.textContent = 'Descargada';
+    return;
+  }
+  if (e.target.closest('[data-ver-respuesta]') && actual) {
+    window.agenda.respuesta.ver(actual.tarea.id);
+    return;
+  }
+  const copiar = e.target.closest('[data-copiar-respuesta]');
+  if (copiar && actual) {
+    window.agenda.respuesta.copiar(actual.tarea.id);
+    copiar.textContent = 'Copiada';
+    setTimeout(() => (copiar.textContent = 'Copiar'), 1600);
     return;
   }
   const enlace = e.target.closest('[data-url]');

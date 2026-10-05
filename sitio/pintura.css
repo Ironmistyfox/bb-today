@@ -1,0 +1,39 @@
+/* Cada color sitúa la función que se está explicando, sin adornos en órbita. */
+:root{--fondo:#f6f4ed;--menta:#86d9b4;--verde:#225e47;--borde:#d5d8ce}
+.aviso-version{display:flex;justify-content:center;align-items:center;gap:20px;padding:11px 20px;background:var(--verde);color:var(--fondo);font-size:12px;line-height:1.5}.aviso-version>span{font-weight:700}.aviso-version a{font-size:11px;white-space:nowrap}
+.preparar{display:grid;grid-template-columns:1fr 1.15fr;gap:30px 100px;padding-block:100px;border-bottom:1px solid var(--borde)}.preparar .nota-ia{grid-column:2;font-size:12px;color:var(--suave);margin:0;max-width:50ch}
+@media(max-width:800px){.aviso-version{flex-direction:column;gap:3px;text-align:center}.preparar{grid-template-columns:1fr;gap:28px;padding-block:65px}.preparar .nota-ia{grid-column:1}}
+.ambiente{inset:0;display:grid;place-items:center;--tinta:#86d9b4}
+.pincelada{width:112%;max-width:680px;aspect-ratio:1;background:var(--tinta);mask:url(img/pincelada.svg) center/contain no-repeat;transform:rotate(-7deg)}
+.sello-funcion{position:absolute;left:12%;top:16%;background:var(--tinta);padding:7px 13px;color:#19352a;font-size:11px;font-weight:800;transform:rotate(-7deg)}
+.escenario[data-estado="1"] .ambiente{--tinta:#afd1ef}
+.escenario[data-estado="2"] .ambiente{--tinta:#edb493}
+.escenario[data-estado="2"] .sello-funcion{top:auto;bottom:18%;left:6%}
+.escenario[data-estado="3"] .ambiente{--tinta:#e2ca94}
+.ambiente .pincelada{animation:pintar-entrada .65s var(--curva) both}
+.escenario[data-estado="1"] .pincelada{animation-name:pintar-archivo}
+.escenario[data-estado="2"] .pincelada{animation-name:pintar-aviso}
+.escenario[data-estado="3"] .pincelada{animation-name:pintar-tema}
+@keyframes pintar-entrada{from{opacity:0;transform:translate3d(-35px,18px,0) rotate(-10deg) scale(.92)}to{opacity:.95;transform:rotate(-7deg)}}
+@keyframes pintar-archivo{from{opacity:0;transform:translate3d(30px,0,0) rotate(-3deg) scale(.92)}to{opacity:.95;transform:rotate(-7deg)}}
+@keyframes pintar-aviso{from{opacity:0;transform:translate3d(0,25px,0) rotate(-9deg) scale(.92)}to{opacity:.95;transform:rotate(-7deg)}}
+@keyframes pintar-tema{from{opacity:0;transform:translate3d(-25px,0,0) rotate(-3deg) scale(.92)}to{opacity:.95;transform:rotate(-7deg)}}
+h1 em{position:relative;isolation:isolate;white-space:nowrap}
+h1 em:after{content:"";position:absolute;z-index:-1;left:-2%;right:-1%;height:19%;bottom:7%;background:var(--menta);clip-path:polygon(0 20%,96% 0,100% 72%,4% 100%,0 78%);transform:rotate(-2deg)}
+.escena .numero{display:inline-block;padding:6px 12px;background:var(--menta);color:#19352a;transform:rotate(-2deg)}
+.escena[data-escena="1"] .numero{background:#afd1ef}
+.escena[data-escena="2"] .numero{background:#edb493}
+.escena[data-escena="3"] .numero{background:#e2ca94}
+.confianza{background:#d6e9da}
+.notificacion{color:#17251f;background:#fafaf5}
+.notificacion strong{color:#17251f}
+.notificacion span,.notificacion p,.notificacion small{color:#526158}
+.cierre{border-radius:6px 26px 8px 26px;background:#86d9b4}
+.cierre-decoracion{display:none}
+.texto-escena h2{transition:opacity .45s var(--curva),transform .6s var(--curva)}
+.escena.por-revelar h2{opacity:0;transform:translate3d(0,20px,0)}
+.escenario[data-estado="2"] .urgente{animation:recordar-fecha .7s var(--curva) 2}
+@keyframes recordar-fecha{50%{transform:scale(1.12);background:#8d4435;color:#fff}}
+@media(max-width:1100px){.sello-funcion{top:13%;left:4%;font-size:10px}.pincelada{width:125%}}
+@media(max-width:800px){.pincelada{width:100%;max-width:490px}.sello-funcion{left:8%;top:8%}.escena-mobile:before{content:"";position:absolute;inset:8% 0;background:#afd1ef;mask:url(img/pincelada.svg) center/contain no-repeat}.escena-mobile[data-demostracion="2"]:before{background:#edb493}.escena-mobile[data-demostracion="3"]:before{background:#e2ca94}}
+@media(prefers-reduced-motion:reduce){.escena.por-revelar h2{opacity:1;transform:none}}

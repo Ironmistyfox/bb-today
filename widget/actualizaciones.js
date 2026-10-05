@@ -41,6 +41,8 @@ export function iniciarActualizaciones({ alCambiar, antesDeSalir, registrar }) {
 
   autoUpdater.autoDownload = !SOLO_AVISO;
   autoUpdater.autoInstallOnAppQuit = true;
+  // Las instalaciones públicas sólo buscan versiones estables.
+  autoUpdater.allowPrerelease = false;
   autoUpdater.logger = { info() {}, warn() {}, debug() {}, error: (e) => registrar('actualización', e) };
 
   autoUpdater.on('checking-for-update', () => cambiar({ estado: 'buscando' }));

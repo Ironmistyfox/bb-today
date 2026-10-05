@@ -21,6 +21,8 @@ const salir = (mensaje) => {
 
 const { version } = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const etiqueta = `v${version}`;
+if (!/^\d+\.\d+\.\d+$/.test(version)) salir('La publicación requiere una versión estable X.Y.Z.');
+if (leer('git', ['branch', '--show-current']) !== 'main') salir('Las versiones públicas se publican desde main.');
 
 if (leer('git', ['status', '--porcelain'])) salir('Hay cambios sin commitear.');
 correr('git', ['fetch', '--quiet', 'origin']);

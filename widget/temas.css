@@ -1,5 +1,5 @@
-/* Temas del widget y de la vista previa. El tema se elige en
-   Configuración; "sistema" lo resuelve la página según el modo de Windows.
+/* Temas del widget, de la vista previa y de la ventana de BB Today. Se elige en
+   Ajustes; "sistema" lo resuelve la página según el modo de Windows.
    La opacidad del fondo la pone la página en --alfa (0–1). */
 
 :root,
@@ -128,5 +128,135 @@
   --acento: #6aa2ff;
   --sombra: 0 10px 28px rgb(0 0 0 / .4), 0 2px 6px rgb(0 0 0 / .25);
   --sombra-texto: 0 1px 2px rgb(0 0 0 / .55);
+  color-scheme: dark;
+}
+
+/* Verde profundo, tranquilo de noche. */
+:root[data-tema="bosque"],
+[data-muestra="bosque"] {
+  --fondo-a: #1a2a22;
+  --fondo-b: #101b16;
+  --alfa-tema: 1;
+  --borde: rgb(160 230 190 / .1);
+  --linea: rgb(160 230 190 / .08);
+  --brillo: rgb(255 255 255 / .06);
+  --texto: #eef6f0;
+  --suave: #b2c7b9;
+  --tenue: #73897b;
+  --hover: rgb(160 230 190 / .07);
+  --pieza: rgb(160 230 190 / .06);
+  --pieza-hover: rgb(160 230 190 / .11);
+  --codigo: rgb(0 0 0 / .25);
+  --mal: #f0846f;
+  --pronto: #e9c062;
+  --bien: #63d39a;
+  --neutro: rgb(160 230 190 / .09);
+  --acento: #2f9e6a;
+  --sombra: 0 10px 28px rgb(0 10 5 / .5), 0 2px 6px rgb(0 10 5 / .3);
+  --sombra-texto: none;
+  color-scheme: dark;
+}
+
+/* Azul petróleo, como el mar de noche. */
+:root[data-tema="oceano"],
+[data-muestra="oceano"] {
+  --fondo-a: #0f2a33;
+  --fondo-b: #081c23;
+  --alfa-tema: 1;
+  --borde: rgb(120 220 230 / .12);
+  --linea: rgb(120 220 230 / .09);
+  --brillo: rgb(255 255 255 / .07);
+  --texto: #ecfafc;
+  --suave: #a9cdd4;
+  --tenue: #6a929b;
+  --hover: rgb(120 220 230 / .08);
+  --pieza: rgb(120 220 230 / .07);
+  --pieza-hover: rgb(120 220 230 / .13);
+  --codigo: rgb(0 0 0 / .25);
+  --mal: #ff8f80;
+  --pronto: #f6c86a;
+  --bien: #4fdcb8;
+  --neutro: rgb(120 220 230 / .1);
+  --acento: #1ca7b8;
+  --sombra: 0 10px 28px rgb(0 12 18 / .55), 0 2px 6px rgb(0 12 18 / .32);
+  --sombra-texto: none;
+  color-scheme: dark;
+}
+
+/* Claro con un toque morado. */
+:root[data-tema="lavanda"],
+[data-muestra="lavanda"] {
+  --fondo-a: #faf7fe;
+  --fondo-b: #efe8f8;
+  --alfa-tema: 1;
+  --borde: rgb(70 30 120 / .11);
+  --linea: rgb(70 30 120 / .08);
+  --brillo: rgb(255 255 255 / .7);
+  --texto: #251c36;
+  --suave: #5a4d70;
+  --tenue: #988caa;
+  --hover: rgb(70 30 120 / .05);
+  --pieza: rgb(70 30 120 / .045);
+  --pieza-hover: rgb(70 30 120 / .085);
+  --codigo: rgb(70 30 120 / .06);
+  --mal: #c13d4a;
+  --pronto: #a5680f;
+  --bien: #2f8a5a;
+  --neutro: rgb(70 30 120 / .06);
+  --acento: #7547d1;
+  --sombra: 0 10px 28px rgb(40 15 80 / .16), 0 2px 6px rgb(40 15 80 / .08);
+  --sombra-texto: none;
+  color-scheme: light;
+}
+
+/* Vino oscuro con acento rosa. */
+:root[data-tema="cereza"],
+[data-muestra="cereza"] {
+  --fondo-a: #2b1820;
+  --fondo-b: #1c0f15;
+  --alfa-tema: 1;
+  --borde: rgb(255 170 200 / .11);
+  --linea: rgb(255 170 200 / .08);
+  --brillo: rgb(255 255 255 / .06);
+  --texto: #fbeff3;
+  --suave: #d3b2bf;
+  --tenue: #957381;
+  --hover: rgb(255 170 200 / .07);
+  --pieza: rgb(255 170 200 / .06);
+  --pieza-hover: rgb(255 170 200 / .11);
+  --codigo: rgb(0 0 0 / .25);
+  --mal: #ff8a7d;
+  --pronto: #f2c26b;
+  --bien: #6ed39c;
+  --neutro: rgb(255 170 200 / .09);
+  --acento: #d6496f;
+  --sombra: 0 10px 28px rgb(20 0 8 / .55), 0 2px 6px rgb(20 0 8 / .32);
+  --sombra-texto: none;
+  color-scheme: dark;
+}
+
+/* Negro puro y letras blancas: lo más legible. */
+:root[data-tema="contraste"],
+[data-muestra="contraste"] {
+  --fondo-a: #0b0b0b;
+  --fondo-b: #000000;
+  --alfa-tema: 1;
+  --borde: rgb(255 255 255 / .35);
+  --linea: rgb(255 255 255 / .22);
+  --brillo: rgb(255 255 255 / .1);
+  --texto: #ffffff;
+  --suave: #e6e6e6;
+  --tenue: #b8b8b8;
+  --hover: rgb(255 255 255 / .12);
+  --pieza: rgb(255 255 255 / .1);
+  --pieza-hover: rgb(255 255 255 / .18);
+  --codigo: rgb(255 255 255 / .08);
+  --mal: #ff6b5e;
+  --pronto: #ffd23f;
+  --bien: #4fe08a;
+  --neutro: rgb(255 255 255 / .16);
+  --acento: #1f6bff;
+  --sombra: 0 10px 28px rgb(0 0 0 / .6), 0 2px 6px rgb(0 0 0 / .4);
+  --sombra-texto: none;
   color-scheme: dark;
 }

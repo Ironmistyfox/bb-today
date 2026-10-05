@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>Archivos para ChatGPT</title>
+<link rel="stylesheet" href="temas.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--fondo-b); color: var(--texto); font: 13px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; user-select: none; }
+  body { display: flex; flex-direction: column; border: 1px solid var(--borde); border-radius: 10px; }
+  header { display: flex; align-items: flex-start; gap: 8px; padding: 11px 12px 8px; -webkit-app-region: drag; }
+  header .texto { flex: 1; min-width: 0; }
+  header b { display: block; font-weight: 600; }
+  header span { color: var(--tenue); font-size: 11.5px; }
+  .tecla { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--texto); border: 1px solid var(--borde); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
+  #cerrar { -webkit-app-region: no-drag; width: 22px; height: 22px; border: 0; border-radius: 6px; background: transparent; color: var(--tenue); cursor: pointer; display: grid; place-items: center; padding: 0; }
+  #cerrar:hover { background: var(--hover); color: var(--texto); }
+  #lista { flex: 1; overflow-y: auto; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 4px; }
+  .archivo { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 8px; background: var(--pieza); cursor: grab; -webkit-app-region: no-drag; }
+  .archivo:hover { background: var(--pieza-hover); }
+  .archivo:active { cursor: grabbing; }
+  .archivo.todos { background: color-mix(in srgb, var(--acento) 22%, var(--pieza)); }
+  .archivo .tipo { flex: none; width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; font-size: 9.5px; font-weight: 800; color: #fff; background: #5d6b82; }
+  .archivo .nombre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .archivo .asa { margin-left: auto; color: var(--tenue); flex: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="texto"><b id="titulo">Arrástralos a ChatGPT</b><span id="pista">Suéltalos en el chat y pulsa <span class="tecla">Enter</span></span></div>
+  <button id="cerrar" title="Cerrar"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+</header>
+<div id="lista"></div>
+
+<script>
+// Ventanita flotante con los archivos de la tarea: chatgpt.com no recibe
+// archivos por el enlace, así que se arrastran (el arrastre lo hace el sistema
+// con los archivos reales, como desde el Explorador).
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const COLORES = { pdf: '#e5534b', docx: '#2f6fd8', doc: '#2f6fd8', pptx: '#d2692b', xlsx: '#2e9a5a', zip: '#8a6cd4', png: '#3aa0a8', jpg: '#3aa0a8', jpeg: '#3aa0a8' };
+const ASA = '<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor"><circle cx="6" cy="4" r="1.2"/><circle cx="10" cy="4" r="1.2"/><circle cx="6" cy="8" r="1.2"/><circle cx="10" cy="8" r="1.2"/><circle cx="6" cy="12" r="1.2"/><circle cx="10" cy="12" r="1.2"/></svg>';
+
+// Para ChatGPT o para la entrega en Blackboard.
+if (new URLSearchParams(location.search).get('destino') === 'Blackboard') {
+  $('titulo').textContent = 'Tu entrega para Blackboard';
+  $('pista').textContent = 'Si no se pusieron solos, arrástralos a la entrega. Luego pulsa Entregar en Blackboard.';
+  document.title = 'Tu entrega';
+}
+const oscuro = matchMedia('(prefers-color-scheme: dark)');
+window.agenda.tema().then((t) => (document.documentElement.dataset.tema = t));
+
+window.agenda.arrastre.obtener().then((archivos) => {
+  const fila = (a, i) =>
+    `<div class="archivo" draggable="true" data-i="${i}" title="${esc(a.nombre)}"><span class="tipo" style="background:${COLORES[a.ext.toLowerCase()] || '#5d6b82'}">${esc(a.ext.toUpperCase().slice(0, 4))}</span><span class="nombre">${esc(a.nombre)}</span><span class="asa">${ASA}</span></div>`;
+  const todos = archivos.length > 1
+    ? `<div class="archivo todos" draggable="true" data-i="todos"><span class="tipo" style="background:var(--acento)">${archivos.length}</span><span class="nombre"><b>Todos a la vez</b></span><span class="asa">${ASA}</span></div>`
+    : '';
+  $('lista').innerHTML = todos + archivos.map(fila).join('');
+});
+
+$('lista').addEventListener('dragstart', (e) => {
+  const el = e.target.closest('[data-i]');
+  if (!el) return;
+  e.preventDefault();
+  window.agenda.arrastre.iniciar(el.dataset.i === 'todos' ? null : Number(el.dataset.i));
+});
+$('cerrar').onclick = () => window.agenda.arrastre.cerrar();
+</script>
+</body>
+</html>

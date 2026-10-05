@@ -5,9 +5,28 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { cabeceraCookie, iniciarSesion, urlBase } from './sesion.js';
+import { crearCola, esperaReintento } from './red.js';
+const enCola = crearCola(4);
+let pausaHasta = 0;
+const cacheLecturas = new Map();
+const dormir = (ms) => new Promise((ok) => setTimeout(ok, ms));
+async function consultar(ejecutar) {
+  for (let intento = 0; ; intento++) {
+    const r = await enCola(async () => {
+      if (pausaHasta > Date.now()) await dormir(pausaHasta - Date.now());
+      return ejecutar();
+    });
+    if (![429, 503].includes(r.status)) return r;
+    const espera = esperaReintento(r.headers.get('retry-after'), intento);
+    if (intento >= 2 || espera > 60000) return r;
+    pausaHasta = Math.max(pausaHasta, Date.now() + espera);
+    await r.body?.cancel();
+  }
+}
 
 export class ErrorBlackboard extends Error {
   constructor(mensaje, estado) {
@@ -30,6 +49,8 @@ let transporte = {
 };
 export function configurarTransporte(opciones) {
   transporte = { ...transporte, ...opciones };
+  cacheLecturas.clear();
+  pausaHasta = 0;
 }
 
 let renovando = null;
@@ -50,11 +71,10 @@ async function pedirCrudo(ruta, { reintentar = true, esperaMs = 30_000 } = {}) {
   }
 
   let r;
-  const senal = AbortSignal.timeout(esperaMs);
   if (transporte.fetch) {
     // La sesión del navegador sigue las redirecciones; si acaba en la
     // página de inicio de sesión, la sesión se cerró.
-    r = await transporte.fetch(url.href, { headers: { Accept: 'application/json, */*' }, signal: senal }).catch((e) => {
+    r = await consultar(() => transporte.fetch(url.href, { headers: { Accept: 'application/json, */*' }, signal: AbortSignal.timeout(esperaMs) })).catch((e) => {
       throw new ErrorBlackboard(`Sin conexión con Blackboard (${e.name === 'TimeoutError' ? 'tardó demasiado' : e.message})`, 0);
     });
     const final = r.url ? new URL(r.url) : url;
@@ -66,11 +86,11 @@ async function pedirCrudo(ruta, { reintentar = true, esperaMs = 30_000 } = {}) {
   } else {
     const cookie = cabeceraCookie();
     if (!cookie) throw caducada();
-    r = await fetch(url, {
+    r = await consultar(() => fetch(url, {
       headers: { Cookie: cookie, Accept: 'application/json, */*' },
       redirect: 'manual',
-      signal: senal,
-    }).catch((e) => {
+      signal: AbortSignal.timeout(esperaMs),
+    })).catch((e) => {
       throw new ErrorBlackboard(`Sin conexión con Blackboard (${e.message})`, 0);
     });
     // Una redirección a la página de login también significa sesión caducada.
@@ -81,8 +101,9 @@ async function pedirCrudo(ruta, { reintentar = true, esperaMs = 30_000 } = {}) {
     if (r.status >= 300 && r.status < 400) {
       const destino = new URL(r.headers.get('location'), url);
       if (destino.origin !== base) {
+        if (!/^https?:$/.test(destino.protocol)) throw new ErrorBlackboard('La descarga no tiene una dirección web válida.');
         // Archivos servidos desde un CDN firmado: la URL ya trae su permiso.
-        return fetch(destino, { signal: AbortSignal.timeout(esperaMs) });
+        return consultar(() => fetch(destino, { signal: AbortSignal.timeout(esperaMs) }));
       }
       return pedirCrudo(destino.pathname + destino.search, { reintentar, esperaMs });
     }
@@ -98,7 +119,7 @@ async function pedirCrudo(ruta, { reintentar = true, esperaMs = 30_000 } = {}) {
         ? 'Blackboard no te deja ver esto con tu rol de estudiante'
         : r.status === 404
           ? 'No existe (revisa el identificador)'
-          : `Blackboard respondió ${r.status}`;
+          : r.status === 429 ? 'Blackboard pidió esperar antes de volver a consultar' : `Blackboard respondió ${r.status}`;
     throw new ErrorBlackboard(`${motivo}${detalle ? `: ${detalle}` : ''} [${url.pathname}]`, r.status);
   }
   return r;
@@ -109,8 +130,15 @@ function esLogin(location) {
 }
 
 export async function pedir(ruta) {
-  const r = await pedirCrudo(ruta);
-  return r.json();
+  const clave = `${urlBase()}|${ruta}`;
+  let entrada = cacheLecturas.get(clave);
+  if (!entrada || Date.now() - entrada.cuando > 30000) {
+    entrada = { cuando: Date.now(), promesa: pedirCrudo(ruta).then((r) => r.json()) };
+    cacheLecturas.set(clave, entrada);
+    entrada.promesa.catch(() => { if (cacheLecturas.get(clave) === entrada) cacheLecturas.delete(clave); });
+    if (cacheLecturas.size > 300) cacheLecturas.delete(cacheLecturas.keys().next().value);
+  }
+  return structuredClone(await entrada.promesa);
 }
 
 // Descarga a memoria, para previsualizar. Si el archivo pasa de `maximo`
@@ -159,6 +187,7 @@ export async function usuarioActual() {
 // Tras cerrar sesión o entrar con otra cuenta.
 export function olvidarUsuario() {
   yo = null;
+  cacheLecturas.clear();
 }
 
 export function carpetaDescargas(subcarpeta = '') {
@@ -196,7 +225,11 @@ export async function descargar(ruta, carpeta, nombrePreferido) {
   );
   fs.mkdirSync(carpeta, { recursive: true });
   const destino = rutaLibre(carpeta, nombre);
-  await pipeline(Readable.fromWeb(r.body), fs.createWriteStream(destino));
+  const parcial = `${destino}.${randomUUID()}.parcial`;
+  try {
+    await pipeline(Readable.fromWeb(r.body), fs.createWriteStream(parcial));
+    fs.renameSync(parcial, destino);
+  } finally { fs.rmSync(parcial, { force: true }); }
   return { ruta: destino, bytes: fs.statSync(destino).size };
 }
 
