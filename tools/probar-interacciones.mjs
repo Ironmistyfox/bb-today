@@ -110,3 +110,6 @@ try {
   }
   clearTimeout(limite);
 }
+// Playwright puede conservar el transporte abierto después de matar Electron.
+// Llegar aquí significa que todas las aserciones terminaron correctamente.
+process.exit(0);
