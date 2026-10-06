@@ -2,8 +2,37 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión en preparación es 1.2.7. Todo el código, textos y comentarios se
+MCP. La versión pública vigente es 1.2.7. Todo el código, textos y comentarios se
 escriben en español.
+
+## Publicado: hub corregido 1.2.7, 2026-10-06
+
+El dueño pidió quitar la presentación de app limitada y conservar el hub sin IA.
+Release estable v1.2.7, 13 archivos, código d0f7329. Windows, Mac y publicación
+aprobados en 37532125773. v1.2.6/e15725f permanece sin release: dos pruebas
+fallaron y se corrigió el fallo real de altura al cambiar zoom en una etiqueta
+nueva. No mover ni borrar etiquetas. Hub sin avisos permanentes de mantenimiento.
+ResizeObserver vuelve a medir el contenido después de zoom/ajuste de ancho;
+los controles conservan altura, la lista se desplaza si falta espacio y
+[hidden] oculta de verdad los controles. El ancho elegido ignora redondeo de 1px.
+Pruebas empaquetadas: contenido completo, aviso largo, tres tamaños, mensajes,
+archivos propios, conservación, interacción, MCP, aislamiento y actualizaciones.
+Sin IA real, cuenta real ni envío a Blackboard durante las pruebas.
+
+Web: https://ea7d4e66.bb-today.pages.dev, accesible en https://bb-today.pages.dev.
+Sin texto de app limitada, versión 1.2.7 y contador verificado de 39. API real
+probada con Windows y Mac simulados, y móvil sin desborde. Instalador Windows
+y ZIP Mac arm64/x64 descargados: tamaños, SHA-256 GitHub y SHA-512 de manifiestos
+correctos. DMG disponibles. Verificadores externos verificar-publicacion-127.mjs
+y verificar-web-127.cjs, en bb-today-revision. No quedan copias de pruebas vivas.
+La instalada del dueño era 1.2.5 al cerrar la verificación: para el parche,
+Cuenta → Buscar ahora → descargar → Reiniciar ahora. No ejecutar instaladores
+ni eludir el rechazo automático previo a /S. No decir que ya ejecuta 1.2.7.
+Personal conserva versión y SOLO_AVISO; cambios reflejados, historial sin publicar.
+MODO_LIMITADO/mantenimiento son nombres internos de compatibilidad, sin avisos:
+no poner a false ni reactivar IA sin instrucción explícita del dueño.
+
+Lo siguiente es histórico.
 
 ## Corrección vigente: hub sin avisos, 2026-10-06
 
