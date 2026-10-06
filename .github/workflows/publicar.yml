@@ -59,6 +59,15 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Permite corregir el cierre del comprobador sin mover la etiqueta de la app.
+      - name: Usar la prueba de interacción del flujo
+        shell: bash
+        env:
+          PRUEBAS_REF: ${{ github.sha }}
+        run: |
+          git fetch --depth=1 origin "$PRUEBAS_REF"
+          git show FETCH_HEAD:tools/probar-interacciones.mjs > tools/probar-interacciones.mjs
+
       - run: npm ci
 
       # El servidor MCP de «Resolver con Claude» viaja como bundle, que no se versiona.
@@ -144,12 +153,19 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Usar la prueba de interacción del flujo
+        env:
+          PRUEBAS_REF: ${{ github.sha }}
+        run: |
+          git fetch --depth=1 origin "$PRUEBAS_REF"
+          git show FETCH_HEAD:tools/probar-interacciones.mjs > tools/probar-interacciones.mjs
+
       - run: npm ci
 
       # npm sólo instala el binario de koffi de esta máquina (Apple Silicon);
       # la versión para Intel necesita también el suyo.
       - name: Binario de koffi para Mac Intel
-        run: npm install --no-save --force @koromix/koffi-darwin-x64@$(node -p "require('koffi/package.json').version")
+        run: npm install --no-save --force @koromix/koffi-darwin-x64@$(node -p "JSON.parse(require('fs').readFileSync('node_modules/koffi/package.json')).version")
 
       # El servidor MCP de «Resolver con Claude» viaja como bundle, que no se versiona.
       - name: Empaquetar el servidor MCP

@@ -18,6 +18,13 @@ ajustes.prefs = { ...ajustes.prefs, tutorialVisto: true, tareaPrueba: false };
 fs.writeFileSync(rutaAjustes, JSON.stringify(ajustes));
 fs.writeFileSync(path.join(datos, 'inicio-instalado'), 'prueba');
 let electron;
+let paso = 'arranque';
+const marcar = (nombre) => { paso = nombre; console.log('Comprobando: ' + nombre); };
+const limite = setTimeout(() => {
+  console.error('La prueba no terminó en 90 s. Paso: ' + paso);
+  electron?.process().kill('SIGKILL');
+  process.exit(1);
+}, 90000);
 try {
   electron = await _electron.launch({
     executablePath: ejecutable,
@@ -25,6 +32,7 @@ try {
     env: { ...process.env, BB_DATOS: datos, BB_CAPTURA_SIN_RED: '1', BB_SIN_NAVEGADOR: '1' },
     timeout: 30000,
   });
+  marcar('preparar confirmaciones');
   await electron.evaluate(({ dialog, ipcMain }) => {
     globalThis.__confirmaciones = [];
     globalThis.__aperturas = 0;
@@ -35,6 +43,8 @@ try {
     ipcMain.handle('agenda:abrir', () => { globalThis.__aperturas++; });
   });
   const widget = await electron.firstWindow();
+  widget.setDefaultTimeout(10000);
+  marcar('abrir detalle con clic');
   await widget.locator('.item').first().waitFor();
   const fila = widget.locator('.item').first();
   const id = await fila.getAttribute('data-tarea');
@@ -46,12 +56,14 @@ try {
     if (!tarjeta) await new Promise((r) => setTimeout(r, 50));
   }
   assert.ok(tarjeta, 'El clic abre la tarjeta flotante');
+  tarjeta.setDefaultTimeout(10000);
   await tarjeta.locator('#tarjeta.visible.fijada').waitFor();
   await widget.mouse.move(0, 0);
   await tarjeta.waitForTimeout(400);
   assert.equal(await tarjeta.locator('#tarjeta.visible.fijada').count(), 1);
   assert.equal(await electron.evaluate(() => globalThis.__aperturas), 0);
   await tarjeta.locator('#cerrar-vista').click();
+  marcar('cerrar y abrir con teclado');
   await tarjeta.waitForFunction(() => !document.querySelector('#tarjeta').classList.contains('visible'), null, { polling: 50 });
   await fila.focus();
   await widget.keyboard.press('Enter');
@@ -70,12 +82,14 @@ try {
     assert.deepEqual(opciones.buttons, ['Cancelar', 'Quitar de la lista']);
     await electron.evaluate((_, { numero, respuesta }) => globalThis.__confirmaciones[numero - 1].responder({ response: respuesta }), { numero, respuesta });
   };
+  marcar('cancelar eliminación');
   await fila.hover();
   await fila.locator('[data-quitar]').click({ position: { x: 11, y: 11 } });
   await confirmar(1, 0);
   await widget.waitForFunction((selector) => !document.querySelector(selector + ' [data-quitar]').disabled, selector, { polling: 50 });
   assert.equal(await widget.locator(selector).count(), 1, 'Cancelar conserva la tarea');
   assert.equal(await widget.locator('#deshacer').isVisible(), false);
+  marcar('quitar y deshacer');
   await fila.locator('[data-quitar]').click();
   await confirmar(2, 1);
   await widget.locator(selector).waitFor({ state: 'detached' });
@@ -85,9 +99,14 @@ try {
   const finales = JSON.parse(fs.readFileSync(rutaAjustes, 'utf8'));
   assert.ok(!(finales.descartadas || []).some((t) => t.id === id));
   console.log('Correcto: tarjeta fijada con clic/Enter, cierre con ✕/Escape, confirmación, cancelar, quitar y deshacer sin abrir Blackboard.');
+} catch (error) {
+  console.error('Fallo en ' + paso + ':', error);
+  throw error;
 } finally {
   if (electron) {
-    await electron.evaluate(({ app }) => { app.salir = true; app.quit(); }).catch(() => {});
-    await electron.close().catch(() => {});
+    // El cierre del proceso en Mac puede cortar la respuesta del protocolo.
+    electron.process().kill('SIGKILL');
+    await Promise.race([electron.close().catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
   }
+  clearTimeout(limite);
 }

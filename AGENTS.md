@@ -13,6 +13,12 @@ una versión o desplegar la web requiere una petición del responsable del
 proyecto. El responsable autorizó el lanzamiento con IA y corrigió después
 el clic en tareas y el botón de quitar; ese parche se prepara como 1.2.2.
 
+La etiqueta v1.2.2 conserva el commit a6d5396. La primera ejecución
+37382326719 aprobó Windows y todas las comprobaciones de Mac, pero el
+comprobador quedó abierto al cerrar en Mac; se canceló para corregir ese
+cierre. Las ejecuciones manuales usan el comprobador del commit del flujo,
+mientras el código y la versión de la app siguen saliendo de la etiqueta.
+
 Antes de publicar: actualizar package.json/package-lock.json, CHANGELOG,
 README, privacidad y este documento; verificar el paquete Windows y las
 comprobaciones de GitHub Actions en Windows y Mac. `npm run publicar`
