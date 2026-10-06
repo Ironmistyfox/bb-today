@@ -100,6 +100,16 @@ jobs:
       - name: Prueba de aislamiento de avisos
         run: node tools/probar-avisos.mjs
 
+      - name: Prueba de explicación de aprendizaje
+        shell: bash
+        run: node tools/probar-aprendizaje.mjs "dist/win-unpacked/BB Today.exe"
+
+      - name: Prueba del respaldo de aprendizaje
+        shell: bash
+        run: node tools/probar-aprendizaje.mjs "dist/win-unpacked/BB Today.exe"
+        env:
+          BB_PRUEBA_RESPALDO: '1'
+
       - name: Prueba del respaldo de revisión
         shell: bash
         run: node tools/probar-entregables.mjs "dist/win-unpacked/BB Today.exe"
@@ -203,6 +213,14 @@ jobs:
 
       - name: Prueba de aislamiento de avisos
         run: node tools/probar-avisos.mjs
+
+      - name: Prueba de explicación de aprendizaje
+        run: node tools/probar-aprendizaje.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
+
+      - name: Prueba del respaldo de aprendizaje
+        run: node tools/probar-aprendizaje.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
+        env:
+          BB_PRUEBA_RESPALDO: '1'
 
       - name: Prueba del respaldo de revisión
         run: node tools/probar-entregables.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"

@@ -1,6 +1,6 @@
 {
   "name": "bb-today",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "private": true,
   "description": "Tus pendientes de Blackboard en el escritorio de Windows y Mac.",
   "type": "module",

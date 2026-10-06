@@ -2,13 +2,14 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión en preparación es 1.2.3. Todo el código, textos y comentarios se
+MCP. La versión en preparación es 1.2.4. Todo el código, textos y comentarios se
 escriben en español.
 
 ## Trabajo y publicación
 
-**ALTO, 2026-10-06:** el responsable dijo «espera aun no publiques».
-No reanudar publicación ni desplegar el sitio sin una nueva petición explícita.
+**AUTORIZADO, 2026-10-06:** el responsable dijo «ok publica» después de
+implementar la explicación de la IA. Publicar 1.2.4 y desplegar la web.
+El alto anterior queda revocado por esta petición explícita.
 La ejecución 37491974403 aprobó Windows/Mac, pero al cancelarla el release
 1.2.3 alcanzó a salir. Se volvió inmediatamente a borrador y se marcó 1.2.2
 como latest. La web sigue en 1.2.2, sin desplegar estos cambios. La etiqueta
@@ -53,7 +54,7 @@ generación automática, recuperación de respuestas anteriores, conservación
 y fallo visible con motor falso. BB_PRUEBA_RESPALDO=1 prueba portapapeles y
 respaldo web con navegador apagado. No se usaron cuentas reales ni se envió
 una tarea. Estos cambios NO están en la etiqueta inmutable v1.2.3 ni en sus
-artefactos en borrador. Necesitarán otra versión al autorizar publicación.
+artefactos en borrador. Se publican con revisión y adjuntos en 1.2.4.
 
 Validación local: paquete Windows nuevo en bb-today-build-aprendizaje pasó
 aprendizaje, respaldo web simulado, entregables/revisión y humo MCP. Mac y

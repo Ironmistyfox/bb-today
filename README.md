@@ -1,6 +1,6 @@
 # BB Today
 
-Tus pendientes de Blackboard, a la vista. BB Today 1.2.3 combina un widget
+Tus pendientes de Blackboard, a la vista. BB Today 1.2.4 combina un widget
 para Windows y Mac con una app para leer materiales, preparar respuestas con
 ChatGPT o Claude y revisar tus archivos antes de abrir la entrega oficial.
 
@@ -19,6 +19,11 @@ universidad. Código abierto bajo [MIT](LICENSE).
 - Usar ChatGPT o Claude con tu cuenta. Con Codex o Claude Code disponible,
   el agente trabaja en segundo plano; hay respaldo por chatgpt.com o Claude Desktop.
 - Añadir tus archivos, revisar entregables y preparar texto por tarea.
+- Aprender el procedimiento con «Cómo se hace»: la IA genera los pasos y
+  sus razones aparte de los entregables. Puedes generar la explicación de
+  una respuesta anterior sin cambiar sus archivos.
+- Pedir una revisión de imágenes o documentos; conserva el original y
+  elige qué versión adjuntar. Otro clic en Adjuntar quita la selección.
 - Abrir la página oficial de Blackboard y colocar o arrastrar los archivos.
   Revisa su carga y pulsa tú el botón final de envío.
 - Ver mensajes y anuncios de tus cursos. Marcar visto sólo cambia BB Today.
