@@ -10,7 +10,7 @@ Estudiantes que usan Blackboard Learn Ultra y quieren ver sus pendientes al abri
 
 ## Product Purpose
 
-Mostrar el widget y la app completa para que el visitante entienda cómo encajan en su escritorio y pueda descargarlos. La versión 1.2.0 incluye asistencia con IA usando la cuenta de cada estudiante y preparación de entregas que se revisan en Blackboard.
+Mostrar el widget y la app completa para que el visitante entienda cómo encajan en su escritorio y pueda descargarlos. La versión 1.2.6 es un hub sin IA: tareas, mensajes, materiales y preparación de entregas con archivos propios. El widget debe mantener las tareas legibles sin avisos promocionales permanentes.
 
 ## Brand Personality
 

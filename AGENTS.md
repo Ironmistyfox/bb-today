@@ -2,8 +2,26 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión pública vigente es 1.2.5. Todo el código, textos y comentarios se
+MCP. La versión en preparación es 1.2.6. Todo el código, textos y comentarios se
 escriben en español.
+
+## Corrección vigente: hub sin avisos, 2026-10-06
+
+El dueño pidió quitar «app limitada»: se retira la presentación de mantenimiento
+sin reactivar IA, de acuerdo con su instrucción anterior «sólo hub».
+Preparando 1.2.6 para actualizar la pública. El aviso del widget ocupaba espacio
+pero ajustarAlto no lo sumaba: comprimía la lista. Ahora mide hijos visibles,
+márgenes y bordes; sólo la lista puede encogerse y desplazarse. [hidden] impide
+que botones ocultos ocupen espacio. No añadir banners permanentes al widget.
+La guía, README y web describen tareas, mensajes y archivos propios.
+MODO_LIMITADO/mantenimiento permanecen como nombres internos por compatibilidad,
+con IA desactivada, sin avisos visibles. No poner ese booleano a false.
+La instalación local ya es 1.2.5 (verificada ahora); su actualización normal funcionó.
+No ejecutar instaladores ni eludir la revisión que bloqueó /S antes.
+Pruebas ampliadas: lista sin recortes, aviso largo y sus márgenes, tres tamaños,
+mensajes/anuncios, entrega de archivos propios y ausencia de avisos de mantenimiento.
+
+Lo inferior es histórico.
 
 ## Publicación terminada: 1.2.5, 2026-10-06
 

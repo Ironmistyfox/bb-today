@@ -558,7 +558,7 @@ async function cerrarGuia(conPrueba) {
 function pintarGuia() {
   if (!guia || !datos) return;
   if (datos.mantenimiento) {
-    guia.fondo.innerHTML = '<div class="modal guia"><h3>BB Today · modo limitado</h3><p>La asistencia de IA está pausada por mantenimiento. Tus pendientes, instrucciones y materiales siguen disponibles.</p><ol><li>Entra en el Blackboard de tu escuela desde Cuenta.</li><li>Pulsa una tarea del widget para leer sus instrucciones.</li><li>Abre «Mis archivos y entrega», añade tus propios archivos y elige qué adjuntar.</li><li>Comprueba la carga y pulsa tú el envío final en Blackboard.</li></ol><div class="acciones"><button class="boton primario" data-g="fin">Entendido</button></div></div>';
+    guia.fondo.innerHTML = '<div class="modal guia"><h3>Todo lo de tus cursos, a la vista</h3><p>Consulta tareas y mensajes, encuentra tus materiales y prepara la entrega de tus propios archivos.</p><ol><li>Entra en el Blackboard de tu escuela desde Cuenta.</li><li>Pulsa una tarea del widget para leer sus instrucciones. La burbuja reúne mensajes y anuncios.</li><li>Abre «Mis archivos y entrega», añade tus archivos y elige qué adjuntar.</li><li>Comprueba la carga y pulsa tú el envío final en Blackboard.</li></ol><div class="acciones"><button class="boton primario" data-g="fin">Entendido</button></div></div>';
     return;
   }
   const p = datos.prefs;
@@ -1313,9 +1313,6 @@ function pintar() {
   if (datos.mantenimiento) {
     document.querySelectorAll('[data-ir="ia"],[data-ir="respuestas"]').forEach(el=>el.hidden=true);
     if (['ia','respuestas'].includes(seccion)) ir('pendientes');
-    let aviso = $('aviso-mantenimiento');
-    if (!aviso) { aviso=document.createElement('p');aviso.id='aviso-mantenimiento';aviso.className='nota';document.querySelector('nav').append(aviso); }
-    aviso.textContent=datos.avisoMantenimiento;
     for (const id of ['limpiarMetadatos','avisoMetadatos']) $(id)?.closest('.opcion')?.setAttribute('hidden','');
   }
   // El mismo estilo que el widget.

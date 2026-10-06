@@ -1,8 +1,7 @@
 # BB Today
 
-Tus pendientes de Blackboard, a la vista. BB Today 1.2.5 funciona en modo
-limitado por mantenimiento: widget para Windows y Mac, mensajes y consulta de materiales
-y preparación de entregas con tus propios archivos. La asistencia de IA está pausada.
+Tus pendientes de Blackboard, a la vista. BB Today 1.2.6 reúne tus tareas, mensajes y materiales en un widget para
+Windows y Mac. Prepara entregas con tus propios archivos. Esta versión no incluye IA.
 
 [Descargar](https://bb-today.pages.dev/) ·
 [Versiones](https://github.com/Ironmistyfox/bb-today/releases) ·
@@ -24,7 +23,7 @@ universidad. Código abierto bajo [MIT](LICENSE).
 
 La primera vez aparece una guía; puedes volver a abrirla en Cuenta → Ayuda.
 Las respuestas y archivos generados en versiones anteriores se conservan,
-pero la generación de IA y la entrega directa de esos archivos están pausadas.
+La generación de IA está desactivada; se entrega desde archivos que añadas tú.
 
 ## Instalación y actualizaciones
 
@@ -39,7 +38,7 @@ o al pedirlo. Mac avisa y lleva a la página para descargar la versión nueva.
 
 ## Datos y privacidad
 
-En 1.2.5 la IA está pausada: no se consultan motores ni se vigila el portapapeles.
+Esta versión no incluye IA: no se consultan motores ni se vigila el portapapeles.
 La sesión, agenda y archivos se guardan localmente. Se conservan los datos de
 versiones anteriores. Consulta el [aviso completo](https://bb-today.pages.dev/privacidad.html).
 
@@ -69,7 +68,7 @@ node tools/probar-mcp.mjs <ejecutable>
 ```
 
 El MCP incluido para Claude Desktop expone las herramientas de BB Today para
-leer las tareas de la agenda. Guardar respuestas con IA está bloqueado durante el mantenimiento. El servidor de
+leer las tareas de la agenda. Guardar respuestas con IA está desactivado. El servidor de
 desarrollo también permite consultar cursos y otros datos accesibles con la sesión.
 
 ## Publicación

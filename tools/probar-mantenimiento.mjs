@@ -29,12 +29,34 @@ const limite=setTimeout(()=>{console.error('Prueba agotada');app?.process().kill
 try {
   app=await _electron.launch({executablePath:process.argv[2],args:process.argv[3]?[process.argv[3]]:[],env:{...process.env,BB_DATOS:datos,BB_CAPTURA_SIN_RED:'1',BB_SIN_NAVEGADOR:'1',BB_CARPETA_TAREAS:path.join(datos,'tareas')}});
   const widget=await app.firstWindow();
-  await widget.locator('#mantenimiento').waitFor();
+  await widget.locator('.item').first().waitFor();
+  assert.equal(await widget.locator('#mantenimiento').count(),0);
+  // La ventana cabe al contenido, incluso con avisos largos y sus márgenes.
+  const sinCorte=()=>widget.evaluate(()=>{
+    const marco=document.querySelector('#marco');
+    const lista=document.querySelector('#lista');
+    return lista.scrollHeight<=lista.clientHeight+1 && [...marco.children].filter(e=>getComputedStyle(e).display!=='none')
+      .every(e=>e.getBoundingClientRect().bottom<=marco.getBoundingClientRect().bottom+1);
+  });
+  await widget.waitForFunction(()=>document.querySelector('#lista').getBoundingClientRect().bottom<=innerHeight);
+  assert.equal(await sinCorte(),true);
+  await widget.evaluate(()=>{const aviso=document.querySelector('#aviso');aviso.hidden=false;aviso.textContent='No se pudo consultar Blackboard. '.repeat(5);ajustarAlto();});
+  await widget.waitForFunction(()=>document.querySelector('#lista').getBoundingClientRect().bottom<=innerHeight);
+  assert.equal(await sinCorte(),true);
+  await widget.evaluate(()=>{document.querySelector('#aviso').hidden=true;ajustarAlto();});
+  for (const tamano of [0.9,1,1.15]) {
+    await widget.evaluate(tamano=>window.agenda.config.guardar({tamano}),tamano);
+    await widget.waitForFunction(()=>document.querySelector('#lista').getBoundingClientRect().bottom<=innerHeight);
+    assert.equal(await sinCorte(),true,`Contenido completo con tamaño ${tamano}`);
+  }
+  await widget.evaluate(()=>window.agenda.config.guardar({tamano:1}));
   await widget.locator('#mensajes').click();
   await widget.locator('#panel-mensajes .mensaje').first().waitFor();
   assert.equal(await widget.locator('#panel-mensajes .mensaje').count(),2);
   assert.match(await widget.locator('#panel-mensajes').textContent(),/Mensaje de prueba aislado/);
   assert.match(await widget.locator('#panel-mensajes').textContent(),/Anuncio de prueba aislado/);
+  await widget.waitForFunction(()=>document.querySelector('#lista').getBoundingClientRect().bottom<=innerHeight);
+  assert.equal(await sinCorte(),true);
   await widget.evaluate(()=>window.agenda.mensajes.vistos(['m:prueba','a:prueba']));
   assert.equal(await widget.locator('#bolita').isVisible(),false);
   await widget.locator('#mensajes').click();
@@ -45,7 +67,8 @@ try {
   let pagina;for(let i=0;i<100&&!pagina;i++){pagina=app.windows().find(p=>p.url().includes('app.html'));if(!pagina)await new Promise(r=>setTimeout(r,50));}
   assert.ok(pagina);pagina.setDefaultTimeout(15000);
   const errores=[];pagina.on('pageerror',e=>errores.push(e.message));
-  await pagina.locator('#aviso-mantenimiento').waitFor();
+  await pagina.locator('button[data-subir]').waitFor();
+  assert.equal(await pagina.locator('#aviso-mantenimiento').count(),0);
   assert.equal(await pagina.locator('[data-ir="ia"]').isVisible(),false);
   assert.equal(await pagina.locator('[data-resolver]').count(),0);
   const config=await pagina.evaluate(()=>window.agenda.config.obtener());assert.equal(config.mantenimiento,true);assert.equal(config.trabajo,null);
@@ -62,7 +85,7 @@ try {
   await assert.rejects(pagina.evaluate(ruta=>window.agenda.entrega.adjuntar('_t1',ruta,true),generado));
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(datos,'respuestas.json'))),anteriores);
   assert.equal(fs.readFileSync(propio,'utf8'),'Mi trabajo de prueba.');assert.deepEqual(errores,[]);
-  if(process.argv[4])await pagina.screenshot({path:process.argv[4]});
+  if(process.argv[4]){await pagina.screenshot({path:process.argv[4]});await widget.screenshot({path:process.argv[4].replace(/\.png$/,'-widget.png')});}
   console.log('Mantenimiento: mensajes/anuncios disponibles, IA/MCP bloqueados, respuestas preservadas, archivos propios/adjuntar/quitar/texto disponibles. Sin red ni envío real.');
 } catch(e){salida=1;console.error(e);} finally{await cerrarPrueba(app);clearTimeout(limite);}
 process.exit(salida);
