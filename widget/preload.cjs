@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld('agenda', {
     obtener: (tareaId) => ipcRenderer.invoke('entrega:obtener', tareaId),
     adjuntar: (tareaId, ruta, si) => ipcRenderer.invoke('entrega:adjuntar', tareaId, ruta, si),
     adjuntarTodo: (tareaId) => ipcRenderer.invoke('entrega:adjuntarTodo', tareaId),
+    revisar: (pedido) => ipcRenderer.invoke('entrega:revisar', pedido),
     subir: (tareaId, rutas) => ipcRenderer.invoke('entrega:subir', tareaId, rutas),
     quitarTuyo: (tareaId, ruta) => ipcRenderer.invoke('entrega:quitarTuyo', tareaId, ruta),
     texto: (tareaId, texto) => ipcRenderer.invoke('entrega:texto', tareaId, texto),

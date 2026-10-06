@@ -28,6 +28,7 @@ import { limpiar } from './limpiar.js';
 import { copiarSiCambio } from './archivos.js';
 import { reunirMaterial } from './material.js';
 import { colocarArchivos } from './entrega.js';
+import { ES_REVISABLE, prepararRevision } from './revision.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const NOMBRE = 'BB Today';
@@ -842,6 +843,17 @@ function correrEnFondo(c, motor, soloImagen) {
 
 function terminarEnFondo(c, motor, soloImagen, codigo) {
   const r = fondo.recoger(c.carpeta, c.inicio);
+  if (c.modo === 'revision') {
+    if (codigo !== 0 || (!r.imagenes.length && !r.archivos.length)) {
+      const fallo = fondo.clasificarFallo(fondo.registroUltimaVuelta(c.carpeta));
+      if (fallo.tipo !== 'otro') bloquear(motor, fallo);
+      publicar({ claude: { ...c, fase: 'error', detalle: fondo.finDelRegistro(c.carpeta) || 'La IA no dejó un archivo revisado. El original se conserva.' } });
+      return;
+    }
+    guardarRevision(c, [...r.imagenes, ...r.archivos]);
+    publicar({ claude: { ...c, fase: 'lista', recibido: r.imagenes.length ? 'imagen' : 'texto' } });
+    return;
+  }
   // Claude dejó el pedido de la hoja: la dibuja Codex.
   if (!soloImagen && motor === 'claude' && r.pedidoImagen && !r.imagenes.length && puedeEnFondo('codex')) {
     guardarDeFondo(c, r);
@@ -1196,7 +1208,7 @@ function listaEntregables(tareaId) {
     copiarSiCambio(origen, destino);
     lista.push({ ruta: destino, origen: r.ia || 'IA' });
   });
-  for (const a of r?.archivos || []) if (fs.existsSync(a.ruta)) lista.push({ ruta: a.ruta, origen: r.ia || 'IA' });
+  for (const a of r?.archivos || []) if (fs.existsSync(a.ruta)) lista.push({ ruta: a.ruta, origen: a.ia || r.ia || 'IA', revisionDe: a.revisionDe });
   const tuyos = path.join(carpeta, 'tuyos');
   let nombres = [];
   try {
@@ -1211,6 +1223,7 @@ function listaEntregables(tareaId) {
       ...x,
       nombre: path.basename(x.ruta),
       imagen: ES_IMAGEN.test(x.ruta),
+      revisable: ES_REVISABLE.test(x.ruta),
       url: ES_IMAGEN.test(x.ruta) ? `${pathToFileURL(x.ruta).href}?v=${Math.round(fs.statSync(x.ruta).mtimeMs)}` : null,
       peso: tamano(x.ruta),
       adjuntado: adjuntos.has(x.ruta),
@@ -1305,9 +1318,55 @@ async function entregar(tareaId) {
 
 ipcMain.handle('entrega:obtener', (_e, tareaId) => datosEntrega(tareaId));
 ipcMain.handle('entrega:adjuntar', (_e, tareaId, ruta, si) => {
-  if (esEntregable(tareaId, ruta)) adjuntar(tareaId, [ruta], si);
+  if (!esEntregable(tareaId, ruta)) throw new Error('No encontré ese archivo. Actualiza la tarea y vuelve a intentarlo.');
+  adjuntar(tareaId, [ruta], si === true);
   return datosEntrega(tareaId);
 });
+
+function guardarRevision(c, rutas) {
+  const anterior = respuestas[c.tareaId] || { titulo: c.titulo, texto: '', imagenes: [], archivos: [] };
+  const archivos = [...(anterior.archivos || [])];
+  for (const ruta of rutas) {
+    if (!fs.existsSync(ruta) || !fs.statSync(ruta).isFile()) continue;
+    const relativa = path.relative(fs.realpathSync(c.carpeta), fs.realpathSync(ruta));
+    if (relativa.startsWith('..') || path.isAbsolute(relativa)) continue;
+    if (!archivos.some(a => a.ruta === ruta)) archivos.push({ nombre: path.basename(ruta), ruta, revisionDe: c.originalNombre, ia: c.nombre || 'ChatGPT' });
+  }
+  respuestas[c.tareaId] = { ...anterior, archivos, cuando: new Date().toISOString() };
+  guardarRespuestas();
+  publicar({ entregaCambio: Date.now() });
+}
+
+async function revisarEntregable({ tareaId, ruta, comentario }) {
+  if (typeof comentario !== 'string' || !comentario.trim() || comentario.length > 4000) return { error: 'Escribe qué quieres cambiar (hasta 4000 caracteres).' };
+  if (!esEntregable(tareaId, ruta) || !ES_REVISABLE.test(ruta)) return { error: 'Este archivo no está disponible para revisión.' };
+  if (trabajo || (estado.claude && ['preparando','trabajando','dibujando','esperando','leyendo'].includes(estado.claude.fase))) return { error: 'Ya hay una tarea en proceso. Espera o cancélala antes de pedir otra revisión.' };
+  const encontrada = buscarEnAgenda(tareaId);
+  if (!encontrada) return { error: 'No encontré esa tarea.' };
+  const base = { tareaId, titulo: encontrada.tarea.titulo, modo: 'revision', inicio: Date.now(), originalNombre: path.basename(ruta), cuando: new Date().toISOString() };
+  publicar({ claude: { ...base, ia: 'fondo', fase: 'preparando' } });
+  try {
+    vigia = null;
+    const preparada = prepararRevision({ base: carpetaDeTarea(tareaId), ruta, comentario: comentario.trim(), titulo: base.titulo, solucion: respuestas[tareaId]?.texto, estilo: estado.prefs.iaPedidoImagen });
+    await fondo.motores();
+    if (estado.claude?.inicio !== base.inicio) return { error: 'Se canceló la revisión.' };
+    const motor = preparada.imagen || estado.prefs.iaResolver === 'chatgpt' ? 'codex' : 'claude';
+    if (puedeEnFondo(motor)) {
+      correrEnFondo({ ...base, carpeta: preparada.carpeta, nombre: motor === 'codex' ? 'ChatGPT' : 'Claude', ia: 'fondo', motor }, motor, false);
+      return { ok: true, fondo: true };
+    }
+    const { pegar } = await chatgpt.abrir(preparada.pedido, estado.prefs.chatgptModelo, { enviar: false });
+    vigia = await chatgpt.vigilarPortapapeles({ soloImagen: preparada.imagen });
+    abrirVentanaArchivos([preparada.original]);
+    publicar({ claude: { ...base, ia: 'chatgpt', fase: 'esperando', carpeta: preparada.carpeta, imagen: preparada.imagen, adjuntar: 1, pegar } });
+    return { ok: true, fondo: false, manual: true };
+  } catch (error) {
+    registrar('revisar archivo', error);
+    publicar({ claude: { ...base, fase: 'error', detalle: error.message } });
+    return { error: error.message };
+  }
+}
+ipcMain.handle('entrega:revisar', (_e, pedido) => revisarEntregable(pedido || {}));
 ipcMain.handle('entrega:adjuntarTodo', (_e, tareaId) => {
   adjuntar(tareaId, listaEntregables(tareaId).map((x) => x.ruta), true);
   return datosEntrega(tareaId);
@@ -1359,6 +1418,15 @@ async function imagenConChatGPT(tareaId) {
 }
 
 function guardarDeChatGPT(c, { texto, imagen }) {
+  if (c.modo === 'revision') {
+    fs.mkdirSync(path.join(c.carpeta, 'entrega'), { recursive: true });
+    const ruta = path.join(c.carpeta, 'entrega', imagen ? 'revisado.png' : 'revisado.md');
+    fs.writeFileSync(ruta, imagen || texto);
+    guardarRevision(c, [ruta]);
+    if (texto) vigia?.ignorarTexto(texto);
+    publicar({ claude: { ...c, fase: 'lista', recibido: imagen ? 'imagen' : 'texto' } });
+    return;
+  }
   const r = { titulo: c.titulo, texto: '', ...respuestas[c.tareaId], cuando: new Date().toISOString() };
   // Lo primero que llega al resolver con ChatGPT sustituye a la respuesta
   // anterior; lo que llega después en la misma espera se le suma.

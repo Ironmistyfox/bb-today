@@ -1,13 +1,21 @@
 # Cambios
 
-## Sin publicar
+## 1.2.3 · 2026-10-06
+
+- Adjuntar muestra el estado y permite quitar el archivo de la selección con
+  otro clic, sin borrarlo. Se evitan clics simultáneos y se muestran los errores.
+- «Pedir revisión» en imágenes y documentos permite escribir un consejo.
+  La versión corregida se añade como otro archivo, conservando el original
+  y la solución escrita. Se puede cancelar y elegir qué versión adjuntar.
+- La revisión usa el motor disponible; sin acceso al CLI, abre ChatGPT con
+  el pedido y una copia del original para adjuntar manualmente.
 
 - Los apuntes digitales piden letras inclinadas y de tamaños variables,
   presión irregular y líneas hechas a pulso, sin columnas simétricas.
   Se actualizan los pedidos predeterminados anteriores, conservando los personalizados.
 
 - Las comprobaciones con datos inventados no emiten avisos del sistema ni
-  registran la app de prueba para iniciar con Windows.
+  registran la app de prueba para iniciar con Windows ni descargan actualizaciones.
 
 ## 1.2.2 · 2026-10-05
 

@@ -2,7 +2,7 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión publicada es 1.2.2. Todo el código, textos y comentarios se
+MCP. La versión en preparación es 1.2.3. Todo el código, textos y comentarios se
 escriben en español.
 
 ## Trabajo y publicación
@@ -27,6 +27,8 @@ construye instaladores y crea el release. Desplegar la web después del release
 con `npm run desplegar-sitio`. Nunca ejecutar wrangler dentro del repo.
 
 ## Mapa
+
+- `widget/revision.js`: copia aislada del archivo y pedido de revisión.
 
 - `widget/main.js`: proceso principal, ventanas, estado, IPC, IA y entregas.
 - `widget/app.html`: pendientes, respuestas, IA, ajustes, cuenta y guía inicial.
@@ -57,6 +59,22 @@ descarga actualizaciones; Mac avisa y lleva a la web mientras no exista firma
 apta para actualización automática.
 
 ## Pruebas
+
+La 1.2.3 añade revisión por archivo y estados de adjuntos. El responsable
+pidió ambas funciones y se prepara su actualización pública. Los originales
+y la solución no se sustituyen; el resultado revisado no se adjunta solo.
+La IA trabaja en una carpeta nueva de revisiones. Sin CLI disponible, ChatGPT
+recibe el pedido para que la persona adjunte la copia del original; copiar
+texto guarda Markdown, los documentos binarios se descargan y suben manualmente.
+tools/probar-entregables.mjs usa motor falso para comprobar adjuntar/quitar,
+avisos de metadatos, revisión de imagen/documento, validación, concurrencia,
+error y cancelación. BB_PRUEBA_RESPALDO=1 comprueba el respaldo con navegador
+desactivado. Pasaron en desarrollo Windows; no equivalen a probar una IA
+real ni a enviar una tarea a Blackboard. Ejecutarlas también en los paquetes.
+
+El paquete local 1.2.3 de Windows también pasó entregables/revisión (incluye
+archivo propio), error/concurrencia/cancelación, respaldo, clic/teclado del
+widget, humo y MCP. El motor de revisión fue simulado y el navegador apagado.
 
 El 2026-10-05 los datos temporales emitieron un aviso de «Integrales dobles»
 en el escritorio del dueño: aislar BB_DATOS no silencia Windows. Se corrigió

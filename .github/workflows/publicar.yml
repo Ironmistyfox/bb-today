@@ -93,6 +93,19 @@ jobs:
         shell: bash
         run: node tools/probar-interacciones.mjs "dist/win-unpacked/BB Today.exe"
 
+      - name: Prueba de entregables y revisión
+        shell: bash
+        run: node tools/probar-entregables.mjs "dist/win-unpacked/BB Today.exe"
+
+      - name: Prueba de aislamiento de avisos
+        run: node tools/probar-avisos.mjs
+
+      - name: Prueba del respaldo de revisión
+        shell: bash
+        run: node tools/probar-entregables.mjs "dist/win-unpacked/BB Today.exe"
+        env:
+          BB_PRUEBA_RESPALDO: '1'
+
       - name: Guardar las capturas de la prueba
         if: always()
         uses: actions/upload-artifact@v4
@@ -184,6 +197,17 @@ jobs:
 
       - name: Prueba de interacción con tareas
         run: node tools/probar-interacciones.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
+
+      - name: Prueba de entregables y revisión
+        run: node tools/probar-entregables.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
+
+      - name: Prueba de aislamiento de avisos
+        run: node tools/probar-avisos.mjs
+
+      - name: Prueba del respaldo de revisión
+        run: node tools/probar-entregables.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
+        env:
+          BB_PRUEBA_RESPALDO: '1'
 
       - name: Guardar las capturas de la prueba
         if: always()

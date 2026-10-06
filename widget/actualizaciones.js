@@ -37,7 +37,7 @@ export function iniciarActualizaciones({ alCambiar, antesDeSalir, registrar }) {
   avisar = alCambiar;
   antesDeInstalar = antesDeSalir;
   // En desarrollo (electron .) no hay instalador que actualizar.
-  if (!app.isPackaged) return;
+  if (!app.isPackaged || process.env.BB_CAPTURA_SIN_RED) return;
 
   autoUpdater.autoDownload = !SOLO_AVISO;
   autoUpdater.autoInstallOnAppQuit = true;

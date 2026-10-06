@@ -185,6 +185,11 @@
   .pie-entregable .origen.tuyo { color: var(--pronto); }
   .pie-entregable .botones { display: flex; gap: 5px; margin-top: 5px; }
   .pie-entregable .botones [data-adjuntar] { flex: 1; justify-content: center; }
+  .pie-entregable [data-revisar] { margin-top: 4px; justify-content: center; }
+  .revision-formulario { padding: 14px; margin: 12px 0; border: 1px solid var(--borde); border-radius: 10px; background: var(--fondo-a); }
+  .revision-formulario label { display: block; font-weight: 600; margin-bottom: 8px; overflow-wrap: anywhere; }
+  .revision-formulario textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 90px; margin: 8px 0; }
+  .revision-formulario .acciones { justify-content: flex-end; flex-wrap: wrap; }
   .boton.listo { background: color-mix(in srgb, var(--bien) 18%, transparent); border-color: var(--bien); color: var(--bien); }
   .soltar { border: 1.5px dashed var(--borde); border-radius: 10px; padding: 14px; text-align: center; color: var(--tenue); font-size: 12.5px; cursor: pointer; }
   .soltar:hover, .soltando .soltar { border-color: var(--acento); color: var(--texto); background: color-mix(in srgb, var(--acento) 8%, transparent); }
@@ -683,12 +688,15 @@ function pintarPendientes() {
 // generó la IA y lo que subes tú; cada uno se adjunta o no) → tu entrega
 // (adjuntos y texto) → «Entregar», que abre la página oficial de Blackboard.
 let entregaActual = null;
+let revisionActual = null;
+let guardandoAdjunto = false;
 let notaTarea = '';
 
 async function verTarea(id) {
   const t = todasLasTareas().find((x) => x.id === id);
   if (!t) return;
   tareaSel = t;
+  revisionActual = null;
   notaTarea = '';
   entregaActual = null;
   pintarPendientes();
@@ -721,6 +729,7 @@ function pintarDetalleTarea(d) {
   const ruta = datos.rutas?.[t.id] || { resolverCon: 'ChatGPT' };
   const fecha = t.cuando ? `${mayus(fmtLargo.format(t.cuando))}${t.cuando < Date.now() ? (t.tardia ? ' · venció, acepta entrega tardía' : ' · venció') : ''}` : 'Sin fecha de entrega';
   const trabajando = datos.trabajo?.tareaId === t.id && ['preparando', 'trabajando', 'dibujando', 'esperando'].includes(datos.trabajo.fase);
+  const revisionTrabajo = datos.trabajo?.tareaId === t.id && datos.trabajo.modo === 'revision' ? datos.trabajo : null;
   const instrucciones = d === null ? '<div class="sub">Cargando…</div>' : d.error ? '<div class="sub">No se pudo leer el detalle de Blackboard.</div>' : `<div class="instrucciones">${esc(d.instrucciones || 'La tarea no trae instrucciones escritas.')}</div>`;
   const archivosTarea = d && !d.error && d.archivos?.length
     ? `<div class="sub-titulo">Archivos de la tarea</div>${d.archivos.map((a, i) => `<div class="archivo" data-archivo="${i}" title="Abrir">${iconoArchivo(a.nombre)}<span class="nombre">${esc(a.nombre)}</span>${a.bytes ? `<span class="peso">${pesoLegible(a.bytes)}</span>` : ''}</div>`).join('')}`
@@ -735,10 +744,12 @@ function pintarDetalleTarea(d) {
         <div class="nombre" title="${esc(x.nombre)}">${esc(x.nombre)}</div>
         <div class="meta"><span class="origen ${x.origen === 'Tuyo' ? 'tuyo' : ''}">${esc(x.origen === 'Tuyo' ? 'Tuyo' : `De ${x.origen}`)}</span> · ${pesoLegible(x.peso)}</div>
         <div class="botones">
-          <button class="boton chico ${x.adjuntado ? 'listo' : 'primario'}" data-adjuntar>${x.adjuntado ? '✓ Adjuntado' : 'Adjuntar'}</button>
+          <button type="button" class="boton chico ${x.adjuntado ? 'listo' : 'primario'}" data-adjuntar aria-pressed="${!!x.adjuntado}" title="${x.adjuntado ? 'Quitar de la entrega; el archivo se conserva' : 'Seleccionar para la entrega'}" ${guardandoAdjunto ? 'disabled' : ''}>${x.adjuntado ? 'Quitar adjunto' : 'Adjuntar'}</button>
           <button class="boton chico" data-mostrar-entregable title="Mostrar en la carpeta">📁</button>
           ${x.origen === 'Tuyo' ? '<button class="boton chico peligro" data-quitar-tuyo title="Quitar">✕</button>' : ''}
         </div>
+        ${x.revisable ? `<button type="button" class="boton chico" data-revisar aria-expanded="${revisionActual?.ruta === x.ruta}" ${trabajando ? 'disabled' : ''}>Pedir revisión</button>` : ''}
+        ${x.revisionDe ? `<div class="meta">Revisión de ${esc(x.revisionDe)}</div>` : ''}
       </div>
     </div>`).join('');
   const prueba = t.cursoId === 'bbtoday-prueba';
@@ -746,7 +757,7 @@ function pintarDetalleTarea(d) {
     ? `${adjuntos.length ? `${adjuntos.length} ${adjuntos.length === 1 ? 'archivo adjunto' : 'archivos adjuntos'}` : 'Sin archivos'}${en.texto ? ' · con texto' : ''}`
     : 'Aún no adjuntas nada.';
 
-  const foco = document.activeElement?.id === 'texto-entrega' ? { inicio: document.activeElement.selectionStart, fin: document.activeElement.selectionEnd } : null;
+  const foco = ['texto-entrega', 'comentario-revision'].includes(document.activeElement?.id) ? { id: document.activeElement.id, inicio: document.activeElement.selectionStart, fin: document.activeElement.selectionEnd } : null;
   $('detalle-pendiente').innerHTML = `<div class="detalle">
     <div class="curso" style="color:${t.color}">${esc(t.curso)}</div>
     <h2>${esc(t.titulo)}</h2>
@@ -773,6 +784,15 @@ function pintarDetalleTarea(d) {
         </span>
       </div>
       ${lista.length ? `<div class="entregables">${tarjetas}</div>` : ''}
+      ${revisionActual ? `<div class="revision-formulario" role="region" aria-label="Revisar archivo">
+        <label for="comentario-revision">Revisar ${esc(revisionActual.nombre)}</label>
+        <p class="sub">Describe qué quieres corregir. La nueva versión aparece aquí y conserva el original.</p>
+        <textarea id="comentario-revision" maxlength="4000" placeholder="Por ejemplo: letras menos uniformes, corrige el paso 3 o desarrolla mejor la conclusión." ${revisionActual.enviando ? 'disabled' : ''}>${esc(revisionActual.comentario || '')}</textarea>
+        <div role="alert" class="sub" data-error-revision>${esc(revisionActual.error || '')}</div>
+        <div class="acciones"><button class="boton chico" data-cancelar-revision ${revisionActual.enviando ? 'disabled' : ''}>Cancelar</button><button class="boton primario" data-enviar-revision ${revisionActual.enviando ? 'disabled' : ''}>${revisionActual.enviando ? 'Enviando…' : 'Enviar revisión'}</button></div>
+      </div>` : ''}
+      <p class="sub">Adjuntar selecciona el archivo para tu entrega. Otro clic lo quita de la selección y conserva el archivo.</p>
+      ${revisionTrabajo ? `<p class="sub" role="${revisionTrabajo.fase === 'error' ? 'alert' : 'status'}">${revisionTrabajo.fase === 'error' ? esc(revisionTrabajo.detalle || 'No se pudo revisar el archivo. El original se conserva.') : revisionTrabajo.fase === 'lista' ? 'Revisión lista. Elige qué versión quieres adjuntar.' : revisionTrabajo.fase === 'cancelada' ? 'Revisión cancelada. El original se conserva.' : 'Revisando ' + esc(revisionTrabajo.originalNombre || 'archivo') + '…'}${trabajando ? ' <button class="boton chico" data-detener-revision>Cancelar revisión</button>' : ''}</p>` : ''}
       <div class="soltar" data-subir>${lista.length ? 'Arrastra aquí más fotos o archivos tuyos' : `Aquí aparece lo que genere ${esc(ruta.resolverCon)} (hojas, documentos, código) y lo que subas tú. Arrastra tus fotos o archivos aquí, o pulsa «Subir tus archivos».`}</div>
       ${en.respuesta ? `<details class="respuesta-plegable"><summary>Respuesta escrita de ${esc(en.respuesta.ia)}</summary><div class="acciones"><button class="boton chico" data-copiar-respuesta>Copiar</button><button class="boton chico" data-usar-respuesta>Usar como texto de la entrega</button></div><div class="respuesta-md" id="md-tarea"></div></details>` : ''}
     </section>
@@ -792,9 +812,9 @@ function pintarDetalleTarea(d) {
     $('md-tarea').innerHTML = formatoRespuesta.markdown(en.respuesta.texto);
     formatoRespuesta.formulas($('md-tarea'));
   }
-  if (foco) {
-    $('texto-entrega').focus();
-    $('texto-entrega').setSelectionRange(foco.inicio, foco.fin);
+  if (foco && $(foco.id) && !$(foco.id).disabled) {
+    $(foco.id).focus({ preventScroll: true });
+    $(foco.id).setSelectionRange(foco.inicio, foco.fin);
   }
 }
 
@@ -879,10 +899,44 @@ $('detalle-pendiente').addEventListener('click', async (e) => {
   const tarjeta = e.target.closest('.entregable');
   const rutaArchivo = tarjeta?.dataset.ruta;
   if (rutaArchivo && e.target.closest('[data-adjuntar]')) {
+    if (guardandoAdjunto) return;
     const actual = (entregaActual?.entregables || []).find((x) => x.ruta === rutaArchivo);
-    if (!actual?.adjuntado && actual?.origen !== 'Tuyo') await avisoMetadatos([actual.nombre]);
-    entregaActual = await window.agenda.entrega.adjuntar(t.id, rutaArchivo, !actual?.adjuntado);
-    return pintarDetalleTarea(detalleActual);
+    if (!actual) return;
+    guardandoAdjunto = true;
+    e.target.closest('button').disabled = true;
+    try {
+      if (!actual.adjuntado && actual.origen !== 'Tuyo') await avisoMetadatos([actual.nombre]);
+      const en = await window.agenda.entrega.adjuntar(t.id, rutaArchivo, !actual.adjuntado);
+      if (tareaSel?.id === t.id) { entregaActual = en; notaTarea = actual.adjuntado ? 'Se quitó de la entrega. El archivo se conserva.' : 'Archivo adjuntado a tu entrega.'; }
+    } catch (error) {
+      if (tareaSel?.id === t.id) notaTarea = esc('No se pudo cambiar el adjunto: ' + error.message);
+    } finally { guardandoAdjunto = false; pintarDetalleTarea(detalleActual); }
+    return;
+  }
+  if (rutaArchivo && e.target.closest('[data-revisar]')) {
+    const archivo = entregaActual?.entregables.find(x => x.ruta === rutaArchivo);
+    if (!archivo) return;
+    revisionActual = { ruta: rutaArchivo, nombre: archivo.nombre, comentario: '' };
+    pintarDetalleTarea(detalleActual);
+    $('comentario-revision')?.focus();
+    return;
+  }
+  if (e.target.closest('[data-cancelar-revision]')) { revisionActual = null; return pintarDetalleTarea(detalleActual); }
+  if (e.target.closest('[data-detener-revision]')) { await window.agenda.claude.cancelar(); notaTarea = 'Revisión cancelada. El original se conserva.'; pintarDetalleTarea(detalleActual); return; }
+  if (e.target.closest('[data-enviar-revision]') && revisionActual && !revisionActual.enviando) {
+    const seleccion = revisionActual;
+    seleccion.comentario = $('comentario-revision').value.trim();
+    if (!seleccion.comentario) { seleccion.error = 'Escribe qué quieres cambiar.'; pintarDetalleTarea(detalleActual); $('comentario-revision')?.focus(); return; }
+    seleccion.enviando = true;
+    pintarDetalleTarea(detalleActual);
+    try {
+      const r = await window.agenda.entrega.revisar({ tareaId: t.id, ruta: seleccion.ruta, comentario: seleccion.comentario });
+      if (tareaSel?.id !== t.id) return;
+      if (r?.error) { seleccion.error = r.error; seleccion.enviando = false; }
+      else { revisionActual = null; notaTarea = r?.manual ? 'Adjunta el original en el chat que se abrió y envía el pedido. Copia la imagen corregida para traerla aquí; si es un documento, descarga el archivo y añádelo con «Subir tus archivos». Copiar texto guarda una alternativa en Markdown.' : 'La IA está revisando ese archivo. La nueva versión aparecerá en Entregables.'; }
+    } catch (error) { seleccion.error = error.message; seleccion.enviando = false; }
+    if (tareaSel?.id === t.id) pintarDetalleTarea(detalleActual);
+    return;
   }
   if (rutaArchivo && e.target.closest('[data-mostrar-entregable]')) return window.agenda.entrega.mostrarArchivo(t.id, rutaArchivo);
   if (rutaArchivo && e.target.closest('[data-quitar-tuyo]')) {
@@ -929,6 +983,14 @@ $('detalle-pendiente').addEventListener('click', async (e) => {
 // El texto de la entrega se guarda solo.
 $('detalle-pendiente').addEventListener('change', async (e) => {
   if (e.target.id === 'texto-entrega' && tareaSel) entregaActual = await window.agenda.entrega.texto(tareaSel.id, e.target.value);
+});
+$('detalle-pendiente').addEventListener('input', (e) => {
+  if (e.target.id === 'comentario-revision' && revisionActual) {
+    revisionActual.comentario = e.target.value;
+    revisionActual.error = '';
+    const aviso = document.querySelector('[data-error-revision]');
+    if (aviso) aviso.textContent = '';
+  }
 });
 
 // Soltar fotos o archivos propios en la tarea.
