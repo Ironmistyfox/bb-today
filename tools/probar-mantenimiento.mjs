@@ -32,16 +32,17 @@ try {
   await widget.locator('.item').first().waitFor();
   assert.equal(await widget.locator('#mantenimiento').count(),0);
   // La ventana cabe al contenido, incluso con avisos largos y sus márgenes.
-  const sinCorte=()=>widget.evaluate(()=>{
+  const contenidoCompleto=()=>{
     const marco=document.querySelector('#marco');
     const lista=document.querySelector('#lista');
     return lista.scrollHeight<=lista.clientHeight+1 && [...marco.children].filter(e=>getComputedStyle(e).display!=='none')
       .every(e=>e.getBoundingClientRect().bottom<=marco.getBoundingClientRect().bottom+1);
-  });
-  await widget.waitForFunction(()=>document.querySelector('#lista').getBoundingClientRect().bottom<=innerHeight);
+  };
+  const sinCorte=()=>widget.evaluate(contenidoCompleto);
+  await widget.waitForFunction(contenidoCompleto);
   assert.equal(await sinCorte(),true);
   await widget.evaluate(()=>{const aviso=document.querySelector('#aviso');aviso.hidden=false;aviso.textContent='No se pudo consultar Blackboard. '.repeat(5);ajustarAlto();});
-  await widget.waitForFunction(()=>document.querySelector('#lista').getBoundingClientRect().bottom<=innerHeight);
+  await widget.waitForFunction(contenidoCompleto);
   assert.equal(await sinCorte(),true);
   await widget.evaluate(()=>{document.querySelector('#aviso').hidden=true;ajustarAlto();});
   for (const tamano of [0.9,1,1.15]) {
@@ -49,10 +50,7 @@ try {
     // setZoomFactor y el cambio de bounds llegan por vías distintas en Mac.
     // Esperar la condición completa que se verifica, no sólo el borde externo:
     // una lista comprimida también puede tener su borde dentro de la ventana.
-    await widget.waitForFunction(()=>{
-      const lista=document.querySelector('#lista');
-      return lista.scrollHeight<=lista.clientHeight+1 && lista.getBoundingClientRect().bottom<=innerHeight;
-    });
+    await widget.waitForFunction(contenidoCompleto);
     assert.equal(await sinCorte(),true,`Contenido completo con tamaño ${tamano}`);
   }
   await widget.evaluate(()=>window.agenda.config.guardar({tamano:1}));
@@ -61,7 +59,7 @@ try {
   assert.equal(await widget.locator('#panel-mensajes .mensaje').count(),2);
   assert.match(await widget.locator('#panel-mensajes').textContent(),/Mensaje de prueba aislado/);
   assert.match(await widget.locator('#panel-mensajes').textContent(),/Anuncio de prueba aislado/);
-  await widget.waitForFunction(()=>document.querySelector('#lista').getBoundingClientRect().bottom<=innerHeight);
+  await widget.waitForFunction(contenidoCompleto);
   assert.equal(await sinCorte(),true);
   await widget.evaluate(()=>window.agenda.mensajes.vistos(['m:prueba','a:prueba']));
   assert.equal(await widget.locator('#bolita').isVisible(),false);
@@ -93,5 +91,7 @@ try {
   assert.equal(fs.readFileSync(propio,'utf8'),'Mi trabajo de prueba.');assert.deepEqual(errores,[]);
   if(process.argv[4]){await pagina.screenshot({path:process.argv[4]});await widget.screenshot({path:process.argv[4].replace(/\.png$/,'-widget.png')});}
   console.log('Mantenimiento: mensajes/anuncios disponibles, IA/MCP bloqueados, respuestas preservadas, archivos propios/adjuntar/quitar/texto disponibles. Sin red ni envío real.');
-} catch(e){salida=1;console.error(e);} finally{await cerrarPrueba(app);clearTimeout(limite);}
+} catch(e){salida=1;console.error(e);
+  try {console.error('Geometría:',await app.firstWindow().then(p=>p.evaluate(()=>({alto:innerHeight,ancho:innerWidth,dpr:devicePixelRatio,elementos:[...document.querySelector('#marco').children].map(e=>({id:e.id,alto:e.offsetHeight,contenido:e.scrollHeight,rect:e.getBoundingClientRect().toJSON()}))}))));} catch {}
+} finally{await cerrarPrueba(app);clearTimeout(limite);}
 process.exit(salida);

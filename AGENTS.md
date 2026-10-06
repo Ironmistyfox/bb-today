@@ -2,14 +2,14 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión en preparación es 1.2.6. Todo el código, textos y comentarios se
+MCP. La versión en preparación es 1.2.7. Todo el código, textos y comentarios se
 escriben en español.
 
 ## Corrección vigente: hub sin avisos, 2026-10-06
 
 El dueño pidió quitar «app limitada»: se retira la presentación de mantenimiento
 sin reactivar IA, de acuerdo con su instrucción anterior «sólo hub».
-Preparando 1.2.6 para actualizar la pública. El aviso del widget ocupaba espacio
+Preparando 1.2.7 para actualizar la pública. El aviso del widget ocupaba espacio
 pero ajustarAlto no lo sumaba: comprimía la lista. Ahora mide hijos visibles,
 márgenes y bordes; sólo la lista puede encogerse y desplazarse. [hidden] impide
 que botones ocultos ocupen espacio. No añadir banners permanentes al widget.
@@ -26,6 +26,11 @@ tras cambiar de zoom. El comprobador debe esperar lista.scrollHeight <=
 lista.clientHeight, manteniendo la misma aserción de contenido completo.
 Se repite el flujo manual con esa prueba actualizada sin mover v1.2.6.
 Si también falla al esperar, corregir la app y usar una etiqueta nueva.
+
+La espera confirmó un fallo real de actualización de altura al cambiar zoom:
+37531134302 falló en ambas plataformas. 1.2.6 no se publicó; su etiqueta
+e15725f se conserva. 1.2.7 añade ResizeObserver del contenido y conserva el
+ancho elegido, ignorando sólo redondeo de un píxel. No mover etiquetas.
 
 Lo inferior es histórico.
 

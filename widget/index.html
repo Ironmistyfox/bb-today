@@ -555,6 +555,16 @@ function ajustarAlto() {
   window.agenda.alto(Math.ceil(natural));
 }
 
+// El zoom puede cambiar el ancho disponible después de pintar. Observar
+// el contenido vuelve a medir sus saltos de línea y evita una altura vieja.
+let medidaPendiente = false;
+const medirContenido = new ResizeObserver(() => {
+  if (medidaPendiente) return;
+  medidaPendiente = true;
+  requestAnimationFrame(() => { medidaPendiente = false; ajustarAlto(); });
+});
+for (const elemento of $('marco').children) medirContenido.observe(elemento);
+
 // Vista previa: la primera vez aparece tras una pausa corta sobre la fila
 // (pasar el ratón de largo no la dispara); con la tarjeta ya abierta, pasar
 // a otra fila la cambia al momento. Cerrarla lo decide el proceso principal,

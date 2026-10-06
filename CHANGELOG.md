@@ -1,10 +1,11 @@
 # Cambios
 
-## 1.2.6 · 2026-10-06
+## 1.2.7 · 2026-10-06
 
 - BB Today se presenta como hub de tareas, mensajes y archivos propios, sin avisos de app limitada o mantenimiento. La IA continúa desactivada.
 - El widget mide todo el contenido visible y sus márgenes; la lista se desplaza cuando falta espacio, sin comprimir botones o avisos.
 - Los elementos ocultos no ocupan espacio ni muestran botones por reglas de estilo.
+- La altura se vuelve a medir al cambiar zoom o ancho; redimensionar conserva el ancho elegido.
 - Guía y web ajustadas al hub. Se conservan datos y archivos anteriores.
 
 

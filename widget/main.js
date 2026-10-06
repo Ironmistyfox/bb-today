@@ -311,8 +311,9 @@ function crearVentana() {
   };
   ventana.on('moved', guardar);
   ventana.on('resized', () => {
-    // Sólo cuenta si lo redimensionó la persona, no un ajuste de altura nuestro.
-    if (Date.now() - ultimoAjuste > 400) {
+    // El ancho nuevo identifica un gesto de la persona, incluso justo después
+    // de ajustar altura/zoom. Ignorar el redondeo de un píxel de Windows.
+    if (Math.abs(ventana.getBounds().width - anchoWidget) > 1) {
       anchoWidget = Math.max(ANCHO_MIN, Math.min(ANCHO_MAX, ventana.getBounds().width));
     }
     guardar();
