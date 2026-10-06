@@ -1,5 +1,12 @@
 # Cambios
 
+## Sin publicar
+
+- La IA explica cómo se hace cada tarea: concepto, pasos y razones, ejemplo y comprobación, en un apartado separado para aprender.
+- Las explicaciones quedan fuera de los entregables y del texto que se copia para entregar.
+- Las respuestas anteriores permiten generar sólo su explicación, conservando archivos y adjuntos.
+- El estudiante no tiene que escribir la explicación ni responder un cuestionario.
+
 ## 1.2.3 · 2026-10-06
 
 - Adjuntar muestra el estado y permite quitar el archivo de la selección con

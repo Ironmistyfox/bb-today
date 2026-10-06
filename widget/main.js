@@ -29,6 +29,7 @@ import { copiarSiCambio } from './archivos.js';
 import { reunirMaterial } from './material.js';
 import { colocarArchivos } from './entrega.js';
 import { ES_REVISABLE, prepararRevision } from './revision.js';
+import { ARCHIVO_EXPLICACION, INSTRUCCION_APRENDIZAJE, explicacionValida, separarRespuesta } from '../src/aprendizaje.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const NOMBRE = 'BB Today';
@@ -620,7 +621,7 @@ function revisarClaude() {
       if (!r.imagenes) borrarImagenes(antes[id]);
       clipboard.writeText(r.texto);
       const conImagen = r.tipo === 'ejercicios' && r.pedidoImagen && estado.prefs.iaImagenes && estado.prefs.iaImagenAuto;
-      if (Notification.isSupported()) {
+      if (!SIN_RED && Notification.isSupported()) {
         const cuerpo = conImagen ? 'Ya está copiada. ChatGPT va a hacer la imagen de la hoja.' : 'Claude terminó. Ya está copiada; haz clic para verla.';
         const aviso = new Notification({ title: `Respuesta lista: ${r.titulo}`, body: cuerpo, icon: ICONO_PNG });
         aviso.on('click', () => abrirRespuesta(id));
@@ -645,7 +646,7 @@ function revisarClaude() {
   if (c?.ia === 'agente' && (c.fase === 'esperando' || c.fase === 'lista')) {
     if (recogerImagenes(c) && c.modo === 'imagen') {
       publicar({ claude: { ...c, fase: 'lista', recibido: 'imagen' } });
-      if (c.fase === 'esperando' && Notification.isSupported()) {
+      if (!SIN_RED && c.fase === 'esperando' && Notification.isSupported()) {
         const aviso = new Notification({ title: `Hoja lista: ${c.titulo}`, body: 'Codex dibujó la hoja. Haz clic para verla y descargarla.', icon: ICONO_PNG });
         aviso.on('click', () => abrirRespuesta(c.tareaId));
         aviso.show();
@@ -843,6 +844,17 @@ function correrEnFondo(c, motor, soloImagen) {
 
 function terminarEnFondo(c, motor, soloImagen, codigo) {
   const r = fondo.recoger(c.carpeta, c.inicio);
+  if (c.modo === 'explicacion') {
+    const explicacion = r.explicacion || separarRespuesta(r.texto || '').explicacion;
+    if (codigo !== 0 || !explicacionValida(explicacion)) {
+      publicar({ claude: { ...c, fase: 'error', detalle: 'La IA no dejó una explicación completa. Tu respuesta y tus entregables se conservan.' } });
+      return;
+    }
+    respuestas[c.tareaId] = { ...respuestas[c.tareaId], explicacion: explicacion.trim(), cuando: new Date().toISOString() };
+    guardarRespuestas();
+    publicar({ claude: { ...c, fase: 'lista' }, entregaCambio: Date.now() });
+    return;
+  }
   if (c.modo === 'revision') {
     if (codigo !== 0 || (!r.imagenes.length && !r.archivos.length)) {
       const fallo = fondo.clasificarFallo(fondo.registroUltimaVuelta(c.carpeta));
@@ -868,7 +880,7 @@ function terminarEnFondo(c, motor, soloImagen, codigo) {
       else bloquear(motor, fallo);
       const motivo = MOTIVOS[fallo.tipo](nombreMotor, fallo.hasta);
       registrar('resolver', new Error(`${motivo}; se usa la vía de respaldo`));
-      if (Notification.isSupported()) {
+      if (!SIN_RED && Notification.isSupported()) {
         new Notification({ title: motivo, body: motor === 'codex' ? 'Sigo en chatgpt.com: allí arrastras los archivos y copias la respuesta.' : 'Sigo con la app de Claude: pulsa Enter allí.', icon: ICONO_PNG }).show();
       }
       publicar({ claude: null });
@@ -877,12 +889,16 @@ function terminarEnFondo(c, motor, soloImagen, codigo) {
     const detalle = fondo.finDelRegistro(c.carpeta) || `Terminó sin respuesta (código ${codigo}).`;
     registrar('resolver', new Error(`${c.nombre}: ${detalle}`));
     publicar({ claude: { ...c, fase: 'error', detalle } });
-    if (Notification.isSupported()) new Notification({ title: `No se pudo resolver: ${c.titulo}`, body: detalle, icon: ICONO_PNG }).show();
+    if (!SIN_RED && Notification.isSupported()) new Notification({ title: `No se pudo resolver: ${c.titulo}`, body: detalle, icon: ICONO_PNG }).show();
     return;
   }
   guardarDeFondo(c, r);
   const guardada = respuestas[c.tareaId];
-  if (Notification.isSupported()) {
+  if (!explicacionValida(guardada.explicacion)) {
+    publicar({ claude: { ...c, fase: 'error', detalle: 'La IA dejó el resultado, pero falta su explicación paso a paso. Puedes generarla desde «Cómo se hace» sin cambiar los entregables.' }, entregaCambio: Date.now() });
+    return;
+  }
+  if (!SIN_RED && Notification.isSupported()) {
     const extras = [guardada.imagenes?.length && `${guardada.imagenes.length} ${guardada.imagenes.length === 1 ? 'hoja' : 'hojas'}`, guardada.archivos?.length && `${guardada.archivos.length} ${guardada.archivos.length === 1 ? 'archivo' : 'archivos'}`].filter(Boolean);
     const aviso = new Notification({ title: `Respuesta lista: ${c.titulo}`, body: `${guardada.texto ? 'Ya está copiada' : 'Lista'}${extras.length ? ` · ${extras.join(' y ')}` : ''}. Haz clic para adjuntarla y entregarla.`, icon: ICONO_PNG });
     aviso.on('click', () => abrirApp('pendientes', c.tareaId));
@@ -910,13 +926,16 @@ function guardarDeFondo(c, r) {
     imagenes.push(nombre);
   });
   const archivos = r.archivos.map((ruta) => ({ nombre: path.basename(ruta), ruta }));
-  const texto = r.texto ?? (deEstaVuelta ? previa.texto : '') ?? '';
+  const partes = separarRespuesta(r.texto ?? (deEstaVuelta ? previa.texto : '') ?? '');
+  const texto = partes.texto;
+  const explicacion = r.explicacion || partes.explicacion || (deEstaVuelta ? previa.explicacion : '') || '';
   // La IA dejó el pedido de la hoja pero no la dibujó (su plan o su
   // herramienta no lo permiten): la respuesta ofrece dibujarla en chatgpt.com.
   const sinImagen = !!r.pedidoImagen && !imagenes.length && !r.imagenes.length;
   respuestas[c.tareaId] = {
     titulo: c.titulo,
     texto,
+    explicacion,
     ia: c.nombre,
     tipo: imagenes.length ? 'ejercicios' : archivos.length ? 'documento' : 'texto',
     imagenes,
@@ -1046,7 +1065,10 @@ function recogerImagenes(c) {
 }
 
 function guardarDeAgente(c, archivo, marca) {
-  const texto = fs.readFileSync(archivo, 'utf8');
+  const partes = separarRespuesta(fs.readFileSync(archivo, 'utf8'));
+  const texto = partes.texto;
+  const rutaExplicacion = path.join(c.carpeta, ARCHIVO_EXPLICACION);
+  const explicacion = mtime(rutaExplicacion) >= c.inicio - 1000 ? fs.readFileSync(rutaExplicacion, 'utf8') : partes.explicacion;
   const previa = respuestas[c.tareaId];
   // Las imágenes que el agente ya dejó en esta vuelta se quedan; las de antes, no.
   const deEstaVuelta = previa?.vuelta === c.inicio ? previa.imagenes || [] : [];
@@ -1054,6 +1076,7 @@ function guardarDeAgente(c, archivo, marca) {
   const r = {
     titulo: c.titulo,
     texto,
+    explicacion,
     tipo: c.modo === 'codigo' ? 'codigo' : deEstaVuelta.length ? 'ejercicios' : 'texto',
     ia: c.agente,
     carpeta: c.carpeta,
@@ -1064,13 +1087,13 @@ function guardarDeAgente(c, archivo, marca) {
   respuestas[c.tareaId] = r;
   guardarRespuestas();
   clipboard.writeText(texto);
-  if (c.fase === 'esperando' && Notification.isSupported()) {
+  if (!SIN_RED && c.fase === 'esperando' && explicacionValida(explicacion) && Notification.isSupported()) {
     const cuerpo = c.modo === 'codigo' ? `${c.agente} terminó. El resumen ya está copiado; el código está en su carpeta.` : `${c.agente} terminó. La respuesta ya está copiada; haz clic para verla.`;
     const aviso = new Notification({ title: `Respuesta lista: ${c.titulo}`, body: cuerpo, icon: ICONO_PNG });
     aviso.on('click', () => abrirRespuesta(c.tareaId));
     aviso.show();
   }
-  publicar({ claude: { ...c, fase: 'lista', marca, cuando: c.fase === 'lista' ? c.cuando : r.cuando } });
+  publicar({ claude: { ...c, fase: explicacionValida(explicacion) ? 'lista' : 'error', ...(!explicacionValida(explicacion) ? {detalle:'Falta la explicación de la IA. Genérala desde «Cómo se hace»; los entregables se conservan.'} : {}), marca, cuando: c.fase === 'lista' ? c.cuando : r.cuando } });
   if (ventanaRespuesta && !ventanaRespuesta.isDestroyed()) ventanaRespuesta.webContents.send('respuesta:mostrar', c.tareaId);
 }
 
@@ -1233,8 +1256,41 @@ function listaEntregables(tareaId) {
 function datosEntrega(tareaId) {
   const e = entregas[tareaId] || {};
   const r = respuestas[tareaId];
-  return { entregables: listaEntregables(tareaId), texto: e.texto ?? '', respuesta: r?.texto ? { texto: r.texto, ia: r.ia || 'IA' } : null, abierta: e.abierta || null, estado: e.estado || null };
+  return { entregables: listaEntregables(tareaId), texto: e.texto ?? '', respuesta: r ? { texto: r.texto || '', explicacion: r.explicacion || '', explicacionPendiente: !explicacionValida(r.explicacion), ia: r.ia || 'IA' } : null, abierta: e.abierta || null, estado: e.estado || null };
 }
+
+async function pedirExplicacion(tareaId) {
+  const r = respuestas[tareaId];
+  const encontrada = buscarEnAgenda(tareaId);
+  if (!r || !encontrada) return { error: 'Primero hace falta una respuesta para explicar.' };
+  if (trabajo || (estado.claude && ['preparando','trabajando','dibujando','esperando','leyendo'].includes(estado.claude.fase))) return { error: 'Espera a que termine el trabajo actual o cancélalo.' };
+  cerrarVistaPrevia();
+  vigia = null;
+  const base = { tareaId, titulo: encontrada.tarea.titulo, modo: 'explicacion', inicio: Date.now(), ia: 'fondo', cuando: new Date().toISOString() };
+  publicar({ claude: { ...base, fase: 'preparando' } });
+  try {
+    const carpeta = path.join(carpetaDeTarea(tareaId), 'aprendizaje', String(base.inicio));
+    fs.mkdirSync(carpeta, {recursive:true});
+    const referencias = listaEntregables(tareaId).filter(x=>x.origen !== 'Tuyo');
+    const rutas = referencias.map((x,i)=>{ const destino=path.join(carpeta,(i+1)+'-'+x.nombre); fs.copyFileSync(x.ruta,destino); return destino; });
+    const pedido = INSTRUCCION_APRENDIZAJE + '\n\nExplica la respuesta existente, sin rehacerla ni modificar sus archivos.\nTarea: ' + base.titulo + '\n\nRespuesta existente:\n' + (r.texto || '').slice(0,30000);
+    fs.writeFileSync(path.join(carpeta,'TAREA.md'),pedido);
+    fs.writeFileSync(path.join(carpeta,'INSTRUCCIONES-IA.md'),pedido + '\n\nLos archivos de referencia están en esta carpeta: léelos si hacen falta. Escribe ' + ARCHIVO_EXPLICACION + ' con la explicación y luego RESPUESTA.md con una frase confirmando que terminaste. No crees entregables ni cambies el original.');
+    await fondo.motores();
+    if (estado.claude?.inicio !== base.inicio) return { error:'Se canceló la explicación.' };
+    const motor = estado.prefs.iaResolver === 'claude' ? 'claude' : 'codex';
+    if (puedeEnFondo(motor)) {
+      correrEnFondo({...base,carpeta,motor,nombre:motor==='codex'?'ChatGPT':'Claude'},motor,false);
+      return {ok:true,fondo:true};
+    }
+    const {pegar} = await chatgpt.abrir(pedido+'\nDevuelve sólo la explicación bajo el título «## Cómo se hace».',estado.prefs.chatgptModelo,{enviar:rutas.length===0});
+    vigia = await chatgpt.vigilarPortapapeles();
+    if (rutas.length) abrirVentanaArchivos(rutas);
+    publicar({claude:{...base,carpeta,ia:'chatgpt',fase:'esperando',adjuntar:rutas.length,pegar}});
+    return {ok:true,manual:true,adjuntar:rutas.length};
+  } catch(error) { publicar({claude:{...base,fase:'error',detalle:error.message}}); return {error:error.message}; }
+}
+ipcMain.handle('entrega:explicar',(_e,tareaId)=>pedirExplicacion(tareaId));
 
 // Sólo se tocan rutas que son entregables de esa tarea.
 const esEntregable = (tareaId, ruta) => listaEntregables(tareaId).some((x) => x.ruta === ruta);
@@ -1418,6 +1474,17 @@ async function imagenConChatGPT(tareaId) {
 }
 
 function guardarDeChatGPT(c, { texto, imagen }) {
+  if (c.modo === 'explicacion') {
+    if (!texto) return;
+    const partes = separarRespuesta(texto);
+    const explicacion = partes.explicacion || texto;
+    if (!explicacionValida(explicacion)) { publicar({claude:{...c,fase:'error',detalle:'Falta una explicación completa, con pasos y sus razones.'}}); return; }
+    respuestas[c.tareaId] = {...respuestas[c.tareaId],explicacion,cuando:new Date().toISOString()};
+    guardarRespuestas();
+    vigia?.ignorarTexto(texto);
+    publicar({claude:{...c,fase:'lista'},entregaCambio:Date.now()});
+    return;
+  }
   if (c.modo === 'revision') {
     fs.mkdirSync(path.join(c.carpeta, 'entrega'), { recursive: true });
     const ruta = path.join(c.carpeta, 'entrega', imagen ? 'revisado.png' : 'revisado.md');
@@ -1434,9 +1501,12 @@ function guardarDeChatGPT(c, { texto, imagen }) {
     borrarImagenes(r);
     r.imagenes = [];
     r.texto = '';
+    r.explicacion = '';
   }
   if (texto) {
-    r.texto = texto;
+    const partes = separarRespuesta(texto);
+    r.texto = partes.texto;
+    r.explicacion = partes.explicacion;
     r.ia = 'chatgpt';
   }
   if (imagen) {
@@ -1634,6 +1704,7 @@ function listaRespuestas() {
       curso: buscarEnAgenda(id)?.curso.nombre || '',
       ia: r.ia === 'chatgpt' ? 'ChatGPT' : r.ia || 'Claude',
       tipo: r.tipo,
+      explicacionPendiente: !explicacionValida(r.explicacion),
       cuando: r.cuando,
       imagenes: (r.imagenes || []).length,
       primera: r.imagenes?.[0] ? urlImagen(r.imagenes[0]) : null,

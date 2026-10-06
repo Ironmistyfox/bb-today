@@ -13,6 +13,7 @@
 
 import { execFile, spawn } from 'node:child_process';
 import fs from 'node:fs';
+import { ARCHIVO_EXPLICACION, INSTRUCCION_APRENDIZAJE } from '../src/aprendizaje.js';
 import path from 'node:path';
 
 const MAC = process.platform === 'darwin';
@@ -24,7 +25,7 @@ const MENSAJE = 'Resuelve la tarea de esta carpeta: lee INSTRUCCIONES-IA.md y TA
 const MENSAJE_IMAGEN = 'Lee PEDIDO-IMAGEN.md y genera esa imagen con tu herramienta de generación de imágenes; guárdala en entrega/hoja-1.png (hoja-2.png… si el pedido trae varias hojas). No hagas nada más.';
 const IMAGEN = /\.(png|jpe?g|webp)$/i;
 // Archivos de trabajo de la IA que no se entregan (pedidos de imagen, notas).
-const AUXILIAR = /^(pedido|prompt)[-_ ]?imagen|^\.|^instrucciones|^notas?[-_ ]?ia/i;
+const AUXILIAR = /^(pedido|prompt)[-_ ]?imagen|^\.|^instrucciones|^explicacion\.md$|^notas?[-_ ]?ia/i;
 
 function salida(cmd, args) {
   return new Promise((ok) => {
@@ -147,12 +148,14 @@ export function prepararCarpeta({ carpeta, curso, tarea, entrega, instrucciones,
       'Eres el asistente de un estudiante. La tarea está en TAREA.md y sus archivos (PDF, Word, imágenes…) en esta carpeta: ábrelos y léelos completos.',
       '',
       pedido,
+      '', INSTRUCCION_APRENDIZAJE,
       '',
       '## Qué entregar',
       '',
       `Decide tú qué necesita la tarea. Lo que se entrega va en la carpeta ${ENTREGA}/:`,
       '',
       `- **Siempre**: ${RESPUESTA} en esta carpeta (no en ${ENTREGA}/), con la respuesta completa en Markdown (fórmulas en LaTeX entre $…$) y, al final, qué dejaste en ${ENTREGA}/.`,
+      `- **Siempre**: ${ARCHIVO_EXPLICACION} en esta carpeta, fuera de ${ENTREGA}/, con la explicación didáctica completa. No se adjunta ni se copia como entrega.`,
       ...hoja,
       `- **Si pide un documento** (ensayo, reporte, presentación, hoja de cálculo…): el archivo en el formato que pida (si no dice, .docx) en ${ENTREGA}/. Si no puedes crear ese formato, entrégalo en .md y dilo.`,
       `- **Programación**: el código en ${ENTREGA}/, probado con los ejemplos de la tarea; en ${RESPUESTA}, cómo correrlo.`,
@@ -160,7 +163,7 @@ export function prepararCarpeta({ carpeta, curso, tarea, entrega, instrucciones,
       '',
       `En ${ENTREGA}/ deja sólo lo que se entrega: nada de notas, pedidos ni archivos de trabajo.`,
       '',
-      `Escribe ${RESPUESTA} al final, cuando todo lo demás esté listo. No preguntes nada (nadie va a contestar): si falta un dato, decide lo más razonable y dilo en la respuesta.`,
+      `Escribe primero ${ARCHIVO_EXPLICACION} y después ${RESPUESTA}, cuando todo lo demás esté listo. No preguntes nada (nadie va a contestar): si falta un dato, decide lo más razonable y dilo en la respuesta.`,
     ].join('\n'),
   );
 }
@@ -226,7 +229,7 @@ export function recoger(carpeta, desde) {
   mirar(path.join(carpeta, ENTREGA), 0);
   // Por si la hoja quedó fuera de entrega/.
   for (const n of fs.readdirSync(carpeta)) if (/^hoja.*\.(png|jpe?g|webp)$/i.test(n) && nuevo(path.join(carpeta, n))) imagenes.push(path.join(carpeta, n));
-  return { texto: leer(path.join(carpeta, RESPUESTA)), pedidoImagen: leer(path.join(carpeta, PEDIDO_IMAGEN)), imagenes, archivos };
+  return { texto: leer(path.join(carpeta, RESPUESTA)), explicacion: leer(path.join(carpeta, ARCHIVO_EXPLICACION)), pedidoImagen: leer(path.join(carpeta, PEDIDO_IMAGEN)), imagenes, archivos };
 }
 
 // Lo que escribió la IA en su última vuelta, para explicar un fallo.

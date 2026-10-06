@@ -103,7 +103,10 @@ async function cargar() {
   const archivos = (datos.archivos || [])
     .map((a, i) => `<div class="archivo"><span class="nombre">${esc(a.nombre)}</span><button class="primario" data-abrir-archivo="${i}">Abrir</button><button data-mostrar-archivo="${i}">Mostrar en carpeta</button></div>`)
     .join('');
-  $('contenido').innerHTML = (imagenes ? `<div class="imagenes">${imagenes}</div>` : '') + (archivos ? `<div class="archivos">${archivos}</div>` : '') + formatoRespuesta.markdown(datos.texto || '');
+  const explicacion = datos.explicacion?.trim().length >= 80
+    ? formatoRespuesta.markdown(datos.explicacion)
+    : '<p class="cuando">Falta la explicación de la IA. Puedes generarla desde el detalle de la tarea en la app.</p>';
+  $('contenido').innerHTML = `<section aria-label="Cómo se hace"><h2>Cómo se hace</h2><p class="cuando">Explicación de la IA para estudiar el procedimiento.</p>${explicacion}</section><hr><h2>Resultado</h2>` + (imagenes ? `<div class="imagenes">${imagenes}</div>` : '') + (archivos ? `<div class="archivos">${archivos}</div>` : '') + formatoRespuesta.markdown(datos.texto || '');
   formatoRespuesta.formulas($('contenido'));
   $('imagen').hidden = !datos.imagenConChatGPT;
   $('copiar').hidden = !datos.texto && !(datos.imagenes || []).length;

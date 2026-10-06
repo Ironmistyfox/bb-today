@@ -7,6 +7,14 @@ escriben en español.
 
 ## Trabajo y publicación
 
+**ALTO, 2026-10-06:** el responsable dijo «espera aun no publiques».
+No reanudar publicación ni desplegar el sitio sin una nueva petición explícita.
+La ejecución 37491974403 aprobó Windows/Mac, pero al cancelarla el release
+1.2.3 alcanzó a salir. Se volvió inmediatamente a borrador y se marcó 1.2.2
+como latest. La web sigue en 1.2.2, sin desplegar estos cambios. La etiqueta
+v1.2.3 y sus artefactos se conservan; no moverla ni borrarla. Main contiene
+código preparado para 1.2.3, pero NO es la versión pública vigente.
+
 `main` contiene la versión pública. Cualquier rama local de experimentación
 se conserva separada: no publicar su historial ni datos personales. Publicar
 una versión o desplegar la web requiere una petición del responsable del
@@ -26,9 +34,35 @@ verifica main, árbol limpio, upstream y versión, y sube la etiqueta; Actions
 construye instaladores y crea el release. Desplegar la web después del release
 con `npm run desplegar-sitio`. Nunca ejecutar wrangler dentro del repo.
 
-## Mapa
+## Cambios locales posteriores al borrador (2026-10-06)
+
+El dueño pidió explicaciones de aprendizaje obligatorias, generadas por la
+IA, nunca solicitadas al estudiante. `src/aprendizaje.js` centraliza el
+pedido: concepto, pasos con razones, ejemplo, comprobación y error común.
+Todos los motores piden explicación separada; MCP exige `explicacion`.
+La app la muestra en «Cómo se hace», fuera de los entregables. No se copia
+con la respuesta ni se adjunta. EXPLICACION.md es auxiliar, fuera de entrega/.
+Las respuestas anteriores o incompletas permiten «Generar explicación con
+IA»: trabaja sobre copias en aprendizaje/, y sólo agrega explicacion; conserva
+texto, imágenes, archivos, selección de adjuntos y texto de entrega. No hay
+cuestionario ni obligación de que el estudiante escriba una explicación.
+La comprobación de presencia mínima no certifica exactitud pedagógica.
+
+`tools/probar-aprendizaje.mjs` prueba esquema MCP obligatorio, separación,
+generación automática, recuperación de respuestas anteriores, conservación
+y fallo visible con motor falso. BB_PRUEBA_RESPALDO=1 prueba portapapeles y
+respaldo web con navegador apagado. No se usaron cuentas reales ni se envió
+una tarea. Estos cambios NO están en la etiqueta inmutable v1.2.3 ni en sus
+artefactos en borrador. Necesitarán otra versión al autorizar publicación.
+
+Validación local: paquete Windows nuevo en bb-today-build-aprendizaje pasó
+aprendizaje, respaldo web simulado, entregables/revisión y humo MCP. Mac y
+las respuestas de una IA real no se probaron para estos cambios nuevos.
+
+## Archivos
 
 - `widget/revision.js`: copia aislada del archivo y pedido de revisión.
+- `src/aprendizaje.js`: explicación obligatoria de la IA y separación del resultado.
 
 - `widget/main.js`: proceso principal, ventanas, estado, IPC, IA y entregas.
 - `widget/app.html`: pendientes, respuestas, IA, ajustes, cuenta y guía inicial.

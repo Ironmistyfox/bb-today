@@ -12,6 +12,7 @@
 //   - respuestas.json: las respuestas, por tarea.
 
 import fs from 'node:fs';
+import { INSTRUCCION_APRENDIZAJE } from './aprendizaje.js';
 import path from 'node:path';
 import { z } from 'zod';
 import { contenidoArchivo } from './contenido.js';
@@ -61,6 +62,8 @@ function instruccionesFinales(tareaId) {
   const lineas = [
     '',
     '## Al terminar',
+    INSTRUCCION_APRENDIZAJE,
+    'entregar_respuesta requiere explicacion, separado de respuesta y de los entregables.',
     `Guarda la respuesta con entregar_respuesta (tarea_id ${tareaId}) y di qué tipo de tarea era:`,
     '- tipo "ejercicios": ejercicios para resolver y entregar en papel (matemáticas, física, química, contabilidad…).',
     '- tipo "codigo": de programación (LeetCode, implementar un programa, una función o una clase…). BB Today le ofrecerá al estudiante abrirla en un agente de código.',
@@ -163,6 +166,7 @@ export function registrarHerramientasBBToday(servidor) {
       inputSchema: {
         tarea_id: z.string().describe('Id de la tarea.'),
         respuesta: z.string().describe('La respuesta completa, en texto (puede usar Markdown y LaTeX entre $…$).'),
+        explicacion: z.string().trim().min(80).max(40000).describe('Obligatoria: enseña el concepto, cada paso y su porqué, un ejemplo con los datos de la tarea y cómo comprobar el resultado. Se muestra en la app, no se entrega.'),
         tipo: z.enum(['ejercicios', 'codigo', 'texto']).optional().describe('Qué tipo de tarea era (ver leer_tarea).'),
         pedido_imagen: z
           .string()
@@ -170,13 +174,14 @@ export function registrarHerramientasBBToday(servidor) {
           .describe('Sólo en tipo "ejercicios": el pedido para el generador de imágenes, con el contenido de la hoja y el estilo que indica leer_tarea.'),
       },
     },
-    async ({ tarea_id, respuesta, tipo, pedido_imagen }) => {
+    async ({ tarea_id, respuesta, explicacion, tipo, pedido_imagen }) => {
       try {
         const { tarea } = buscarTarea(tarea_id);
         const respuestas = leerJson(ARCHIVO_RESPUESTAS, {});
         respuestas[tarea_id] = {
           titulo: tarea.titulo,
           texto: respuesta,
+          explicacion,
           tipo: tipo || 'texto',
           ...(pedido_imagen ? { pedidoImagen: pedido_imagen } : {}),
           cuando: new Date().toISOString(),

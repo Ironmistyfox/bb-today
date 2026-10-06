@@ -677,7 +677,8 @@ function pintarPendientes() {
       html += `<div class="grupo-titulo ${g.startsWith('Vencidas') ? 'mal' : ''}">${esc(g)}</div>`;
     }
     const [p, clase] = pastilla(t);
-    const resuelta = datos.respuestas?.some((r) => r.id === t.id) ? ' · <span class="lista-ok">respuesta lista</span>' : '';
+    const respuesta = datos.respuestas?.find((r) => r.id === t.id);
+    const resuelta = respuesta ? respuesta.explicacionPendiente ? ' · falta explicación de IA' : ' · <span class="lista-ok">respuesta y explicación listas</span>' : '';
     html += `<div class="fila ${tareaSel?.id === t.id ? 'sel' : ''}" data-tarea="${esc(t.id)}"><i class="punto" style="background:${t.color}"></i><div class="info"><div class="titulo">${esc(t.titulo)}</div><div class="meta">${esc(t.curso)}${resuelta}</div></div><span class="pastilla ${clase}">${esc(p)}</span></div>`;
   }
   $('filas-pendientes').innerHTML = html || `<div class="vacio">${datos.agenda ? 'Nada por aquí.' : 'Inicia sesión para ver tus tareas.'}</div>`;
@@ -730,6 +731,7 @@ function pintarDetalleTarea(d) {
   const fecha = t.cuando ? `${mayus(fmtLargo.format(t.cuando))}${t.cuando < Date.now() ? (t.tardia ? ' · venció, acepta entrega tardía' : ' · venció') : ''}` : 'Sin fecha de entrega';
   const trabajando = datos.trabajo?.tareaId === t.id && ['preparando', 'trabajando', 'dibujando', 'esperando'].includes(datos.trabajo.fase);
   const revisionTrabajo = datos.trabajo?.tareaId === t.id && datos.trabajo.modo === 'revision' ? datos.trabajo : null;
+  const explicacionTrabajo = datos.trabajo?.tareaId === t.id && datos.trabajo.modo === 'explicacion' ? datos.trabajo : null;
   const instrucciones = d === null ? '<div class="sub">Cargando…</div>' : d.error ? '<div class="sub">No se pudo leer el detalle de Blackboard.</div>' : `<div class="instrucciones">${esc(d.instrucciones || 'La tarea no trae instrucciones escritas.')}</div>`;
   const archivosTarea = d && !d.error && d.archivos?.length
     ? `<div class="sub-titulo">Archivos de la tarea</div>${d.archivos.map((a, i) => `<div class="archivo" data-archivo="${i}" title="Abrir">${iconoArchivo(a.nombre)}<span class="nombre">${esc(a.nombre)}</span>${a.bytes ? `<span class="peso">${pesoLegible(a.bytes)}</span>` : ''}</div>`).join('')}`
@@ -764,7 +766,7 @@ function pintarDetalleTarea(d) {
     ${t.ruta?.length ? `<div class="ruta">${esc(t.ruta.join(' › '))}</div>` : ''}
     <div class="sub">${esc(fecha)}</div>
     <div class="acciones">
-      <button class="boton ${ruta.resolverCon === 'ChatGPT' ? 'chatgpt' : 'primario'}" data-resolver ${trabajando ? 'disabled' : ''}>${ruta.resolverCon === 'ChatGPT' ? '<img src="icono/chatgpt.png" alt="">' : CHISPA}${trabajando ? `${esc(ruta.resolverCon)} está trabajando…` : `Resolver con ${esc(ruta.resolverCon)}`}</button>
+      <button class="boton ${ruta.resolverCon === 'ChatGPT' ? 'chatgpt' : 'primario'}" data-resolver ${trabajando ? 'disabled' : ''}>${ruta.resolverCon === 'ChatGPT' ? '<img src="icono/chatgpt.png" alt="">' : CHISPA}${trabajando ? `${esc(ruta.resolverCon)} está trabajando…` : `Resolver y explicar con ${esc(ruta.resolverCon)}`}</button>
       <button class="boton" data-blackboard>Abrir en Blackboard ↗</button>
       <button class="boton" data-quitar>Quitar de la lista</button>
     </div>
@@ -774,6 +776,13 @@ function pintarDetalleTarea(d) {
       <div class="paso-titulo"><span class="num">1</span>La tarea</div>
       ${instrucciones}
       ${archivosTarea}
+    </section>
+
+    <section class="paso" aria-labelledby="titulo-explicacion">
+      <div class="paso-titulo" id="titulo-explicacion">Cómo se hace</div>
+      <p class="sub">La IA explica el procedimiento y sus razones para que puedas repetirlo por tu cuenta. Este apartado es para estudiar.</p>
+      ${en.respuesta && !en.respuesta.explicacionPendiente ? '<div class="respuesta-md" id="md-explicacion"></div>' : en.respuesta ? `<p class="sub">Falta la explicación paso a paso de esta respuesta.</p><button class="boton chico" data-explicar ${trabajando ? 'disabled' : ''}>${explicacionTrabajo && trabajando ? 'Generando explicación…' : 'Generar explicación con IA'}</button>` : '<p class="sub">Al resolver la tarea, la IA generará aquí su explicación automáticamente.</p>'}
+      ${explicacionTrabajo ? `<p class="sub" role="${explicacionTrabajo.fase === 'error' ? 'alert' : 'status'}">${esc(explicacionTrabajo.fase === 'error' ? explicacionTrabajo.detalle : explicacionTrabajo.fase === 'lista' ? 'Explicación lista.' : explicacionTrabajo.fase === 'cancelada' ? 'Explicación cancelada.' : explicacionTrabajo.fase === 'esperando' ? 'Copia la explicación del chat para mostrarla aquí.' : 'La IA está explicando cómo se hace…')}${trabajando ? ' <button class="boton chico" data-detener-explicacion>Cancelar</button>' : ''}</p>` : ''}
     </section>
 
     <section class="paso" id="zona-entregables">
@@ -811,6 +820,10 @@ function pintarDetalleTarea(d) {
   if (en.respuesta && $('md-tarea')) {
     $('md-tarea').innerHTML = formatoRespuesta.markdown(en.respuesta.texto);
     formatoRespuesta.formulas($('md-tarea'));
+  }
+  if ($('md-explicacion')) {
+    $('md-explicacion').innerHTML = formatoRespuesta.markdown(en.respuesta.explicacion);
+    formatoRespuesta.formulas($('md-explicacion'));
   }
   if (foco && $(foco.id) && !$(foco.id).disabled) {
     $(foco.id).focus({ preventScroll: true });
@@ -895,6 +908,17 @@ $('detalle-pendiente').addEventListener('click', async (e) => {
     if (archivo) window.agenda.abrirArchivo({ url: archivo.url, nombre: archivo.nombre, curso: t.curso });
     return;
   }
+  if (e.target.closest('[data-explicar]')) {
+    e.target.disabled = true;
+    try {
+      const r = await window.agenda.entrega.explicar(t.id);
+      if (tareaSel?.id !== t.id) return;
+      notaTarea = r?.error ? esc(r.error) : r?.manual ? 'La IA explicará la respuesta en el chat. ' + (r.adjuntar ? 'Adjunta las copias de referencia y envía el pedido. ' : '') + 'Copia su explicación para verla aquí.' : 'La IA está generando la explicación. Tu respuesta y tus archivos se conservan.';
+    } catch (error) { notaTarea = esc(error.message); }
+    if (tareaSel?.id === t.id) pintarDetalleTarea(detalleActual);
+    return;
+  }
+  if (e.target.closest('[data-detener-explicacion]')) { await window.agenda.claude.cancelar(); return pintarDetalleTarea(detalleActual); }
   // Entregables.
   const tarjeta = e.target.closest('.entregable');
   const rutaArchivo = tarjeta?.dataset.ruta;
@@ -1066,6 +1090,9 @@ async function verRespuesta(id) {
       <button class="boton" data-ventana>Abrir en ventana</button>
       <button class="boton peligro" data-borrar>Borrar</button>
     </div>
+    <h3>Cómo se hace</h3>
+    <p class="sub">Explicación de la IA para estudiar el procedimiento.</p>
+    ${r.explicacion?.trim().length >= 80 ? '<div class="respuesta-md" id="md-aprendizaje-respuesta"></div>' : '<p class="sub">Falta la explicación de la IA. Puedes generarla desde el detalle de la tarea en Pendientes.</p>'}
     ${imagenes ? `<h3>Imágenes</h3><div class="imagenes">${imagenes}</div>` : ''}
     ${(r.archivos || []).length ? `<h3>Archivos entregados</h3>${r.archivos.map((a, i) => {
       const ext = (a.nombre.split('.').pop() || '').toLowerCase();
@@ -1074,6 +1101,10 @@ async function verRespuesta(id) {
     ${r.texto ? `<h3>Respuesta</h3><div class="respuesta-md" id="md"></div>` : ''}
   </div>`;
   $('detalle-respuesta').dataset.enlace = r.enlace || '';
+  if ($('md-aprendizaje-respuesta')) {
+    $('md-aprendizaje-respuesta').innerHTML = formatoRespuesta.markdown(r.explicacion);
+    formatoRespuesta.formulas($('md-aprendizaje-respuesta'));
+  }
   if (r.texto) {
     $('md').innerHTML = formatoRespuesta.markdown(r.texto);
     formatoRespuesta.formulas($('md'));

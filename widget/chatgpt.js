@@ -12,6 +12,7 @@
 
 import { clipboard, ClipboardItem, shell } from 'electron';
 import crypto from 'node:crypto';
+import { INSTRUCCION_APRENDIZAJE } from '../src/aprendizaje.js';
 import fs from 'node:fs';
 
 const LIMITE_URL = 40_000;
@@ -51,6 +52,7 @@ export function mensajeConAdjuntos({ pedido, estiloImagen, titulo, curso, entreg
     '',
     `Te adjunto ${archivos.length === 1 ? 'el archivo' : 'los archivos'} de la tarea: ${archivos.map((a) => `«${a}»`).join(', ')}.`,
   ];
+  partes.push('', INSTRUCCION_APRENDIZAJE, 'Separa el texto en «## Respuesta» y, al final, «## Cómo se hace». Dentro de la explicación usa subtítulos ###. No mezcles la explicación con los archivos entregables.');
   if (estiloImagen) {
     partes.push('', `Si son ejercicios (matemáticas, física…), después de la solución genera también una imagen del apunte digital resuelto, con todo el procedimiento. Estilo: ${estiloImagen}`);
   }
@@ -82,6 +84,7 @@ function mensajeTarea({ pedido, estiloImagen, titulo, curso, entrega, instruccio
     else partes.push(a.aviso || '(No se pudo leer: lo tienes en la carpeta de descargas para adjuntarlo.)');
   }
   // Los ejercicios llevan también un apunte digital con el estilo elegido.
+  partes.push('', INSTRUCCION_APRENDIZAJE, 'Separa el texto en «## Respuesta» y, al final, «## Cómo se hace». Dentro de la explicación usa subtítulos ###. No mezcles la explicación con los archivos entregables.');
   if (estiloImagen) {
     partes.push('', `Si son ejercicios (matemáticas, física…), después de la solución genera también una imagen del apunte digital resuelto, con todo el procedimiento. Estilo: ${estiloImagen}`);
   }
@@ -93,7 +96,7 @@ const huella = (buf) => crypto.createHash('sha1').update(buf).digest('hex');
 // Mira el portapapeles desde que se abre ChatGPT. Lo que ya había y los
 // textos que copia BB Today no cuentan: se pasan aparte porque, justo después
 // de escribirlos, Windows todavía no los devuelve al leer.
-export async function vigilarPortapapeles({ soloImagen, propios = [] }) {
+export async function vigilarPortapapeles({ soloImagen, propios = [] } = {}) {
   const ignorar = new Set(propios);
   let imagenAntes;
   const vigia = {

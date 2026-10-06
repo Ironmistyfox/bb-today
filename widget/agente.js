@@ -12,6 +12,7 @@
 import { app, shell } from 'electron';
 import { execFile, spawn } from 'node:child_process';
 import fs from 'node:fs';
+import { ARCHIVO_EXPLICACION, INSTRUCCION_APRENDIZAJE } from '../src/aprendizaje.js';
 import path from 'node:path';
 import { nombreSeguro } from '../src/cliente.js';
 
@@ -87,13 +88,14 @@ export function prepararCarpeta({ carpeta, curso, tarea, entrega, instrucciones,
         `Estilo: ${estiloImagen}`,
       ]
     : [];
-  const fin = `Al terminar, escribe ${RESPUESTA} en esta carpeta. BB Today lo toma en cuanto aparece, así que escríbelo al final, cuando todo lo demás esté listo.`;
+  const fin = `Antes de terminar escribe ${ARCHIVO_EXPLICACION} en esta carpeta, fuera de entrega/, con la explicación para aprender. Después escribe ${RESPUESTA}, cuando todo lo demás esté listo.`;
   const cuerpo = {
-    codigo: ['La tarea está en TAREA.md y sus archivos en esta carpeta.', '', pedido, '', `${fin} Debe traer: qué hiciste, cómo correrlo y el código final completo en bloques de código.`],
+    codigo: ['La tarea está en TAREA.md y sus archivos en esta carpeta.', '', pedido, '', INSTRUCCION_APRENDIZAJE, '', `${fin} Debe traer: qué hiciste, cómo correrlo y el código final completo en bloques de código.`],
     resolver: [
       'La tarea está en TAREA.md y sus archivos en esta carpeta.',
       '',
       pedido,
+      '', INSTRUCCION_APRENDIZAJE,
       ...(hoja.length ? ['', 'Si son ejercicios (matemáticas, física, química…), genera también un apunte digital resuelto:', ...hoja.map((l) => `- ${l}`)] : []),
       '',
       `${fin} Debe traer la respuesta completa en Markdown, con las fórmulas en LaTeX entre $…$.`,
