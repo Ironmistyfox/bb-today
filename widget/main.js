@@ -1527,7 +1527,7 @@ let avisados = new Set(leerJson(ARCHIVO_AVISOS) || []);
 
 function revisarAvisos() {
   const p = estado.prefs;
-  if (!p.avisos || !estado.datos || estado.sesion !== 'lista' || !Notification.isSupported()) return;
+  if (SIN_RED || !p.avisos || !estado.datos || estado.sesion !== 'lista' || !Notification.isSupported()) return;
   const ahora = Date.now();
   const limite = ahora + p.avisoHoras * 3_600_000;
   for (const curso of estado.datos.cursos) {
@@ -1945,7 +1945,7 @@ app.whenReady().then(() => {
   // (electron .) y las pruebas no tocan nada del sistema: lo hacían, y
   // dejaron el acceso directo y el arranque apuntando a electron.exe.
   const marca = path.join(DIR_DATOS, 'inicio-instalado');
-  if (app.isPackaged && !fs.existsSync(marca) && !process.env.BB_CAPTURA) {
+  if (app.isPackaged && !SIN_RED && !fs.existsSync(marca) && !process.env.BB_CAPTURA) {
     app.setLoginItemSettings({ openAtLogin: true, ...opcionesInicio() });
     // La versión instalada reemplaza a la de desarrollo: que no arranquen
     // las dos con Windows.

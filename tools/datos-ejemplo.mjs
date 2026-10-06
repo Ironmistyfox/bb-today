@@ -92,6 +92,6 @@ fs.writeFileSync(
 );
 fs.writeFileSync(
   path.join(carpeta, 'ajustes.json'),
-  JSON.stringify({ url: 'https://blackboard.example.edu', cuenta: 'demo@escuela.edu', prefs: { diasAdelante: 1, tema: 'medianoche' } }, null, 2),
+  JSON.stringify({ url: 'https://blackboard.example.edu', cuenta: 'demo@escuela.edu', prefs: { diasAdelante: 1, tema: 'medianoche', avisos: false } }, null, 2),
 );
 console.log(`Datos de ejemplo en ${carpeta}`);

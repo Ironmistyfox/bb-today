@@ -1,5 +1,10 @@
 # Cambios
 
+## Sin publicar
+
+- Las comprobaciones con datos inventados no emiten avisos del sistema ni
+  registran la app de prueba para iniciar con Windows.
+
 ## 1.2.2 · 2026-10-05
 
 - **Detalle al pulsar una tarea:** abre la tarjeta flotante dentro de BB Today

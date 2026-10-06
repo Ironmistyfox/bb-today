@@ -58,6 +58,14 @@ apta para actualización automática.
 
 ## Pruebas
 
+El 2026-10-05 los datos temporales emitieron un aviso de «Integrales dobles»
+en el escritorio del dueño: aislar BB_DATOS no silencia Windows. Se corrigió
+revisarAvisos para salir en SIN_RED y el generador pone avisos:false. Las
+pruebas tampoco deben registrar inicio automático. tools/probar-avisos.mjs
+verifica que el modo de prueba no avisa ni escribe y que el normal sí avisa.
+Esta corrección de aislamiento está en main después de la etiqueta 1.2.2;
+no implica un release nuevo ni cambios en las tareas reales del dueño.
+
 Usar BB_DATOS con una carpeta temporal y BB_CAPTURA_SIN_RED=1 para no consultar
 cuentas reales. Compilar fuera de carpetas sincronizadas. Ejecutar:
 
