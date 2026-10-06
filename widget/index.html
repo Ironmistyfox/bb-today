@@ -158,6 +158,7 @@
   <div class="panel-mensajes" id="panel-mensajes" hidden></div>
   <div class="aviso" id="aviso" hidden></div>
   <div class="lista" id="lista"></div>
+  <div class="aviso" id="mantenimiento" hidden></div>
   <div class="deshacer" id="deshacer" hidden></div>
   <div class="claude" id="claude" hidden></div>
   <div class="novedad" id="novedad" hidden></div>
@@ -291,6 +292,7 @@ function pintarNovedad() {
 // cuándo está la respuesta.
 const X = '<svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
 function pintarClaude() {
+  if (estado.mantenimiento) { $('claude').hidden=true; return; }
   const c = estado.claude;
   const caja = $('claude');
   if (!c) {
@@ -342,7 +344,7 @@ function pintarFondo(c, caja) {
   } else if (c.fase === 'error') {
     caja.innerHTML = `<span class="hecho" style="color:var(--mal);background:color-mix(in srgb, var(--mal) 18%, transparent)">!</span><div class="texto"><b>No se pudo resolver</b><span class="sub" title="${esc(c.detalle || '')}">${esc(c.detalle || c.titulo)}</span></div>${cerrar}`;
   } else {
-    caja.innerHTML = `<span class="hecho">${PALOMITA}</span><div class="texto"><b>Respuesta lista</b><span class="sub">«${esc(c.titulo)}» · adjúntala y entrégala</span></div><button class="accion" id="claude-ver">Ver</button>${cerrar}`;
+    caja.innerHTML = `<span class="hecho">${PALOMITA}</span><div class="texto"><b>${c.sinArchivos ? 'Respuesta escrita; sin archivos' : 'Archivos generados'}</b><span class="sub">${c.sinArchivos ? 'La IA no generó archivos entregables. Revisa el texto.' : '«'+esc(c.titulo)+'» · revisa los archivos antes de adjuntar'}</span></div><button class="accion" id="claude-ver">Ver</button>${cerrar}`;
     $('claude-ver').onclick = () => window.agenda.app.abrir('pendientes', c.tareaId);
   }
   $('claude-cerrar').onclick = () => window.agenda.claude.cancelar();
@@ -401,6 +403,9 @@ function pintarChatGPT(c, caja) {
 
 function pintar() {
   aplicarTema();
+  $('mantenimiento').hidden=!estado.mantenimiento;
+  $('mantenimiento').textContent='Modo limitado · IA pausada por mantenimiento. Tus archivos y entregas siguen disponibles.';
+  if (estado.mantenimiento) $('abrir-app').title='Tus archivos, entrega y ajustes';
   pintarMensajes();
   pintarClaude();
   pintarNovedad();

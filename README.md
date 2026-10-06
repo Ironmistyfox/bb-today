@@ -1,8 +1,8 @@
 # BB Today
 
-Tus pendientes de Blackboard, a la vista. BB Today 1.2.4 combina un widget
-para Windows y Mac con una app para leer materiales, preparar respuestas con
-ChatGPT o Claude y revisar tus archivos antes de abrir la entrega oficial.
+Tus pendientes de Blackboard, a la vista. BB Today 1.2.5 funciona en modo
+limitado por mantenimiento: widget para Windows y Mac, consulta de materiales
+y preparación de entregas con tus propios archivos. La asistencia de IA está pausada.
 
 [Descargar](https://bb-today.pages.dev/) ·
 [Versiones](https://github.com/Ironmistyfox/bb-today/releases) ·
@@ -16,21 +16,15 @@ universidad. Código abierto bajo [MIT](LICENSE).
 - Ver lo que vence hoy, lo que viene y las tareas que aceptan entrega tardía.
 - Leer instrucciones y previsualizar PDF, imágenes, Word, ZIP y código.
 - Abrir BB Today completo: pendientes, respuestas, IA, ajustes y cuenta.
-- Usar ChatGPT o Claude con tu cuenta. Con Codex o Claude Code disponible,
-  el agente trabaja en segundo plano; hay respaldo por chatgpt.com o Claude Desktop.
 - Añadir tus archivos, revisar entregables y preparar texto por tarea.
-- Aprender el procedimiento con «Cómo se hace»: la IA genera los pasos y
-  sus razones aparte de los entregables. Puedes generar la explicación de
-  una respuesta anterior sin cambiar sus archivos.
-- Pedir una revisión de imágenes o documentos; conserva el original y
-  elige qué versión adjuntar. Otro clic en Adjuntar quita la selección.
+- Elegir qué archivos propios adjuntar; otro clic en Adjuntar quita la selección.
 - Abrir la página oficial de Blackboard y colocar o arrastrar los archivos.
   Revisa su carga y pulsa tú el botón final de envío.
 - Ver mensajes y anuncios de tus cursos. Marcar visto sólo cambia BB Today.
 
-Las respuestas de IA requieren revisión y la disponibilidad depende de tu
-cuenta y plan. La primera vez aparece una guía; puedes volver a abrirla en
-Cuenta → Ayuda. No necesitas IA para consultar tareas o preparar archivos propios.
+La primera vez aparece una guía; puedes volver a abrirla en Cuenta → Ayuda.
+Las respuestas y archivos generados en versiones anteriores se conservan,
+pero la generación de IA y la entrega directa de esos archivos están pausadas.
 
 ## Instalación y actualizaciones
 
@@ -45,11 +39,9 @@ o al pedirlo. Mac avisa y lleva a la página para descargar la versión nueva.
 
 ## Datos y privacidad
 
-BB Today no tiene servidor propio, analítica ni publicidad. Conserva la sesión,
-preferencias, agenda, mensajes y respuestas localmente. Cuando eliges usar IA,
-las instrucciones y materiales se comparten con el proveedor mediante tu cuenta.
-Mientras esperas a chatgpt.com, puede guardar el texto o imagen que copies como
-respuesta; Cancelar detiene la espera. Consulta el [aviso completo](https://bb-today.pages.dev/privacidad.html).
+En 1.2.5 la IA está pausada: no se consultan motores ni se vigila el portapapeles.
+La sesión, agenda y archivos se guardan localmente. Se conservan los datos de
+versiones anteriores. Consulta el [aviso completo](https://bb-today.pages.dev/privacidad.html).
 
 Datos de la app: `%APPDATA%\\blackboard-mcp` en Windows o
 `~/Library/Application Support/BB Today` en Mac. Los archivos de tareas están
@@ -77,7 +69,7 @@ node tools/probar-mcp.mjs <ejecutable>
 ```
 
 El MCP incluido para Claude Desktop expone las herramientas de BB Today para
-leer las tareas de la agenda y guardar una respuesta local. El servidor de
+leer las tareas de la agenda. Guardar respuestas con IA está bloqueado durante el mantenimiento. El servidor de
 desarrollo también permite consultar cursos y otros datos accesibles con la sesión.
 
 ## Publicación

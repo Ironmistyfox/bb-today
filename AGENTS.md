@@ -2,10 +2,34 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión en preparación es 1.2.4. Todo el código, textos y comentarios se
+MCP. La versión en preparación es 1.2.5. Todo el código, textos y comentarios se
 escriben en español.
 
 ## Trabajo y publicación
+
+**Estado vigente, 2026-10-06:** 1.2.4 se publicó con las pruebas Windows/Mac
+aprobadas en 37495136337; web f7f8b91a y contador de 36. El responsable ahora
+pide poner la app en modo limitado por mantenimiento: widget, materiales y
+entrega de archivos propios; pausar todas las rutas de IA. Esta petición
+autoriza desplegar 1.2.5 y actualizar el mensaje público. No reactivar IA sin
+nueva instrucción. src/mantenimiento.js contiene la política, que también
+aplica al MCP y al proceso principal. Datos anteriores conservados.
+
+La copia que tenía abierta el dueño era un win-unpacked 1.2.2 de pruebas
+(LocalCache/Local/bb-today-build-publico), mientras Programs/bb-today ya era
+1.2.4: el instalador actualizaba Programs pero reiniciar volvía a la copia
+antigua. Las copias portátiles pasan a actualización manual; sólo aceptar
+versiones superiores. No volver a abrir builds de pruebas para uso personal.
+Las comprobaciones Electron deben usar cerrarPrueba, salir de la app y
+terminar sólo su árbol: SIGKILL solo dejó instancias vivas y bandejas duplicadas.
+
+tools/probar-mantenimiento.mjs prueba el acceso desde el widget, bloqueo de
+IA/MCP, conservación y adjuntar/quitar archivos propios sin enviar a Blackboard.
+tools/probar-actualizaciones.mjs comprueba igualdad/anterior/nueva y portátil.
+tools/probar-resultados-motor.mjs comprueba salida parcial/error/cuota y texto
+sin archivos. IA pausada: no comprobar motores ni vigilar portapapeles.
+
+Lo siguiente es registro histórico; prevalece el estado vigente de arriba.
 
 **AUTORIZADO, 2026-10-06:** el responsable dijo «ok publica» después de
 implementar la explicación de la IA. Publicar 1.2.4 y desplegar la web.

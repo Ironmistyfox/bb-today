@@ -1,5 +1,13 @@
 # Cambios
 
+## 1.2.5 · 2026-10-06
+
+- Modo limitado por mantenimiento: pendientes, materiales y entrega de archivos propios. La generación, revisión y explicaciones de IA están pausadas, también en el proceso principal y MCP.
+- Las respuestas y archivos anteriores se conservan; sólo los archivos añadidos por el usuario se ofrecen para entregar durante el mantenimiento.
+- Las copias portátiles de pruebas no intentan actualizarse mediante el instalador ni entran en un ciclo de reinicio. Los avisos sólo aceptan una versión superior a la instalada.
+- Los errores de motor o de cuota no se anuncian como tarea terminada. Se distingue una respuesta escrita de archivos realmente generados.
+- Las pruebas cierran la app y su árbol de procesos, retirando el icono de la bandeja.
+
 ## 1.2.4 · 2026-10-06
 
 - La IA explica cómo se hace cada tarea: concepto, pasos y razones, ejemplo y comprobación, en un apartado separado para aprender.

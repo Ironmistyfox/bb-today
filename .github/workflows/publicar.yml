@@ -67,6 +67,7 @@ jobs:
         run: |
           git fetch --depth=1 origin "$PRUEBAS_REF"
           git show FETCH_HEAD:tools/probar-interacciones.mjs > tools/probar-interacciones.mjs
+          git show FETCH_HEAD:tools/cerrar-prueba.mjs > tools/cerrar-prueba.mjs
 
       - run: npm ci
 
@@ -93,28 +94,17 @@ jobs:
         shell: bash
         run: node tools/probar-interacciones.mjs "dist/win-unpacked/BB Today.exe"
 
-      - name: Prueba de entregables y revisión
+      - name: Prueba de mantenimiento y archivos propios
         shell: bash
-        run: node tools/probar-entregables.mjs "dist/win-unpacked/BB Today.exe"
+        run: node tools/probar-mantenimiento.mjs "dist/win-unpacked/BB Today.exe"
 
       - name: Prueba de aislamiento de avisos
         run: node tools/probar-avisos.mjs
 
-      - name: Prueba de explicación de aprendizaje
-        shell: bash
-        run: node tools/probar-aprendizaje.mjs "dist/win-unpacked/BB Today.exe"
-
-      - name: Prueba del respaldo de aprendizaje
-        shell: bash
-        run: node tools/probar-aprendizaje.mjs "dist/win-unpacked/BB Today.exe"
-        env:
-          BB_PRUEBA_RESPALDO: '1'
-
-      - name: Prueba del respaldo de revisión
-        shell: bash
-        run: node tools/probar-entregables.mjs "dist/win-unpacked/BB Today.exe"
-        env:
-          BB_PRUEBA_RESPALDO: '1'
+      - name: Prueba de estados de actualización
+        run: |
+          node tools/probar-actualizaciones.mjs
+          node tools/probar-resultados-motor.mjs
 
       - name: Guardar las capturas de la prueba
         if: always()
@@ -182,6 +172,7 @@ jobs:
         run: |
           git fetch --depth=1 origin "$PRUEBAS_REF"
           git show FETCH_HEAD:tools/probar-interacciones.mjs > tools/probar-interacciones.mjs
+          git show FETCH_HEAD:tools/cerrar-prueba.mjs > tools/cerrar-prueba.mjs
 
       - run: npm ci
 
@@ -208,24 +199,16 @@ jobs:
       - name: Prueba de interacción con tareas
         run: node tools/probar-interacciones.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
 
-      - name: Prueba de entregables y revisión
-        run: node tools/probar-entregables.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
+      - name: Prueba de mantenimiento y archivos propios
+        run: node tools/probar-mantenimiento.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
 
       - name: Prueba de aislamiento de avisos
         run: node tools/probar-avisos.mjs
 
-      - name: Prueba de explicación de aprendizaje
-        run: node tools/probar-aprendizaje.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
-
-      - name: Prueba del respaldo de aprendizaje
-        run: node tools/probar-aprendizaje.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
-        env:
-          BB_PRUEBA_RESPALDO: '1'
-
-      - name: Prueba del respaldo de revisión
-        run: node tools/probar-entregables.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
-        env:
-          BB_PRUEBA_RESPALDO: '1'
+      - name: Prueba de estados de actualización
+        run: |
+          node tools/probar-actualizaciones.mjs
+          node tools/probar-resultados-motor.mjs
 
       - name: Guardar las capturas de la prueba
         if: always()

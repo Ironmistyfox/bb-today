@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { cerrarPrueba } from './cerrar-prueba.mjs';
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ejecutable = process.argv[2];
@@ -105,8 +106,7 @@ try {
 } finally {
   if (electron) {
     // El cierre del proceso en Mac puede cortar la respuesta del protocolo.
-    electron.process().kill('SIGKILL');
-    await Promise.race([electron.close().catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
+    await cerrarPrueba(electron);
   }
   clearTimeout(limite);
 }

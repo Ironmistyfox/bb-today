@@ -1,5 +1,5 @@
 // Actualizaciones automáticas desde los Releases de GitHub
-// (Ironmistyfox/bb-today-descargas, configurado en package.json → build.publish).
+// (Ironmistyfox/bb-today, configurado en package.json → build.publish).
 //
 // La versión nueva se descarga sola. Se instala cuando no estás usando la
 // computadora (2 min sin tocarla o con la pantalla bloqueada), para no cerrar
@@ -8,6 +8,9 @@
 
 import { app, powerMonitor } from 'electron';
 import paquete from 'electron-updater';
+import fs from 'node:fs';
+import path from 'node:path';
+import { esVersionNueva } from './versiones.js';
 
 const { autoUpdater } = paquete;
 const CADA_MS = 4 * 60 * 60_000;
@@ -38,6 +41,12 @@ export function iniciarActualizaciones({ alCambiar, antesDeSalir, registrar }) {
   antesDeInstalar = antesDeSalir;
   // En desarrollo (electron .) no hay instalador que actualizar.
   if (!app.isPackaged || process.env.BB_CAPTURA_SIN_RED) return;
+  // Una copia win-unpacked de pruebas no puede actualizarse con un NSIS:
+  // instala en Programs, pero al reiniciar vuelve a abrir la copia antigua.
+  if (process.platform === 'win32' && !fs.existsSync(path.join(path.dirname(process.execPath),'Uninstall BB Today.exe'))) {
+    cambiar({estado:'manual',version:null,detalle:'Esta es una copia portátil/de pruebas. Abre la versión instalada o instala la descarga de la web.'});
+    return;
+  }
 
   autoUpdater.autoDownload = !SOLO_AVISO;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -46,11 +55,14 @@ export function iniciarActualizaciones({ alCambiar, antesDeSalir, registrar }) {
   autoUpdater.logger = { info() {}, warn() {}, debug() {}, error: (e) => registrar('actualización', e) };
 
   autoUpdater.on('checking-for-update', () => cambiar({ estado: 'buscando' }));
-  autoUpdater.on('update-not-available', () => cambiar({ estado: 'al-dia', revisado: new Date().toISOString() }));
-  autoUpdater.on('update-available', (info) =>
-    cambiar(SOLO_AVISO ? { estado: 'aviso', version: info.version } : { estado: 'descargando', version: info.version, porcentaje: 0 }));
+  autoUpdater.on('update-not-available', () => cambiar({ estado: 'al-dia', version:null, porcentaje:0, revisado: new Date().toISOString() }));
+  autoUpdater.on('update-available', (info) => {
+    if (!esVersionNueva(info.version,app.getVersion())) return cambiar({estado:'al-dia',version:null,porcentaje:0});
+    cambiar(SOLO_AVISO ? { estado: 'aviso', version: info.version } : { estado: 'descargando', version: info.version, porcentaje: 0 });
+  });
   autoUpdater.on('download-progress', (p) => cambiar({ estado: 'descargando', porcentaje: Math.round(p.percent) }));
   autoUpdater.on('update-downloaded', (info) => {
+    if (!esVersionNueva(info.version,app.getVersion())) return cambiar({estado:'al-dia',version:null,porcentaje:0});
     cambiar({ estado: 'lista', version: info.version, porcentaje: 100 });
     instalarCuandoNoLoUses();
   });
@@ -65,7 +77,7 @@ export function iniciarActualizaciones({ alCambiar, antesDeSalir, registrar }) {
 }
 
 export function buscar() {
-  if (!app.isPackaged || ['descargando', 'lista', 'aviso'].includes(estado.estado)) return;
+  if (!app.isPackaged || process.env.BB_CAPTURA_SIN_RED || ['manual','descargando', 'lista', 'buscando'].includes(estado.estado)) return;
   autoUpdater.checkForUpdates().catch(() => {});
 }
 
@@ -78,7 +90,7 @@ function instalarCuandoNoLoUses() {
 }
 
 export function instalarAhora() {
-  if (estado.estado !== 'lista') return;
+  if (estado.estado !== 'lista' || !esVersionNueva(estado.version,app.getVersion())) return;
   clearInterval(vigilancia);
   antesDeInstalar();
   // Silencioso y vuelve a abrir la app al terminar.

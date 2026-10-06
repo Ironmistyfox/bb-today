@@ -30,6 +30,7 @@ import { reunirMaterial } from './material.js';
 import { colocarArchivos } from './entrega.js';
 import { ES_REVISABLE, prepararRevision } from './revision.js';
 import { ARCHIVO_EXPLICACION, INSTRUCCION_APRENDIZAJE, explicacionValida, separarRespuesta } from '../src/aprendizaje.js';
+import { MODO_LIMITADO, AVISO_MANTENIMIENTO, IA_PAUSADA } from '../src/mantenimiento.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const NOMBRE = 'BB Today';
@@ -142,7 +143,7 @@ function avisar() {
 const ID_PRUEBA = 'bbtoday-prueba-1';
 let datosBase = null;
 function conPrueba(datos) {
-  if (!datos || !estado.prefs?.tareaPrueba) return datos;
+  if (!datos || MODO_LIMITADO || !estado.prefs?.tareaPrueba) return datos;
   const hoy = new Date();
   hoy.setHours(23, 59, 0, 0);
   const tarea = {
@@ -170,6 +171,9 @@ function publicar(cambios) {
     cambios = { ...cambios, datos: conPrueba(datosBase) };
   }
   estado = { ...estado, ...cambios, escuela: cuentaApp.escuela(), entrando: cuentaApp.estaEntrando() };
+  estado.mantenimiento = MODO_LIMITADO;
+  estado.avisoMantenimiento = AVISO_MANTENIMIENTO;
+  if (MODO_LIMITADO) { estado.claude = null; estado.respuestas = {}; }
   avisar();
   // La ventanita de archivos para ChatGPT sólo vive mientras se le espera
   // (la de la entrega en Blackboard se cierra a mano).
@@ -466,6 +470,7 @@ async function mostrarVistaPrevia({ cursoId, tareaId, color, y, fijar = false })
   // Altura de la fila dentro de la ventana de la vista previa, en px de la página.
   const ancla = (ventana.getBounds().y + y * z - marco.y) / z;
   const base = { n, fijada: vistaFijada, curso: curso.nombre, color, tarea, cargando: true, prefs: estado.prefs, ancla, respuesta: respuestaParaVer(tareaId), resolverCon: NOMBRES_RUTA[estado.prefs.iaResolver] || 'ChatGPT', conAgente: null, otrasRutas: [] };
+  base.mantenimiento = MODO_LIMITADO;
   vistaPrevia.webContents.send('vista:datos', base);
   if (!vistaPrevia.isVisible()) vistaPrevia.showInactive();
   if (!vistaAbierta) encimaDelWidget();
@@ -608,6 +613,7 @@ function mtime(archivo) {
 // también puede responder sin que se haya pulsado nada aquí).
 let vueltaRevisar = 0;
 function revisarClaude() {
+  if (MODO_LIMITADO) return;
   if (!estado.claude && ++vueltaRevisar % 5) return;
   const mRespuestas = mtime(ARCHIVO_RESPUESTAS);
   if (mRespuestas !== marcas.respuestas) {
@@ -704,6 +710,7 @@ const urlImagen = (nombre) => pathToFileURL(path.join(DIR_IMAGENES, nombre)).hre
 
 // La respuesta como la ven las ventanas: imágenes con su dirección local.
 function respuestaParaVer(tareaId) {
+  if (MODO_LIMITADO) return null;
   const r = respuestas[tareaId];
   if (!r) return null;
   return {
@@ -773,6 +780,7 @@ function puedeEnFondo(motor) {
 }
 
 async function resolver({ tareaId, forzar }) {
+  if (MODO_LIMITADO) return IA_PAUSADA;
   if (estado.claude && ['preparando', 'trabajando', 'dibujando', 'esperando', 'leyendo'].includes(estado.claude.fase)) return { error: 'Ya hay una tarea en proceso. Cancélala o espera; tus resultados se conservan.' };
   try {
     const familia = forzar === 'claude' || forzar === 'chatgpt' ? forzar : estado.prefs.iaResolver;
@@ -866,6 +874,13 @@ function terminarEnFondo(c, motor, soloImagen, codigo) {
     publicar({ claude: { ...c, fase: 'lista', recibido: r.imagenes.length ? 'imagen' : 'texto' } });
     return;
   }
+  const falloSalida = fondo.clasificarFallo(fondo.registroUltimaVuelta(c.carpeta));
+  if (codigo !== 0 || falloSalida.tipo !== 'otro') {
+    if (falloSalida.tipo !== 'otro') bloquear(motor,falloSalida);
+    const motivo = falloSalida.tipo !== 'otro' ? MOTIVOS[falloSalida.tipo](motor,falloSalida.hasta) : `La IA terminó con un error (código ${codigo}).`;
+    publicar({claude:{...c,fase:'error',detalle:motivo+' No se confirmó una entrega completa. Los archivos previos se conservan.'}});
+    return;
+  }
   // Claude dejó el pedido de la hoja: la dibuja Codex.
   if (!soloImagen && motor === 'claude' && r.pedidoImagen && !r.imagenes.length && puedeEnFondo('codex')) {
     guardarDeFondo(c, r);
@@ -904,7 +919,7 @@ function terminarEnFondo(c, motor, soloImagen, codigo) {
     aviso.on('click', () => abrirApp('pendientes', c.tareaId));
     aviso.show();
   }
-  publicar({ claude: { ...c, fase: 'lista', recibido: guardada.imagenes?.length ? 'imagen' : 'texto' } });
+  publicar({ claude: { ...c, fase: 'lista', sinArchivos: !(guardada.imagenes?.length || guardada.archivos?.length), recibido: guardada.imagenes?.length ? 'imagen' : 'texto' } });
 }
 
 // Lo que dejó la IA pasa a ser la respuesta de la tarea (las imágenes se
@@ -966,6 +981,7 @@ async function materialDe(curso, tarea, carpeta) {
 // Agente de código: carpeta con la tarea y una terminal con Claude Code o
 // Codex. La respuesta es el RESPUESTA.md que deja al terminar.
 async function resolverConAgente({ tareaId, id, modo = 'codigo' }) {
+  if (MODO_LIMITADO) return IA_PAUSADA;
   const encontrada = buscarEnAgenda(tareaId);
   if (!encontrada) return { error: 'No encontré esa tarea.' };
   const { curso, tarea } = encontrada;
@@ -1224,14 +1240,14 @@ function listaEntregables(tareaId) {
   const r = respuestas[tareaId];
   const lista = [];
   // Las hojas de la respuesta, con nombre legible en la carpeta de la tarea.
-  (r?.imagenes || []).forEach((n, k) => {
+  (MODO_LIMITADO ? [] : r?.imagenes || []).forEach((n, k) => {
     const origen = path.join(DIR_IMAGENES, n);
     if (!fs.existsSync(origen)) return;
     const destino = path.join(carpeta, 'entrega', `hoja-${k + 1}${path.extname(n).toLowerCase()}`);
     copiarSiCambio(origen, destino);
     lista.push({ ruta: destino, origen: r.ia || 'IA' });
   });
-  for (const a of r?.archivos || []) if (fs.existsSync(a.ruta)) lista.push({ ruta: a.ruta, origen: a.ia || r.ia || 'IA', revisionDe: a.revisionDe });
+  for (const a of MODO_LIMITADO ? [] : r?.archivos || []) if (fs.existsSync(a.ruta)) lista.push({ ruta: a.ruta, origen: a.ia || r.ia || 'IA', revisionDe: a.revisionDe });
   const tuyos = path.join(carpeta, 'tuyos');
   let nombres = [];
   try {
@@ -1246,7 +1262,7 @@ function listaEntregables(tareaId) {
       ...x,
       nombre: path.basename(x.ruta),
       imagen: ES_IMAGEN.test(x.ruta),
-      revisable: ES_REVISABLE.test(x.ruta),
+      revisable: !MODO_LIMITADO && ES_REVISABLE.test(x.ruta),
       url: ES_IMAGEN.test(x.ruta) ? `${pathToFileURL(x.ruta).href}?v=${Math.round(fs.statSync(x.ruta).mtimeMs)}` : null,
       peso: tamano(x.ruta),
       adjuntado: adjuntos.has(x.ruta),
@@ -1255,11 +1271,12 @@ function listaEntregables(tareaId) {
 
 function datosEntrega(tareaId) {
   const e = entregas[tareaId] || {};
-  const r = respuestas[tareaId];
+  const r = MODO_LIMITADO ? null : respuestas[tareaId];
   return { entregables: listaEntregables(tareaId), texto: e.texto ?? '', respuesta: r ? { texto: r.texto || '', explicacion: r.explicacion || '', explicacionPendiente: !explicacionValida(r.explicacion), ia: r.ia || 'IA' } : null, abierta: e.abierta || null, estado: e.estado || null };
 }
 
 async function pedirExplicacion(tareaId) {
+  if (MODO_LIMITADO) return IA_PAUSADA;
   const r = respuestas[tareaId];
   const encontrada = buscarEnAgenda(tareaId);
   if (!r || !encontrada) return { error: 'Primero hace falta una respuesta para explicar.' };
@@ -1394,6 +1411,7 @@ function guardarRevision(c, rutas) {
 }
 
 async function revisarEntregable({ tareaId, ruta, comentario }) {
+  if (MODO_LIMITADO) return IA_PAUSADA;
   if (typeof comentario !== 'string' || !comentario.trim() || comentario.length > 4000) return { error: 'Escribe qué quieres cambiar (hasta 4000 caracteres).' };
   if (!esEntregable(tareaId, ruta) || !ES_REVISABLE.test(ruta)) return { error: 'Este archivo no está disponible para revisión.' };
   if (trabajo || (estado.claude && ['preparando','trabajando','dibujando','esperando','leyendo'].includes(estado.claude.fase))) return { error: 'Ya hay una tarea en proceso. Espera o cancélala antes de pedir otra revisión.' };
@@ -1461,6 +1479,7 @@ ipcMain.handle('entrega:cancelar', (_e, tareaId) => {
 
 // Con la respuesta escrita (de Claude o de ChatGPT), ChatGPT hace la imagen.
 async function imagenConChatGPT(tareaId) {
+  if (MODO_LIMITADO) return IA_PAUSADA;
   // Codex ya dijo que no puede dibujar (plan o límite): directo a chatgpt.com.
   if (agente.hayAppCodex() && !respuestas[tareaId]?.sinImagen && !bloqueado('codex')) return imagenConCodex(tareaId);
   const r = respuestas[tareaId];
@@ -1576,7 +1595,7 @@ ipcMain.handle('claude:cancelar', () => {
   publicar({ claude: null });
 });
 // Archivos que entregó la IA (documentos, código…).
-app.on('before-quit', cancelarEnFondo);
+app.on('before-quit', () => { app.salir = true; cancelarEnFondo(); bandeja?.destroy(); });
 ipcMain.handle('respuesta:abrirArchivo', (_e, tareaId, i) => {
   const a = respuestas[tareaId]?.archivos?.[i];
   if (a && fs.existsSync(a.ruta)) shell.openPath(a.ruta);
@@ -1592,10 +1611,12 @@ ipcMain.handle('claude:archivos', () => {
 });
 ipcMain.handle('respuesta:carpeta', (_e, tareaId) => respuestas[tareaId]?.carpeta && shell.openPath(respuestas[tareaId].carpeta));
 ipcMain.handle('ia:agentes', async () => {
+  if (MODO_LIMITADO) return datosConfiguracion();
   await Promise.all([agente.disponibles({ renovar: true }), fondo.motores({ renovar: true })]);
   return datosConfiguracion();
 });
 ipcMain.handle('claude:conectar', () => {
+  if (MODO_LIMITADO) return IA_PAUSADA;
   claude.conectar();
   avisar();
   return datosConfiguracion();
@@ -1726,9 +1747,11 @@ function rutasDeTareas() {
 
 function datosConfiguracion() {
   return {
+    mantenimiento: MODO_LIMITADO,
+    avisoMantenimiento: AVISO_MANTENIMIENTO,
     prefs: estado.prefs,
     agenda: estado.datos,
-    respuestas: listaRespuestas(),
+    respuestas: MODO_LIMITADO ? [] : listaRespuestas(),
     rutas: rutasDeTareas(),
     agentes: agente.disponiblesYa(),
     trabajo: estado.claude,
@@ -1758,6 +1781,7 @@ function datosConfiguracion() {
 // BB Today completo: pendientes, respuestas de IA y ajustes. La abren el
 // botón del widget y la bandeja; «seccion» elige dónde abre.
 function abrirApp(seccion = 'pendientes', tareaId = null, { guia = false } = {}) {
+  if (MODO_LIMITADO && ['ia', 'respuestas'].includes(seccion)) seccion = 'pendientes';
   if (MAC) app.focus({ steal: true });
   if (configuracion && !configuracion.isDestroyed()) {
     configuracion.webContents.send('app:ir', seccion, tareaId, guia);
@@ -2235,8 +2259,10 @@ app.whenReady().then(() => {
   // BB_CAPTURA=ruta.png: actualiza, guarda una captura del widget y sale.
   // Sirve para revisar cómo se ve sin tocar el escritorio.
   // Qué agentes de código hay (Claude Code, Codex), para la tarjeta.
-  agente.disponibles().catch(() => {});
-  fondo.motores().catch(() => {});
+  if (!MODO_LIMITADO) {
+    agente.disponibles().catch(() => {});
+    fondo.motores().catch(() => {});
+  }
   if (process.env.BB_CAPTURA) {
     // BB_CAPTURA_TAREA=título: abre además su vista previa y la guarda en
     // <ruta>-vista.png.
@@ -2364,7 +2390,9 @@ app.whenReady().then(() => {
   });
 
   marcas = { estado: mtime(ARCHIVO_CLAUDE), respuestas: mtime(ARCHIVO_RESPUESTAS) };
-  estado.respuestas = resumenRespuestas();
+  estado.respuestas = MODO_LIMITADO ? {} : resumenRespuestas();
+  estado.mantenimiento = MODO_LIMITADO;
+  estado.avisoMantenimiento = AVISO_MANTENIMIENTO;
   setInterval(revisarClaude, 1000);
 
   actualizar();

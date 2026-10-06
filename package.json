@@ -1,6 +1,6 @@
 {
   "name": "bb-today",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "private": true,
   "description": "Tus pendientes de Blackboard en el escritorio de Windows y Mac.",
   "type": "module",
@@ -57,6 +57,7 @@
       "src/contenido.js",
       "src/mensajes.js",
       "src/aprendizaje.js",
+      "src/mantenimiento.js",
       "!node_modules/pdfjs-dist/legacy/**",
       "node_modules/pdfjs-dist/legacy/build/pdf.mjs",
       "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",

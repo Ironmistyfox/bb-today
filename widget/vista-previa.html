@@ -225,6 +225,10 @@ function pintar() {
   html += `</div>${notaClaude ? `<div class="nota-claude">${notaClaude}</div>` : ''}<div class="pie"><button class="abrir" data-url="${esc(tarea.enlace)}" title="Abrir en Blackboard">Abrir en Blackboard ↗</button>${actual.resolverCon === 'Claude' ? `<button class="resolver" data-resolver>${CHISPA}Resolver con Claude</button>` : '<button class="resolver chatgpt" data-resolver><img src="icono/chatgpt.png" alt="">Resolver con ChatGPT</button>'}</div>`;
   $contenido.innerHTML = html;
   const corta = $contenido.querySelector('[data-respuesta-corta]');
+  if (actual.mantenimiento) {
+    $contenido.querySelector('[data-resolver]')?.remove();
+    const boton=document.createElement('button');boton.className='resolver';boton.dataset.entregaPropia='';boton.textContent='Mis archivos y entrega';$contenido.querySelector('.pie').append(boton);
+  }
   if (corta) formatoRespuesta.formulas(corta);
   for (const lienzo of $contenido.querySelectorAll('canvas[data-pdf]')) dibujarPdf(lienzo, Number(lienzo.dataset.pdf));
 }
@@ -422,6 +426,7 @@ $tarjeta.addEventListener('mouseleave', () => {
   vista.soltar();
 });
 $tarjeta.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-entrega-propia]') && actual) return window.agenda.app.abrir('pendientes',actual.tarea.id);
   const el = e.target.closest('[data-archivo]');
   if (el && actual?.detalle) {
     // Se descarga con la sesión de la app (nunca pide volver a entrar) y
@@ -441,6 +446,7 @@ $tarjeta.addEventListener('click', async (e) => {
     return;
   }
   if (e.target.closest('[data-mas-rutas]') && actual) {
+    if (actual.mantenimiento) return;
     menuRutas = !menuRutas;
     pintar();
     return;

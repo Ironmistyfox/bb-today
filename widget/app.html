@@ -10,6 +10,7 @@
 <script src="../node_modules/katex/dist/contrib/auto-render.min.js"></script>
 <script src="markdown.js"></script>
 <style>
+  [hidden] { display: none !important; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--fondo-b); }
   body { color: var(--texto); font: 13px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; display: flex; overflow: hidden; }
@@ -496,6 +497,7 @@ oscuroSistema.addEventListener('change', () => pintar());
 
 // ---------- Navegación ----------
 function ir(s) {
+  if (datos?.mantenimiento && ['ia','respuestas'].includes(s)) s = 'pendientes';
   seccion = s;
   for (const b of document.querySelectorAll('.nav-item')) b.classList.toggle('activo', b.dataset.ir === s);
   for (const el of document.querySelectorAll('.seccion')) el.classList.toggle('activa', el.id === `s-${s}`);
@@ -555,6 +557,10 @@ async function cerrarGuia(conPrueba) {
 }
 function pintarGuia() {
   if (!guia || !datos) return;
+  if (datos.mantenimiento) {
+    guia.fondo.innerHTML = '<div class="modal guia"><h3>BB Today · modo limitado</h3><p>La asistencia de IA está pausada por mantenimiento. Tus pendientes, instrucciones y materiales siguen disponibles.</p><ol><li>Entra en el Blackboard de tu escuela desde Cuenta.</li><li>Pulsa una tarea del widget para leer sus instrucciones.</li><li>Abre «Mis archivos y entrega», añade tus propios archivos y elige qué adjuntar.</li><li>Comprueba la carga y pulsa tú el envío final en Blackboard.</li></ol><div class="acciones"><button class="boton primario" data-g="fin">Entendido</button></div></div>';
+    return;
+  }
   const p = datos.prefs;
   const m = datos.motores || {};
   const c = datos.claude || {};
@@ -826,8 +832,15 @@ function pintarDetalleTarea(d) {
     formatoRespuesta.formulas($('md-explicacion'));
   }
   if (foco && $(foco.id) && !$(foco.id).disabled) {
+    // El formulario de entrega conserva el foco al actualizarse.
     $(foco.id).focus({ preventScroll: true });
     $(foco.id).setSelectionRange(foco.inicio, foco.fin);
+  }
+  if (datos.mantenimiento) {
+    document.querySelector('[data-resolver]')?.remove();
+    $('titulo-explicacion')?.closest('section')?.remove();
+    document.querySelector('#zona-entregables .soltar').textContent = 'Arrastra aquí tus archivos o pulsa «Subir tus archivos».';
+    document.querySelector('#zona-entregables .paso-titulo').childNodes[1].textContent = 'Mis archivos';
   }
 }
 
@@ -1255,6 +1268,7 @@ function pintarCuenta() {
   $('version-larga').textContent = `BB Today ${datos.version}`;
   const textos = {
     desarrollo: 'Versión de desarrollo: no se actualiza sola',
+    manual: a.detalle || 'Copia portátil: instala la descarga de la web y abre la versión instalada.',
     inicial: 'Buscando actualizaciones al arrancar…',
     buscando: 'Buscando actualizaciones…',
     'al-dia': 'Tienes la versión más reciente',
@@ -1266,9 +1280,9 @@ function pintarCuenta() {
   $('estado-actualizacion').textContent = textos[a.estado] || '';
   const boton = $('boton-actualizacion');
   boton.className = a.estado === 'lista' ? 'boton primario' : 'boton';
-  boton.textContent = a.estado === 'lista' ? 'Reiniciar ahora' : a.estado === 'aviso' ? 'Ir a la página' : 'Buscar ahora';
+  boton.textContent = a.estado === 'lista' ? 'Reiniciar ahora' : ['manual','aviso'].includes(a.estado) ? 'Ir a la página' : 'Buscar ahora';
   boton.disabled = ['desarrollo', 'buscando', 'descargando'].includes(a.estado);
-  boton.onclick = () => (a.estado === 'lista' ? window.agenda.actualizacion.instalar() : a.estado === 'aviso' ? window.agenda.web('/') : window.agenda.actualizacion.buscar());
+  boton.onclick = () => (a.estado === 'lista' ? window.agenda.actualizacion.instalar() : ['manual','aviso'].includes(a.estado) ? window.agenda.web('/') : window.agenda.actualizacion.buscar());
 }
 
 function pintarBarra() {
@@ -1296,6 +1310,14 @@ function pintarBarra() {
 
 function pintar() {
   if (!datos) return;
+  if (datos.mantenimiento) {
+    document.querySelectorAll('[data-ir="ia"],[data-ir="respuestas"]').forEach(el=>el.hidden=true);
+    if (['ia','respuestas'].includes(seccion)) ir('pendientes');
+    let aviso = $('aviso-mantenimiento');
+    if (!aviso) { aviso=document.createElement('p');aviso.id='aviso-mantenimiento';aviso.className='nota';document.querySelector('nav').append(aviso); }
+    aviso.textContent=datos.avisoMantenimiento;
+    for (const id of ['limpiarMetadatos','avisoMetadatos']) $(id)?.closest('.opcion')?.setAttribute('hidden','');
+  }
   // El mismo estilo que el widget.
   document.documentElement.dataset.tema = !datos.prefs.tema || datos.prefs.tema === 'sistema' ? temaSistema() : datos.prefs.tema;
   pintarBarra();

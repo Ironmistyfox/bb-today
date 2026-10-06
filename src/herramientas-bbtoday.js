@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import { INSTRUCCION_APRENDIZAJE } from './aprendizaje.js';
+import { MODO_LIMITADO, AVISO_MANTENIMIENTO } from './mantenimiento.js';
 import path from 'node:path';
 import { z } from 'zod';
 import { contenidoArchivo } from './contenido.js';
@@ -58,6 +59,7 @@ const prefs = () => ({ ...PREDETERMINADAS, ...(leerJson(ARCHIVO_AJUSTES, {}).pre
 // Cómo cerrar: la respuesta y qué tipo de tarea era, para que BB Today siga
 // solo (imagen de la hoja resuelta, o un agente de código).
 function instruccionesFinales(tareaId) {
+  if (MODO_LIMITADO) return '\n\n' + AVISO_MANTENIMIENTO;
   const p = prefs();
   const lineas = [
     '',
@@ -175,6 +177,7 @@ export function registrarHerramientasBBToday(servidor) {
       },
     },
     async ({ tarea_id, respuesta, explicacion, tipo, pedido_imagen }) => {
+      if (MODO_LIMITADO) return {isError:true, content:[{type:'text',text:AVISO_MANTENIMIENTO}]};
       try {
         const { tarea } = buscarTarea(tarea_id);
         const respuestas = leerJson(ARCHIVO_RESPUESTAS, {});
