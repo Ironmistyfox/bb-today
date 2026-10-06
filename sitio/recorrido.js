@@ -209,13 +209,12 @@ async function cargarVersion() {
     const publicadas = [...actual, ...antiguo].filter((r) => !r.draft && !r.prerelease).sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at));
     const ultima = actual.filter((r) => !r.draft && !r.prerelease).sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))[0];
     if (ultima) document.querySelector('#version').textContent = `Versión ${ultima.tag_name.replace(/^v/, '')} · Gratis`;
-    // El aviso sólo ofrece la versión con IA cuando sus instaladores existen.
+    // Mantener el aviso de mantenimiento y no sustituirlo por una versión antigua.
     const version = ultima?.tag_name.replace(/^v/, '').split('.').map(Number);
-    const conIA = version?.length === 3 && (version[0] > 1 || (version[0] === 1 && (version[1] > 2 || (version[1] === 2 && version[2] >= 1))));
+    const disponible = version?.length === 3 && (version[0] > 1 || (version[0] === 1 && (version[1] > 2 || (version[1] === 2 && version[2] >= 5))));
     const nombre = esMac ? 'BB-Today-Mac-arm64.dmg' : 'BB-Today-Instalador.exe';
     const instalador = ultima?.assets?.find((a) => a.name === nombre);
-    if (conIA && instalador?.browser_download_url) {
-      document.querySelector('.aviso-version span').textContent = 'Nueva versión: con IA integrada';
+    if (disponible && instalador?.browser_download_url) {
       const enlace = document.querySelector('.aviso-version a');
       enlace.textContent = `Descargar BB Today ${ultima.tag_name.replace(/^v/, '')} ↗`;
       enlace.href = instalador.browser_download_url;

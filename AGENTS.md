@@ -29,6 +29,12 @@ tools/probar-actualizaciones.mjs comprueba igualdad/anterior/nueva y portátil.
 tools/probar-resultados-motor.mjs comprueba salida parcial/error/cuota y texto
 sin archivos. IA pausada: no comprobar motores ni vigilar portapapeles.
 
+La ejecución inicial 37528499252 aprobó Windows; Mac aprobó las aserciones
+de interacción pero falló el cierre del comprobador al consultar un transporte
+ya cerrado. Se corrige sólo cerrarPrueba y se usa desde main en el flujo manual,
+sin mover v1.2.5 ni cambiar el código empaquetado. La web conserva el aviso de
+mantenimiento aunque responda la API de GitHub (antes lo reemplazaba por IA).
+
 Lo siguiente es registro histórico; prevalece el estado vigente de arriba.
 
 **AUTORIZADO, 2026-10-06:** el responsable dijo «ok publica» después de

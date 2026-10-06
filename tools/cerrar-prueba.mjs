@@ -14,6 +14,10 @@ export async function cerrarPrueba(instancia) {
   } finally {
     if (pid && process.platform==='win32') {
       try { execFileSync('taskkill',['/PID',String(pid),'/T','/F'],{windowsHide:true,stdio:'ignore'}); } catch {}
-    } else instancia.process()?.kill('SIGKILL');
+    } else if (pid) {
+      // Tras app.quit, el transporte de Playwright ya puede estar cerrado.
+      // Usar el PID capturado antes de salir, sin consultar ese transporte.
+      try { process.kill(pid, 'SIGKILL'); } catch (e) { if (e.code !== 'ESRCH') throw e; }
+    }
   }
 }
