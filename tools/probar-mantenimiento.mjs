@@ -46,7 +46,13 @@ try {
   await widget.evaluate(()=>{document.querySelector('#aviso').hidden=true;ajustarAlto();});
   for (const tamano of [0.9,1,1.15]) {
     await widget.evaluate(tamano=>window.agenda.config.guardar({tamano}),tamano);
-    await widget.waitForFunction(()=>document.querySelector('#lista').getBoundingClientRect().bottom<=innerHeight);
+    // setZoomFactor y el cambio de bounds llegan por vías distintas en Mac.
+    // Esperar la condición completa que se verifica, no sólo el borde externo:
+    // una lista comprimida también puede tener su borde dentro de la ventana.
+    await widget.waitForFunction(()=>{
+      const lista=document.querySelector('#lista');
+      return lista.scrollHeight<=lista.clientHeight+1 && lista.getBoundingClientRect().bottom<=innerHeight;
+    });
     assert.equal(await sinCorte(),true,`Contenido completo con tamaño ${tamano}`);
   }
   await widget.evaluate(()=>window.agenda.config.guardar({tamano:1}));

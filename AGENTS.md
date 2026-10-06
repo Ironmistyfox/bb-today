@@ -21,6 +21,12 @@ No ejecutar instaladores ni eludir la revisión que bloqueó /S antes.
 Pruebas ampliadas: lista sin recortes, aviso largo y sus márgenes, tres tamaños,
 mensajes/anuncios, entrega de archivos propios y ausencia de avisos de mantenimiento.
 
+La ejecución 37530751964 aprobó Windows; Mac falló al medir inmediatamente
+tras cambiar de zoom. El comprobador debe esperar lista.scrollHeight <=
+lista.clientHeight, manteniendo la misma aserción de contenido completo.
+Se repite el flujo manual con esa prueba actualizada sin mover v1.2.6.
+Si también falla al esperar, corregir la app y usar una etiqueta nueva.
+
 Lo inferior es histórico.
 
 ## Publicación terminada: 1.2.5, 2026-10-06
