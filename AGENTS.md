@@ -97,6 +97,16 @@ no responde. El icono fuente está en widget/icono/icono.svg.
 
 ## Datos y documentación
 
+El 2026-10-06 se reforzó el pedido de imágenes: letras chuecas, tamaños,
+presión y espaciado variables, líneas y recuadros a pulso, sin divisores
+rectos ni dos columnas obligatorias. La imperfección sólo es visual; conservar
+fórmulas exactas y legibles. preferencias.js migra sólo dos pedidos anteriores
+conocidos, sin sustituir pedidos personalizados. La configuración local del
+dueño se actualizó con respaldo. Se verificó lectura/guardado y conservación
+de otros ajustes con datos temporales; no se generó una imagen ni se publicó
+un release nuevo por este cambio. La app abierta debe reiniciarse para leer
+el pedido local actualizado.
+
 Los datos de sesión, agenda y respuestas viven en la carpeta local de la app.
 Los archivos de tareas se conservan en Documentos/BB Today o Descargas/BB Today.
 La privacidad debe explicar las conexiones a proveedores, el portapapeles,

@@ -2,6 +2,10 @@
 
 ## Sin publicar
 
+- Los apuntes digitales piden letras inclinadas y de tamaños variables,
+  presión irregular y líneas hechas a pulso, sin columnas simétricas.
+  Se actualizan los pedidos predeterminados anteriores, conservando los personalizados.
+
 - Las comprobaciones con datos inventados no emiten avisos del sistema ni
   registran la app de prueba para iniciar con Windows.
 

@@ -7,6 +7,12 @@ import { DIR_DATOS } from '../src/sesion.js';
 
 const ARCHIVO = path.join(DIR_DATOS, 'ajustes.json');
 
+// Actualizar sólo pedidos predeterminados conocidos; conservar los personalizados.
+const PEDIDOS_IMAGEN_ANTERIORES = new Set([
+  'Un apunte digital imperfecto escrito con lápiz digital en una app como GoodNotes o Notability: que parezca una captura de pantalla, nunca una fotografía de una libreta ni escritura sobre papel físico. Fondo blanco liso, sin textura de papel, sombras, perspectiva ni objetos alrededor. Trazo negro de lápiz digital con pequeñas variaciones naturales; letra legible pero irregular, espaciado y alineación algo desiguales, como un apunte cotidiano. La imperfección es sólo visual: conserva correctos y completos los números, fórmulas, procedimiento y resultados. Cada ejercicio con su número (por ejemplo «65-»); si son varios, en dos columnas. Nada de texto impreso ni tipografías de computadora.',
+  'Escrita a mano con lápiz digital, como una nota de iPad con Apple Pencil (GoodNotes o Notability): trazo negro fino y uniforme sobre fondo blanco liso, sin renglones, cuadrícula, textura de papel ni sombras; que parezca una captura de pantalla de la app, no una foto. Letra de estudiante clara y algo irregular. Cada ejercicio con su número (por ejemplo «65-»), el procedimiento paso a paso y el resultado; si son varios, en dos columnas. Nada de texto impreso ni tipografías de computadora.',
+]);
+
 export const PREDETERMINADAS = {
   diasAdelante: 0, // 0 = sólo hoy; 1 = hoy y mañana; ...
   diasAtras: 7, // vencidas de hasta N días atrás; 0 = no mostrarlas
@@ -30,7 +36,7 @@ export const PREDETERMINADAS = {
   iaImagenes: true, // ChatGPT hace imágenes de las respuestas
   iaImagenAuto: true, // y en tareas de ejercicios, sin preguntar
   iaPedido: 'Resuélvela completa y explica cada paso con claridad.',
-  iaPedidoImagen: 'Un apunte digital imperfecto escrito con lápiz digital en una app como GoodNotes o Notability: que parezca una captura de pantalla, nunca una fotografía de una libreta ni escritura sobre papel físico. Fondo blanco liso, sin textura de papel, sombras, perspectiva ni objetos alrededor. Trazo negro de lápiz digital con pequeñas variaciones naturales; letra legible pero irregular, espaciado y alineación algo desiguales, como un apunte cotidiano. La imperfección es sólo visual: conserva correctos y completos los números, fórmulas, procedimiento y resultados. Cada ejercicio con su número (por ejemplo «65-»); si son varios, en dos columnas. Nada de texto impreso ni tipografías de computadora.',
+  iaPedidoImagen: 'Dibuja un apunte de matemáticas escrito a pulso en una tablet con lápiz digital, como una captura de GoodNotes o Notability. Fondo blanco liso, sin textura de papel, foto, sombras, perspectiva ni objetos. Escritura cotidiana de estudiante, claramente imperfecta: letras algo chuecas, con inclinación y tamaño variables incluso dentro de una palabra; una misma letra no debe repetirse idéntica. Renglones levemente inclinados u ondulados, márgenes y espacios desiguales; superíndices y subíndices colocados a mano pero inequívocos. Trazo negro con variación natural de presión y grosor, pequeños temblores y extremos irregulares. No uses tipografía manuscrita, caligrafía pulida, letras calcadas ni trazos uniformes. Barras de fracción, raíces, flechas, subrayados y recuadros dibujados a mano: ligeramente torcidos y con longitudes desiguales, nunca perfectamente rectos o hechos con regla. Distribución espontánea pero legible: bloques a alturas diferentes, sin cuadrícula, divisores rectos, columnas simétricas ni alineación de imprenta. No añadas tachones, manchas ni errores artificiales. Cada ejercicio conserva su número, todo el procedimiento y el resultado; si no cabe con letra legible, usa otra imagen. La irregularidad es sólo visual: números, signos, exponentes, fórmulas y resultados deben permanecer exactos, completos y fáciles de distinguir.',
   iaPedidoCodigo: 'Resuelve la tarea escribiendo el código en esta carpeta. Pruébalo con los ejemplos que dé la tarea y con casos propios. Usa el lenguaje que pida la tarea; si no dice, el más común para ese tipo de ejercicio.',
   iaPalabrasCodigo: 'leetcode, hackerrank, codeforces, cat, código, programación, estructuras de datos, implementa, python, java, c++, javascript, poo',
   chatgptModelo: 'auto', // lo que va en chatgpt.com/?model=
@@ -59,7 +65,9 @@ function leerAjustes() {
 }
 
 export function leer() {
-  return { ...PREDETERMINADAS, ...(leerAjustes().prefs || {}) };
+  const prefs = { ...PREDETERMINADAS, ...(leerAjustes().prefs || {}) };
+  if (PEDIDOS_IMAGEN_ANTERIORES.has(prefs.iaPedidoImagen)) prefs.iaPedidoImagen = PREDETERMINADAS.iaPedidoImagen;
+  return prefs;
 }
 
 function limpiar(cambios) {
@@ -79,7 +87,7 @@ function limpiar(cambios) {
 
 export function guardar(cambios) {
   const ajustes = leerAjustes();
-  const prefs = { ...PREDETERMINADAS, ...(ajustes.prefs || {}), ...limpiar(cambios) };
+  const prefs = { ...leer(), ...limpiar(cambios) };
   fs.mkdirSync(DIR_DATOS, { recursive: true });
   fs.writeFileSync(ARCHIVO, JSON.stringify({ ...ajustes, prefs }, null, 2));
   return prefs;
