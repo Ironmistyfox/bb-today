@@ -2,7 +2,7 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión en preparación es 1.2.2. Todo el código, textos y comentarios se
+MCP. La versión publicada es 1.2.2. Todo el código, textos y comentarios se
 escriben en español.
 
 ## Trabajo y publicación
@@ -11,7 +11,7 @@ escriben en español.
 se conserva separada: no publicar su historial ni datos personales. Publicar
 una versión o desplegar la web requiere una petición del responsable del
 proyecto. El responsable autorizó el lanzamiento con IA y corrigió después
-el clic en tareas y el botón de quitar; ese parche se prepara como 1.2.2.
+el clic en tareas y el botón de quitar; ese parche se publicó como 1.2.2.
 
 La etiqueta v1.2.2 conserva el commit a6d5396. La primera ejecución
 37382326719 aprobó Windows y todas las comprobaciones de Mac, pero el
@@ -170,3 +170,14 @@ confirmar y deshacer, sin invocar el navegador. Pasó en desarrollo Windows;
 también se ejecuta en los paquetes Windows/Mac de GitHub antes de publicarlos.
 Los equipos por defecto son windows-2022, macos-14 y ubuntu-22.04 para evitar
 las colas que bloquearon la publicación anterior.
+
+### Parche 1.2.2 publicado
+
+- Release estable: https://github.com/Ironmistyfox/bb-today/releases/tag/v1.2.2, con los 13 archivos.
+- Windows, Mac y publicación aprobados: https://github.com/Ironmistyfox/bb-today/actions/runs/37402460067.
+- Web: https://af86cd66.bb-today.pages.dev, accesible en https://bb-today.pages.dev; contador verificado de 33 descargas antes del despliegue.
+- El clic fija la tarjeta flotante; ✕/Escape la cierran. Quitar usa confirmación, cancelar y deshacer, sin abrir Blackboard.
+- Pruebas Windows empaquetado: interacción, arranque, vista previa y MCP. La prueba de confirmación responde mediante un sustituto aislado del diálogo nativo. No se probaron entregas reales.
+- La etiqueta v1.2.2 conserva a6d5396. El comprobador proviene del commit del flujo, para corregir su cierre en Mac sin mover la etiqueta ni cambiar el código de la app.
+- El dueño desinstaló la versión personal y descargó la pública. No reinstalar la personal ni modificar su sesión.
+- Verificación pública final: instalador Windows y ZIP Mac arm64/x64 descargados del release, tamaños/SHA-512 de los manifiestos y SHA-256 de GitHub correctos; enlaces DMG disponibles. La web con API real anuncia 1.2.2, elige Windows/Mac, muestra contador y privacidad sin errores de página.
