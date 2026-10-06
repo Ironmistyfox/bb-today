@@ -2,15 +2,42 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión en preparación es 1.2.5. Todo el código, textos y comentarios se
+MCP. La versión pública vigente es 1.2.5. Todo el código, textos y comentarios se
 escriben en español.
+
+## Publicación terminada: 1.2.5, 2026-10-06
+
+El dueño confirmó «sin IA, sólo hub: archivos propios, tareas y mensajes».
+Release público v1.2.5 (13 assets), código inmutable d01debf. Windows/Mac y
+publicación aprobados en 37528849309; el flujo tomó cerrarPrueba corregido
+desde eee2baf. La etiqueta no se movió. La primera ejecución 37528499252
+falló sólo al cerrar el comprobador Mac tras aprobar las aserciones.
+Web desplegada: 4096e496, https://bb-today.pages.dev. Aviso de mantenimiento,
+hub/mensajes, privacidad 1.2.5 y contador verificado 36. La API real conserva
+el aviso de mantenimiento y elige descarga Windows/Mac. Sin desborde móvil.
+Descargas públicas verificadas: instalador Windows y ZIP Mac arm64/x64,
+tamaños/SHA-256 GitHub/SHA-512 manifiestos; DMG accesibles. Pruebas Windows
+empaquetado de mensajes/anuncios, IA bloqueada, originales conservados y
+adjuntar/quitar propios; sin envío a Blackboard ni proveedores reales.
+
+La instalación local sigue en Programs/bb-today, versión 1.2.4. La revisión
+automática rechazó ejecutar el instalador público con /S: «blocked by policy».
+No buscar un modo equivalente de eludirlo. El dueño debe instalar la descarga
+pública 1.2.5. Archivo verificado disponible fuera del repo en
+C:/Users/alex7/AppData/Local/bb-today-revision/descargas-125/BB-Today-Instalador.exe.
+No afirmar que el equipo ya ejecuta 1.2.5 ni que las instalaciones antiguas
+quedaron desactivadas remotamente: necesitan actualizarse.
+Inicio automático y acceso del menú Inicio corregidos a Programs/bb-today;
+ambos apuntaban a win-unpacked 1.2.2. No quedan procesos de BB Today ni
+copias de prueba abiertos; no lanzar la 1.2.4 para simular el modo limitado.
+Personal conserva versión/SOLO_AVISO, código reflejado y no se publica.
 
 ## Trabajo y publicación
 
 **Estado vigente, 2026-10-06:** 1.2.4 se publicó con las pruebas Windows/Mac
 aprobadas en 37495136337; web f7f8b91a y contador de 36. El responsable ahora
 pide poner la app en modo limitado por mantenimiento: widget, materiales y
-entrega de archivos propios; pausar todas las rutas de IA. Esta petición
+entrega de archivos propios; el dueño aclaró que sea un hub con mensajes/anuncios; pausar todas las rutas de IA. Esta petición
 autoriza desplegar 1.2.5 y actualizar el mensaje público. No reactivar IA sin
 nueva instrucción. src/mantenimiento.js contiene la política, que también
 aplica al MCP y al proceso principal. Datos anteriores conservados.
@@ -23,7 +50,7 @@ versiones superiores. No volver a abrir builds de pruebas para uso personal.
 Las comprobaciones Electron deben usar cerrarPrueba, salir de la app y
 terminar sólo su árbol: SIGKILL solo dejó instancias vivas y bandejas duplicadas.
 
-tools/probar-mantenimiento.mjs prueba el acceso desde el widget, bloqueo de
+tools/probar-mantenimiento.mjs prueba mensajes/anuncios y visto local, acceso desde el widget, bloqueo de
 IA/MCP, conservación y adjuntar/quitar archivos propios sin enviar a Blackboard.
 tools/probar-actualizaciones.mjs comprueba igualdad/anterior/nueva y portátil.
 tools/probar-resultados-motor.mjs comprueba salida parcial/error/cuota y texto

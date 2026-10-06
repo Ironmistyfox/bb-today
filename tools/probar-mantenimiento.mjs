@@ -11,6 +11,10 @@ const datos=fs.mkdtempSync(path.join(os.tmpdir(),'bb-mantenimiento-'));
 execFileSync(process.execPath,[path.join(raiz,'tools/datos-ejemplo.mjs'),datos]);
 const ajustes=JSON.parse(fs.readFileSync(path.join(datos,'ajustes.json')));ajustes.prefs.tutorialVisto=true;ajustes.prefs.avisos=false;
 fs.writeFileSync(path.join(datos,'ajustes.json'),JSON.stringify(ajustes));fs.writeFileSync(path.join(datos,'inicio-instalado'),'prueba');
+fs.writeFileSync(path.join(datos,'mensajes.json'),JSON.stringify([
+  {id:'m:prueba',tipo:'mensaje',curso:'Curso de ejemplo',de:'Profesor',texto:'Mensaje de prueba aislado',cuando:new Date().toISOString(),enlace:'https://blackboard.example.edu/messages'},
+  {id:'a:prueba',tipo:'anuncio',curso:'Curso de ejemplo',de:'Aviso del curso',texto:'Anuncio de prueba aislado',cuando:new Date().toISOString(),enlace:'https://blackboard.example.edu/announcements'},
+]));
 const generado=path.join(datos,'generado.txt');fs.writeFileSync(generado,'Resultado anterior');
 const anteriores={_t1:{titulo:'Respuesta anterior',texto:'Solución previa',archivos:[{ruta:generado,nombre:'generado.txt'}],cuando:new Date().toISOString()}};
 fs.writeFileSync(path.join(datos,'respuestas.json'),JSON.stringify(anteriores));
@@ -26,6 +30,14 @@ try {
   app=await _electron.launch({executablePath:process.argv[2],args:process.argv[3]?[process.argv[3]]:[],env:{...process.env,BB_DATOS:datos,BB_CAPTURA_SIN_RED:'1',BB_SIN_NAVEGADOR:'1',BB_CARPETA_TAREAS:path.join(datos,'tareas')}});
   const widget=await app.firstWindow();
   await widget.locator('#mantenimiento').waitFor();
+  await widget.locator('#mensajes').click();
+  await widget.locator('#panel-mensajes .mensaje').first().waitFor();
+  assert.equal(await widget.locator('#panel-mensajes .mensaje').count(),2);
+  assert.match(await widget.locator('#panel-mensajes').textContent(),/Mensaje de prueba aislado/);
+  assert.match(await widget.locator('#panel-mensajes').textContent(),/Anuncio de prueba aislado/);
+  await widget.evaluate(()=>window.agenda.mensajes.vistos(['m:prueba','a:prueba']));
+  assert.equal(await widget.locator('#bolita').isVisible(),false);
+  await widget.locator('#mensajes').click();
   await widget.locator('.item[data-tarea="_t1"] .titulo').click();
   let vista;for(let i=0;i<100&&!vista;i++){vista=app.windows().find(p=>p.url().includes('vista-previa.html'));if(!vista)await new Promise(r=>setTimeout(r,50));}
   assert.ok(vista);await vista.locator('[data-entrega-propia]').waitFor();assert.equal(await vista.locator('[data-resolver]').count(),0);
@@ -51,6 +63,6 @@ try {
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(datos,'respuestas.json'))),anteriores);
   assert.equal(fs.readFileSync(propio,'utf8'),'Mi trabajo de prueba.');assert.deepEqual(errores,[]);
   if(process.argv[4])await pagina.screenshot({path:process.argv[4]});
-  console.log('Mantenimiento: IA/MCP bloqueados, respuestas preservadas, archivos propios/adjuntar/quitar/texto disponibles. Sin red ni envío real.');
+  console.log('Mantenimiento: mensajes/anuncios disponibles, IA/MCP bloqueados, respuestas preservadas, archivos propios/adjuntar/quitar/texto disponibles. Sin red ni envío real.');
 } catch(e){salida=1;console.error(e);} finally{await cerrarPrueba(app);clearTimeout(limite);}
 process.exit(salida);
