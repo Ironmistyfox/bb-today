@@ -2,21 +2,11 @@ const plataforma = navigator.userAgentData?.platform || navigator.platform || ''
 const esMac = /mac/i.test(plataforma);
 // Android también dice «Linux»: sólo cuenta el escritorio.
 const esLinux = !esMac && /linux/i.test(plataforma) && !/android/i.test(navigator.userAgent);
-const DESCARGAS = 'https://github.com/Ironmistyfox/bb-today/releases/latest/download/';
 const archivoPropio = esMac ? 'BB-Today-Mac-arm64.dmg' : esLinux ? 'BB-Today-Linux.AppImage' : 'BB-Today-Instalador.exe';
 if (esMac || esLinux) {
   document.documentElement.classList.add(esMac ? 'es-mac' : 'es-linux');
   const enlace = document.querySelector('.aviso-version a');
   if (enlace.href.includes('/releases/download/')) enlace.href = enlace.href.replace('BB-Today-Instalador.exe', archivoPropio);
-}
-// En Linux el botón principal baja la AppImage y el segundo, el .deb.
-if (esLinux) {
-  for (const [selector, archivo, texto] of [['.descarga-windows, .boton-oscuro', 'BB-Today-Linux.AppImage', 'Descargar para Linux'], ['.descarga-mac, .boton-contorno', 'BB-Today-Linux.deb', 'Descargar .deb (Ubuntu/Debian)']]) {
-    for (const boton of document.querySelectorAll(selector)) {
-      boton.href = DESCARGAS + archivo;
-      boton.firstChild.textContent = texto + ' ';
-    }
-  }
 }
 
 const tareas = [
