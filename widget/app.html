@@ -1168,6 +1168,12 @@ function mini(tema, nombre) {
 
 function pintarAjustes() {
   const p = datos.prefs;
+  if (window.agenda.plataforma === 'linux') {
+    $('t-avisos').textContent = 'Notificaciones';
+    $('t-inicio').textContent = 'Abrir al iniciar sesión';
+    $('t-carpeta').textContent = '~/.config/blackboard-mcp';
+    $('t-descargas').textContent = 'Descargas/BB Today';
+  }
   if (window.agenda.plataforma === 'darwin') {
     $('t-avisos').textContent = 'Notificaciones';
     $('t-inicio').textContent = 'Abrir al iniciar sesión';

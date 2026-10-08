@@ -1,0 +1,97 @@
+# Sólo Linux: compila, prueba y sube la AppImage y el .deb a un release que
+# ya existe, sin tocar sus archivos de Windows ni de Mac (no hay versión
+# nueva, así que las apps instaladas en Windows y Mac no reciben nada).
+#
+# Se lanza a mano: Actions → Linux → Run workflow, con la etiqueta del release
+# (p. ej. v1.2.7). Compila el código de la rama elegida con la versión de su
+# package.json, que debe coincidir con la etiqueta.
+
+name: Linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      etiqueta:
+        description: 'Release existente al que añadir Linux (p. ej. v1.2.7); vacío sólo compila y prueba'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    # 22.04: deja a Chromium usar su sandbox sin permisos de administrador.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: La versión coincide con el release
+        if: inputs.etiqueta != ''
+        env:
+          ETIQUETA: ${{ inputs.etiqueta }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          [ "v$version" = "$ETIQUETA" ] || { echo "package.json dice $version y el release es $ETIQUETA"; exit 1; }
+          gh release view "$ETIQUETA" >/dev/null
+
+      - name: Pantalla virtual y bibliotecas de Electron
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libnss3 libatk-bridge2.0-0 libgtk-3-0 libgbm1 libasound2 libnotify4 libxss1 libsecret-1-0
+
+      - run: npm ci
+
+      - name: Empaquetar el servidor MCP
+        run: node tools/empaquetar-mcp.mjs
+
+      - name: Compilar para Linux
+        run: npx electron-builder --linux --publish never -c.directories.output=dist
+
+      - name: Prueba de humo
+        run: xvfb-run -a --server-args="-screen 0 1920x1080x24" node tools/probar-paquete.mjs dist/linux-unpacked/bb-today pruebas
+
+      - name: Prueba del servidor MCP
+        run: node tools/probar-mcp.mjs dist/linux-unpacked/bb-today
+
+      - name: Prueba de interacción con tareas
+        run: xvfb-run -a --server-args="-screen 0 1920x1080x24" node tools/probar-interacciones.mjs dist/linux-unpacked/bb-today
+
+      - name: Prueba de mantenimiento y archivos propios
+        run: xvfb-run -a --server-args="-screen 0 1920x1080x24" node tools/probar-mantenimiento.mjs dist/linux-unpacked/bb-today
+
+      - name: Comprobar el paquete .deb
+        run: |
+          dpkg-deb --info dist/BB-Today-Linux.deb
+          dpkg-deb --contents dist/BB-Today-Linux.deb | grep -E 'bb-today$|bb-today.desktop|icons/.*/bb-today.png'
+
+      - name: Guardar las capturas de la prueba
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruebas-linux
+          path: pruebas
+          if-no-files-found: ignore
+
+      - name: Guardar los archivos de Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            dist/BB-Today-Linux.AppImage
+            dist/BB-Today-Linux.deb
+            dist/latest-linux.yml
+          if-no-files-found: error
+
+      - name: Añadir al release
+        if: inputs.etiqueta != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ETIQUETA: ${{ inputs.etiqueta }}
+        run: gh release upload "$ETIQUETA" dist/BB-Today-Linux.AppImage dist/BB-Today-Linux.deb dist/latest-linux.yml --clobber

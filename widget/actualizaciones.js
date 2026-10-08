@@ -34,7 +34,9 @@ export function estadoActualizacion() {
 // En Mac, macOS sólo deja que una app se reemplace sola si está firmada con
 // una cuenta de desarrollador de Apple. Sin ella, la versión nueva no se
 // descarga: se avisa y el botón lleva a la página.
-const SOLO_AVISO = process.platform === 'darwin';
+// En Linux sólo la AppImage se reemplaza sola; el .deb se instala con el
+// gestor de paquetes, así que también avisa y lleva a la página.
+export const SOLO_AVISO = process.platform === 'darwin' || (process.platform === 'linux' && !process.env.APPIMAGE);
 
 export function iniciarActualizaciones({ alCambiar, antesDeSalir, registrar }) {
   avisar = alCambiar;

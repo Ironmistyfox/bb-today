@@ -21,6 +21,7 @@ const NOMBRE = 'bb-today';
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 export function rutaConfig() {
+  if (process.platform === 'linux') return path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'Claude', 'claude_desktop_config.json');
   return process.platform === 'darwin'
     ? path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
     : path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'Claude', 'claude_desktop_config.json');

@@ -5,6 +5,34 @@ widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
 MCP. La versión pública vigente es 1.2.7. Todo el código, textos y comentarios se
 escriben en español.
 
+## Linux, 2026-10-08: se suma al release 1.2.7
+
+El dueño pidió Linux «como favor a los linuxeros», con una condición: **no tocar
+las versiones que ya funcionan**. Por eso no hubo versión nueva: la AppImage, el
+.deb y latest-linux.yml se subieron al release v1.2.7 con el flujo manual
+`.github/workflows/linux.yml` (Actions → Linux → Run workflow, etiqueta v1.2.7).
+Windows y Mac no recibieron actualización; sus archivos del release no cambian.
+
+- Todo lo nuevo va detrás de `process.platform === 'linux'`; en Windows y Mac el
+  código hace lo mismo que antes (lo comprueban las pruebas de siempre).
+- `widget/inicio-sesion.js`: abrir al iniciar sesión. Windows/Mac siguen con
+  setLoginItemSettings; Linux escribe ~/.config/autostart/bb-today.desktop
+  (apunta a $APPIMAGE si es AppImage).
+- Linux fuerza X11 (`ozone-platform=x11`, XWayland en Wayland) para poder colocar
+  la ventana; BB_WAYLAND=1 lo quita. Sin anclaje al fondo: ventana normal sin marco.
+- Actualizaciones: la AppImage se actualiza sola (latest-linux.yml); el .deb es
+  SOLO_AVISO, como Mac.
+- `publicar.yml` ya incluye Linux para las próximas versiones, pero como extra:
+  `continue-on-error` y el release sólo exige que Windows y Mac pasen.
+- Probado en Docker (electronuserland/builder:22, Xvfb, usuario no root y
+  seccomp=unconfined para el sandbox de Chromium) y en Actions ubuntu-22.04:
+  humo con capturas y ratón simulado, MCP, interacciones, mantenimiento, avisos,
+  actualizaciones y motor. Las mismas pruebas pasaron en Windows con esta rama.
+- probar-paquete lee el JSON del recorrido sólo de stdout: en Linux Chromium
+  escribe avisos de D-Bus con corchetes en stderr.
+- La web detecta Linux (no Android) y ofrece la AppImage y el .deb; el contador
+  suma sus descargas.
+
 ## Publicado: hub corregido 1.2.7, 2026-10-06
 
 El dueño pidió quitar la presentación de app limitada y conservar el hub sin IA.

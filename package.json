@@ -2,7 +2,7 @@
   "name": "bb-today",
   "version": "1.2.7",
   "private": true,
-  "description": "Tus pendientes de Blackboard en el escritorio de Windows y Mac.",
+  "description": "Tus pendientes de Blackboard en el escritorio de Windows, Mac y Linux.",
   "type": "module",
   "bin": {
     "blackboard-mcp": "src/servidor.js"
@@ -138,6 +138,34 @@
     "dmg": {
       "title": "BB Today",
       "artifactName": "BB-Today-Mac-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "widget/icono/icono.png",
+      "category": "Office",
+      "executableName": "bb-today",
+      "synopsis": "Tus pendientes de Blackboard en el escritorio",
+      "description": "Widget de escritorio que reúne tareas, entregas, mensajes y anuncios de Blackboard Learn Ultra.",
+      "maintainer": "Ironmistyfox <https://github.com/Ironmistyfox/bb-today>"
+    },
+    "appImage": {
+      "artifactName": "BB-Today-Linux.${ext}"
+    },
+    "deb": {
+      "artifactName": "BB-Today-Linux.${ext}"
     }
   },
   "license": "MIT",

@@ -4,7 +4,7 @@
 // con un icono en la bandeja (en Mac, en la barra de menús). La primera vez
 // sólo pide iniciar sesión; desde ahí arranca con el sistema, consulta
 // Blackboard cada hora y renueva la sesión sola. Si un día no puede, lo dice
-// y vuelve a pedir iniciar sesión. Funciona en Windows y en Mac.
+// y vuelve a pedir iniciar sesión. Funciona en Windows, Mac y Linux.
 
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, Notification, powerMonitor, screen, shell, Tray } from 'electron';
 import fs from 'node:fs';
@@ -31,14 +31,21 @@ import { colocarArchivos } from './entrega.js';
 import { ES_REVISABLE, prepararRevision } from './revision.js';
 import { ARCHIVO_EXPLICACION, INSTRUCCION_APRENDIZAJE, explicacionValida, separarRespuesta } from '../src/aprendizaje.js';
 import { MODO_LIMITADO, AVISO_MANTENIMIENTO, IA_PAUSADA } from '../src/mantenimiento.js';
+import { abreAlIniciar, abrirAlIniciar } from './inicio-sesion.js';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const NOMBRE = 'BB Today';
-const ICONO = path.join(DIR, 'icono', 'icono.ico');
+// Linux no lee .ico: ventanas y bandeja usan el PNG.
+const ICONO = path.join(DIR, 'icono', process.platform === 'linux' ? 'icono.png' : 'icono.ico');
 const ICONO_PNG = path.join(DIR, 'icono', 'icono.png');
 
 const WIN = process.platform === 'win32';
 const MAC = process.platform === 'darwin';
+const LINUX = process.platform === 'linux';
+// Linux: el widget se coloca con coordenadas y es transparente, y Wayland no
+// deja que una app elija dónde va su ventana. Se usa X11 (XWayland en los
+// escritorios con Wayland). BB_WAYLAND=1 lo desactiva.
+if (LINUX && !process.env.BB_WAYLAND) app.commandLine.appendSwitch('ozone-platform', 'x11');
 // BB_CAPTURA_SIN_RED=1: trabaja sólo con la última lista guardada, sin
 // consultar Blackboard (pruebas con datos de ejemplo, p. ej. en GitHub).
 const SIN_RED = !!process.env.BB_CAPTURA_SIN_RED;
@@ -1768,7 +1775,7 @@ function datosConfiguracion() {
     escuela: cuentaApp.escuela(),
     materias: estado.datos?.materias || [],
     ocultas: preferencias.ocultas(),
-    alIniciar: app.getLoginItemSettings(opcionesInicio()).openAtLogin,
+    alIniciar: abreAlIniciar(),
     actualizado: estado.datos?.generado || null,
     cargando: estado.cargando,
     version: app.getVersion(),
@@ -1815,7 +1822,7 @@ function abrirApp(seccion = 'pendientes', tareaId = null, { guia = false } = {})
 // En Mac la versión nueva no se instala sola: al enterarse, un aviso que se
 // ve (una vez por versión), además de la franja del widget.
 function avisoVersionNueva(a) {
-  if (!MAC || a.estado !== 'aviso' || !a.version || estado.prefs.avisoVersion === a.version) return;
+  if (!actualizaciones.SOLO_AVISO || a.estado !== 'aviso' || !a.version || estado.prefs.avisoVersion === a.version) return;
   estado = { ...estado, prefs: preferencias.guardar({ avisoVersion: a.version }) };
   app.focus({ steal: true });
   dialog.showMessageBox({
@@ -1870,7 +1877,7 @@ ipcMain.handle('config:materias', async (_e, ocultas) => {
   return datosConfiguracion();
 });
 ipcMain.handle('config:inicio', (_e, activo) => {
-  app.setLoginItemSettings({ openAtLogin: !!activo, ...opcionesInicio() });
+  abrirAlIniciar(activo);
   bandeja?.setContextMenu(menuBandeja());
   return datosConfiguracion();
 });
@@ -1941,13 +1948,8 @@ function iconoBandeja() {
   return imagen;
 }
 
-// En desarrollo el ejecutable es electron.exe y hay que pasarle la carpeta.
-function opcionesInicio() {
-  return app.isPackaged ? {} : { path: process.execPath, args: [app.getAppPath()] };
-}
-
 function menuBandeja() {
-  const alIniciar = app.getLoginItemSettings(opcionesInicio()).openAtLogin;
+  const alIniciar = abreAlIniciar();
   return Menu.buildFromTemplate([
     { label: 'Abrir BB Today', click: () => abrirApp('pendientes') },
     { label: 'Mostrar el widget', click: mostrar },
@@ -1959,11 +1961,11 @@ function menuBandeja() {
       : { label: 'Iniciar sesión en Blackboard', click: entrar },
     { type: 'separator' },
     {
-      label: MAC ? 'Abrir al iniciar sesión' : 'Abrir al iniciar Windows',
+      label: WIN ? 'Abrir al iniciar Windows' : 'Abrir al iniciar sesión',
       type: 'checkbox',
       checked: alIniciar,
       click: (item) => {
-        app.setLoginItemSettings({ openAtLogin: item.checked, ...opcionesInicio() });
+        abrirAlIniciar(item.checked);
         bandeja.setContextMenu(menuBandeja());
       },
     },
@@ -2110,7 +2112,7 @@ app.whenReady().then(() => {
   // dejaron el acceso directo y el arranque apuntando a electron.exe.
   const marca = path.join(DIR_DATOS, 'inicio-instalado');
   if (app.isPackaged && !SIN_RED && !fs.existsSync(marca) && !process.env.BB_CAPTURA) {
-    app.setLoginItemSettings({ openAtLogin: true, ...opcionesInicio() });
+    abrirAlIniciar(true);
     // La versión instalada reemplaza a la de desarrollo: que no arranquen
     // las dos con Windows.
     if (app.isPackaged && WIN) app.setLoginItemSettings({ openAtLogin: false, name: 'blackboard-agenda' });

@@ -7,6 +7,7 @@
 - Los elementos ocultos no ocupan espacio ni muestran botones por reglas de estilo.
 - La altura se vuelve a medir al cambiar zoom o ancho; redimensionar conserva el ancho elegido.
 - Guía y web ajustadas al hub. Se conservan datos y archivos anteriores.
+- **Linux (2026-10-08):** la 1.2.7 también está para Linux x64, como AppImage (casi cualquier distribución, se actualiza sola) y `.deb` (Ubuntu y Debian, avisa de versiones nuevas). Se agregó al mismo release: Windows y Mac no cambian ni reciben actualización. En Linux el widget usa X11 (XWayland en Wayland) y «Abrir al iniciar sesión» crea un acceso en `~/.config/autostart`. La web detecta Linux y ofrece sus descargas.
 
 
 ## 1.2.5 · 2026-10-06

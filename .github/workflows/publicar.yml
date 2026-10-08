@@ -1,4 +1,4 @@
-# Compila BB Today para Windows y Mac, la prueba y la publica.
+# Compila BB Today para Windows, Mac y Linux, la prueba y la publica.
 #
 # - Al subir una etiqueta vX.Y.Z (npm run publicar la crea): compila, prueba
 #   y crea el release del que se actualizan las apps instaladas.
@@ -7,7 +7,8 @@
 # Cada sistema pasa una prueba de humo con datos de ejemplo
 # (tools/probar-paquete.mjs): capturas del widget, la vista previa y
 # Configuración, y la vista previa recorrida con un ratón simulado. Las
-# capturas quedan como artefactos del run ("pruebas-windows", "pruebas-mac").
+# capturas quedan como artefactos del run ("pruebas-windows", "pruebas-mac",
+# "pruebas-linux"). En Linux las pruebas corren en una pantalla virtual (Xvfb).
 #
 # Windows se firma con SignPath si está configurado (secreto
 # SIGNPATH_API_TOKEN y variable SIGNPATH_ORGANIZATION_ID; ver docs/FIRMA.md).
@@ -231,9 +232,89 @@ jobs:
             dist/latest-mac.yml
           if-no-files-found: error
 
+  linux:
+    # Linux es un extra: si falla, Windows y Mac se publican igual.
+    # 22.04: deja a Chromium usar su sandbox sin permisos de administrador.
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.etiqueta || github.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Usar la prueba de interacción del flujo
+        env:
+          PRUEBAS_REF: ${{ github.sha }}
+        run: |
+          git fetch --depth=1 origin "$PRUEBAS_REF"
+          git show FETCH_HEAD:tools/probar-interacciones.mjs > tools/probar-interacciones.mjs
+          git show FETCH_HEAD:tools/cerrar-prueba.mjs > tools/cerrar-prueba.mjs
+          git show FETCH_HEAD:tools/probar-mantenimiento.mjs > tools/probar-mantenimiento.mjs
+
+      - name: Pantalla virtual y bibliotecas de Electron
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libnss3 libatk-bridge2.0-0 libgtk-3-0 libgbm1 libasound2 libnotify4 libxss1 libsecret-1-0
+
+      - run: npm ci
+
+      - name: Empaquetar el servidor MCP
+        run: node tools/empaquetar-mcp.mjs
+
+      - name: Compilar para Linux
+        run: npx electron-builder --linux --publish never -c.directories.output=dist
+
+      - name: Prueba de humo
+        run: xvfb-run -a --server-args="-screen 0 1920x1080x24" node tools/probar-paquete.mjs dist/linux-unpacked/bb-today pruebas
+
+      - name: Prueba del servidor MCP
+        run: node tools/probar-mcp.mjs dist/linux-unpacked/bb-today
+
+      - name: Prueba de interacción con tareas
+        run: xvfb-run -a --server-args="-screen 0 1920x1080x24" node tools/probar-interacciones.mjs dist/linux-unpacked/bb-today
+
+      - name: Prueba de mantenimiento y archivos propios
+        run: xvfb-run -a --server-args="-screen 0 1920x1080x24" node tools/probar-mantenimiento.mjs dist/linux-unpacked/bb-today
+
+      - name: Prueba de aislamiento de avisos
+        run: node tools/probar-avisos.mjs
+
+      - name: Prueba de estados de actualización
+        run: |
+          node tools/probar-actualizaciones.mjs
+          node tools/probar-resultados-motor.mjs
+
+      - name: Comprobar el paquete .deb
+        run: |
+          dpkg-deb --info dist/BB-Today-Linux.deb
+          dpkg-deb --contents dist/BB-Today-Linux.deb | grep -E 'bb-today$|bb-today.desktop|icons/.*/bb-today.png'
+
+      - name: Guardar las capturas de la prueba
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruebas-linux
+          path: pruebas
+          if-no-files-found: ignore
+
+      - name: Guardar los archivos de Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            dist/BB-Today-Linux.AppImage
+            dist/BB-Today-Linux.deb
+            dist/latest-linux.yml
+          if-no-files-found: error
+
   publicar:
-    if: startsWith(github.ref, 'refs/tags/') || inputs.etiqueta != ''
-    needs: [windows, mac]
+    if: always() && (startsWith(github.ref, 'refs/tags/') || inputs.etiqueta != '') && needs.windows.result == 'success' && needs.mac.result == 'success'
+    needs: [windows, mac, linux]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
@@ -249,6 +330,12 @@ jobs:
         with:
           name: mac
           path: archivos/mac
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: linux
+          path: archivos/linux
 
       - name: Comprobar que la etiqueta es la versión de package.json
         env:
@@ -270,8 +357,8 @@ jobs:
           # GitHub a veces lanza dos ejecuciones para la misma etiqueta: si el
           # release ya existe, se suben los archivos encima en vez de fallar.
           if gh release view "$ETIQUETA" >/dev/null 2>&1; then
-            gh release upload "$ETIQUETA" archivos/windows/* archivos/mac/* --clobber
+            gh release upload "$ETIQUETA" archivos/windows/* archivos/mac/* $(ls archivos/linux/* 2>/dev/null) --clobber
           else
-            gh release create "$ETIQUETA" archivos/windows/* archivos/mac/* \
+            gh release create "$ETIQUETA" archivos/windows/* archivos/mac/* $(ls archivos/linux/* 2>/dev/null) \
               --title "BB Today $version" --notes-file notas.md --latest
           fi

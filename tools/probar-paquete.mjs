@@ -30,8 +30,9 @@ await new Promise((ok, no) => {
 function correr(nombre, env, limiteMs = 120_000) {
   return new Promise((ok) => {
     let texto = '';
+    let estandar = '';
     const p = spawn(ejecutable, [], { env: { ...process.env, BB_DATOS: datos, BB_CAPTURA_SIN_RED: '1', ...env } });
-    p.stdout.on('data', (d) => (texto += d));
+    p.stdout.on('data', (d) => { texto += d; estandar += d; });
     p.stderr.on('data', (d) => (texto += d));
     const reloj = setTimeout(() => {
       texto += `\n[${nombre}: se cortó a los ${limiteMs / 1000} s]`;
@@ -40,7 +41,7 @@ function correr(nombre, env, limiteMs = 120_000) {
     p.on('exit', (codigo) => {
       clearTimeout(reloj);
       fs.writeFileSync(path.join(salida, `${nombre}.txt`), texto);
-      ok({ codigo, texto });
+      ok({ codigo, texto, estandar });
     });
   });
 }
@@ -60,7 +61,9 @@ for (const archivo of ['widget.png', 'widget-vista.png', 'widget-config.png']) {
 
 // 2. Vista previa con ratón simulado
 const hover = await correr('hover', { BB_PRUEBA_HOVER: '1' });
-const json = hover.texto.slice(hover.texto.indexOf('['), hover.texto.lastIndexOf(']') + 1);
+// Sólo la salida estándar: en Linux, Chromium escribe en stderr avisos con
+// corchetes («[123:ERROR:dbus…]») que estropearían la búsqueda del JSON.
+const json = hover.estandar.slice(hover.estandar.indexOf('['), hover.estandar.lastIndexOf(']') + 1);
 let pasos = [];
 try {
   pasos = JSON.parse(json);

@@ -34,7 +34,7 @@ function salida(cmd, args) {
 }
 
 async function buscar(comando) {
-  const texto = MAC ? await salida('/bin/zsh', ['-lc', `command -v ${comando}`]) : await salida('where', [comando]);
+  const texto = process.platform === 'win32' ? await salida('where', [comando]) : await salida(MAC ? '/bin/zsh' : '/bin/sh', ['-lc', `command -v ${comando}`]);
   return texto.split(/\r?\n/)[0] || null;
 }
 

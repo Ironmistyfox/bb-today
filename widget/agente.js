@@ -29,7 +29,7 @@ const MENSAJE = 'Lee INSTRUCCIONES-IA.md y síguelas.';
 // Ruta del ejecutable, o null si no está instalado.
 function buscar(comando) {
   return new Promise((ok) => {
-    const [cmd, args] = MAC ? ['/bin/zsh', ['-lc', `command -v ${comando}`]] : ['where', [comando]];
+    const [cmd, args] = process.platform === 'win32' ? ['where', [comando]] : MAC ? ['/bin/zsh', ['-lc', `command -v ${comando}`]] : ['/bin/sh', ['-lc', `command -v ${comando}`]];
     execFile(cmd, args, { timeout: 8000, windowsHide: true }, (error, salida) => ok(error ? null : String(salida).split(/\r?\n/)[0].trim() || null));
   });
 }

@@ -10,7 +10,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 // La carpeta de datos de la app: %APPDATA%\blackboard-mcp en Windows y
-// ~/Library/Application Support/BB Today en Mac. BB_DATOS apunta a otra
+// ~/Library/Application Support/BB Today en Mac y ~/.config/blackboard-mcp en
+// Linux. BB_DATOS apunta a otra
 // (pruebas con datos de ejemplo).
 export const DIR_DATOS =
   process.env.BB_DATOS ||
