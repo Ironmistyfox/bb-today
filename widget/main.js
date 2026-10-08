@@ -7,6 +7,7 @@
 // y vuelve a pedir iniciar sesión. Funciona en Windows, Mac y Linux.
 
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, Notification, powerMonitor, screen, shell, Tray } from 'electron';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -42,10 +43,24 @@ const ICONO_PNG = path.join(DIR, 'icono', 'icono.png');
 const WIN = process.platform === 'win32';
 const MAC = process.platform === 'darwin';
 const LINUX = process.platform === 'linux';
-// Linux: el widget se coloca con coordenadas y es transparente, y Wayland no
-// deja que una app elija dónde va su ventana. Se usa X11 (XWayland en los
-// escritorios con Wayland). BB_WAYLAND=1 lo desactiva.
-if (LINUX && !process.env.BB_WAYLAND) app.commandLine.appendSwitch('ozone-platform', 'x11');
+// Linux con Wayland: el widget necesita X11 (XWayland) para colocarse en su
+// esquina y mostrarse sin tomar el foco; en Wayland nativo no aparece. Electron
+// elige la plataforma antes de que corra este archivo, así que la app se vuelve
+// a abrir con --ozone-platform=x11 en la línea de comandos. (Un appendSwitch
+// aquí llegaba tarde: el proceso principal seguía en Wayland y el de gráficos
+// pasaba a X11, y no se dibujaba nada.) Sólo si hay XWayland (DISPLAY); sin él
+// sigue en Wayland nativo. BB_WAYLAND=1 lo desactiva.
+const EN_WAYLAND = LINUX && (process.env.XDG_SESSION_TYPE === 'wayland' || !!process.env.WAYLAND_DISPLAY);
+// Se miran los argumentos reales: con la detección automática, Electron se
+// pone él mismo el switch ozone-platform y hasSwitch siempre da verdadero.
+const RELANZANDO = EN_WAYLAND && !!process.env.DISPLAY && !process.env.BB_WAYLAND && !process.argv.some((a) => a.startsWith('--ozone-platform'));
+if (RELANZANDO) {
+  // En una AppImage, process.execPath vive en un montaje que desaparece al salir.
+  // Esta instancia no se queda el candado de instancia única ni abre ventanas
+  // (salir antes de «ready» no la detiene en el acto): sólo lanza la nueva.
+  spawn(process.env.APPIMAGE || process.execPath, [...process.argv.slice(1), '--ozone-platform=x11'], { detached: true, stdio: 'inherit' }).unref();
+  app.exit(0);
+}
 // BB_CAPTURA_SIN_RED=1: trabaja sólo con la última lista guardada, sin
 // consultar Blackboard (pruebas con datos de ejemplo, p. ej. en GitHub).
 const SIN_RED = !!process.env.BB_CAPTURA_SIN_RED;
@@ -103,7 +118,7 @@ app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 
-if (!app.requestSingleInstanceLock()) app.quit();
+if (RELANZANDO || !app.requestSingleInstanceLock()) app.quit();
 
 let ventana = null;
 let vistaPrevia = null;
@@ -2079,6 +2094,7 @@ app.on('second-instance', mostrar);
 app.on('window-all-closed', (e) => e.preventDefault());
 
 app.whenReady().then(() => {
+  if (RELANZANDO) return;
   if (WIN) app.setAppUserModelId(ID_APP);
   // Mac: un menú de aplicación con Edición, para que Cmd+C/Cmd+V funcionen
   // al escribir (la dirección de la escuela, el inicio de sesión).

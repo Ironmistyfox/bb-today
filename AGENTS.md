@@ -18,8 +18,20 @@ Windows y Mac no recibieron actualización; sus archivos del release no cambian.
 - `widget/inicio-sesion.js`: abrir al iniciar sesión. Windows/Mac siguen con
   setLoginItemSettings; Linux escribe ~/.config/autostart/bb-today.desktop
   (apunta a $APPIMAGE si es AppImage).
-- Linux fuerza X11 (`ozone-platform=x11`, XWayland en Wayland) para poder colocar
-  la ventana; BB_WAYLAND=1 lo quita. Sin anclaje al fondo: ventana normal sin marco.
+- Linux usa X11. **No forzarlo con app.commandLine.appendSwitch**: llega tarde,
+  el proceso principal se queda en Wayland y el de gráficos pasa a X11
+  («XGetWindowAttributes failed for window 1/2») y no se dibuja nada. Pasó en la
+  primera AppImage y lo reportó alguien que la descargó. Ahora, en sesión Wayland
+  con DISPLAY, `RELANZANDO` lanza de nuevo la app con `--ozone-platform=x11` en la
+  línea de comandos (spawn de $APPIMAGE o execPath) y esa instancia no toma el
+  candado ni abre ventanas. Se miran los argumentos reales: Electron se pone él
+  mismo el switch y hasSwitch siempre da verdadero. En Wayland nativo el widget no
+  aparece (sólo la ventana completa). BB_WAYLAND=1 lo desactiva. Sin anclaje al
+  fondo: ventana normal sin marco.
+- Probado en Docker con capturas de la pantalla real (no capturePage): X11 con
+  openbox, sway headless con XWayland (AppImage y binario del .deb) y sway sin
+  XWayland. Docker necesita usuario no root y seccomp=unconfined; con
+  APPIMAGE_EXTRACT_AND_RUN=1 la AppImage corre sin FUSE.
 - Actualizaciones: la AppImage se actualiza sola (latest-linux.yml); el .deb es
   SOLO_AVISO, como Mac.
 - `publicar.yml` ya incluye Linux para las próximas versiones, pero como extra:

@@ -8,6 +8,7 @@
 - La altura se vuelve a medir al cambiar zoom o ancho; redimensionar conserva el ancho elegido.
 - Guía y web ajustadas al hub. Se conservan datos y archivos anteriores.
 - **Linux (2026-10-08):** la 1.2.7 también está para Linux x64, como AppImage (casi cualquier distribución, se actualiza sola) y `.deb` (Ubuntu y Debian, avisa de versiones nuevas). Se agregó al mismo release: Windows y Mac no cambian ni reciben actualización. En Linux el widget usa X11 (XWayland en Wayland) y «Abrir al iniciar sesión» crea un acceso en `~/.config/autostart`. La web detecta Linux y ofrece sus descargas.
+- **Linux en Wayland (2026-10-08):** la primera AppImage no mostraba nada en escritorios con Wayland (Ubuntu, Fedora, KDE…). Ahora la app se vuelve a abrir sola con X11 (XWayland) y aparecen el widget y la ventana. Se reemplazaron la AppImage y el `.deb` del mismo release; quien bajó la anterior tiene que volver a descargarla.
 
 
 ## 1.2.5 · 2026-10-06

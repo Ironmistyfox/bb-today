@@ -38,8 +38,10 @@ Windows y la AppImage descargan las actualizaciones y las instalan cuando no usa
 la computadora o al pedirlo. Mac y el `.deb` avisan y llevan a la página para
 descargar la versión nueva.
 
-En Linux el widget usa X11 (XWayland en escritorios con Wayland), porque Wayland
-no deja que una app coloque su ventana; `BB_WAYLAND=1` lo desactiva. No queda
+En Linux el widget usa X11 (XWayland en escritorios con Wayland), porque en
+Wayland nativo no puede colocarse ni mostrarse sin foco: en una sesión Wayland con
+XWayland la app se vuelve a abrir sola con `--ozone-platform=x11`. Sin XWayland se
+queda en Wayland nativo y sólo se ve la ventana completa. `BB_WAYLAND=1` lo desactiva. No queda
 anclado debajo de las demás ventanas como en Windows y Mac: es una ventana normal
 sin marco. El icono va en la bandeja del sistema; en GNOME hace falta la
 extensión de AppIndicator (Ubuntu la trae). «Abrir al iniciar sesión» crea
