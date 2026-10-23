@@ -196,6 +196,7 @@ function pintar() {
     <h2>${esc(tarea.titulo)}</h2>
     ${(tarea.ruta || []).length ? `<div class="ruta" title="${esc(tarea.ruta.join(' › '))}">${esc(tarea.ruta.join(' › '))}</div>` : ''}
     ${chipsEntrega(tarea)}`;
+  if (tarea.entregaPorConfirmar) html += `<div class="seccion">Entrega por confirmar</div><div class="instrucciones">${esc(tarea.motivoEntrega)}</div>`;
   if (actual.respuesta) {
     html += `<div class="seccion">Respuesta de ${esc(actual.respuesta.ia === 'chatgpt' ? 'ChatGPT' : actual.respuesta.ia || 'Claude')}</div><div class="respuesta">${(actual.respuesta.imagenes || []).length ? `<div class="imagenes-resp">${actual.respuesta.imagenes.slice(-3).map((u) => `<img src="${esc(u)}" alt="">`).join('')}</div>` : ''}${actual.respuesta.texto ? `<div class="corta" data-respuesta-corta>${formatoRespuesta.markdown(actual.respuesta.texto.split(/\n\s*\n/).slice(0, 4).join('\n\n'))}</div>` : ''}
       <div class="botones-resp"><button data-ver-respuesta>Ver completa</button>${actual.respuesta.texto ? '<button data-copiar-respuesta>Copiar</button>' : ''}${(actual.respuesta.imagenes || []).length ? `<button data-descargar-imagenes>Descargar ${actual.respuesta.imagenes.length > 1 ? 'imágenes' : 'imagen'}</button>` : ''}</div></div>`;

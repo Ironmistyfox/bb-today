@@ -1,6 +1,6 @@
 # BB Today
 
-Tus pendientes de Blackboard, a la vista. BB Today 1.2.7 reúne tus tareas, mensajes y materiales en un widget para
+Tus pendientes de Blackboard, a la vista. BB Today 1.2.8 reúne tus tareas, mensajes y materiales en un widget para
 Windows, Mac y Linux. Prepara entregas con tus propios archivos. Esta versión no incluye IA.
 
 [Descargar](https://bb-today.pages.dev/) ·
@@ -19,6 +19,7 @@ universidad. Código abierto bajo [MIT](LICENSE).
 - Elegir qué archivos propios adjuntar; otro clic en Adjuntar quita la selección.
 - Abrir la página oficial de Blackboard y colocar o arrastrar los archivos.
   Revisa su carga y pulsa tú el botón final de envío.
+- Revisar tareas calificadas cuya entrega no se pudo confirmar, sin ocultarlas como terminadas.
 - Ver mensajes y anuncios de tus cursos. Marcar visto sólo cambia BB Today.
 
 La primera vez aparece una guía; puedes volver a abrirla en Cuenta → Ayuda.

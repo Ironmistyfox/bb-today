@@ -243,7 +243,7 @@ function fila(t, pastilla, clase) {
   const material = t.relacionados?.length || /\S/.test(t.instrucciones || '') ? CLIP : '';
   return `<div class="item" tabindex="0" role="group" aria-label="Abrir detalle de ${esc(t.titulo)}" data-curso="${esc(t.cursoId)}" data-tarea="${esc(t.id)}" data-color="${t.color}" data-enlace="${esc(t.enlace)}">
     <i class="punto" style="background:${t.color};color:${t.color}"></i>
-    <div style="min-width:0"><div class="titulo">${esc(t.titulo)}</div><div class="meta">${esc(t.curso)}${material}${estado.respuestas?.[t.id] ? `<span class="resuelta" title="${esc(estado.respuestas[t.id])} ya la resolvió">· respuesta lista</span>` : ''}</div></div>
+    <div style="min-width:0"><div class="titulo">${esc(t.titulo)}</div><div class="meta" title="${esc(t.motivoEntrega || t.curso)}">${t.entregaPorConfirmar ? 'Entrega por confirmar · ' : ''}${esc(t.curso)}${material}${estado.respuestas?.[t.id] ? `<span class="resuelta" title="${esc(estado.respuestas[t.id])} ya la resolvió">· respuesta lista</span>` : ''}</div></div>
     <span class="lado"><span class="pastilla ${clase}">${pastilla}</span><button type="button" class="quitar" data-quitar title="Quitar de la lista" aria-label="Quitar ${esc(t.titulo)}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></span></div>`;
 }
 
@@ -469,7 +469,7 @@ function pintar() {
   }
   if (!total) {
     html = estado.datos
-      ? `<div class="vacio"><span class="ok"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg></span><div><b>Todo al día</b><span>${['Nada vence hoy', 'Nada vence hoy ni mañana', 'Nada en los próximos 3 días', 'Nada esta semana', 'Nada en dos semanas'][[0, 1, 2, 6, 13].indexOf(prefs().diasAdelante)] || 'Nada pendiente'}</span></div></div>`
+      ? `<div class="vacio"><span class="ok"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg></span><div><b>Sin tareas en este filtro</b><span>${['Nada vence hoy', 'Nada vence hoy ni mañana', 'Nada en los próximos 3 días', 'Nada esta semana', 'Nada en dos semanas'][[0, 1, 2, 6, 13].indexOf(prefs().diasAdelante)] || 'Nada pendiente'}</span></div></div>`
       : '<div class="vacio"><span>Revisando tus cursos…</span></div>';
   }
   const activa = document.querySelector('.item.activa')?.dataset.tarea;

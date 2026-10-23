@@ -9,6 +9,10 @@ import {cerrarPrueba} from './cerrar-prueba.mjs';
 const raiz=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const datos=fs.mkdtempSync(path.join(os.tmpdir(),'bb-mantenimiento-'));
 execFileSync(process.execPath,[path.join(raiz,'tools/datos-ejemplo.mjs'),datos]);
+const agendaEjemplo=JSON.parse(fs.readFileSync(path.join(datos,'agenda.json')));
+const tareaEjemplo=agendaEjemplo.cursos.flatMap(c=>c.tareas).find(t=>t.id==='_t1');
+tareaEjemplo.entregaPorConfirmar=true;tareaEjemplo.motivoEntrega='Calificación sin intento enviado confirmado.';
+fs.writeFileSync(path.join(datos,'agenda.json'),JSON.stringify(agendaEjemplo));
 const ajustes=JSON.parse(fs.readFileSync(path.join(datos,'ajustes.json')));ajustes.prefs.tutorialVisto=true;ajustes.prefs.avisos=false;
 fs.writeFileSync(path.join(datos,'ajustes.json'),JSON.stringify(ajustes));fs.writeFileSync(path.join(datos,'inicio-instalado'),'prueba');
 fs.writeFileSync(path.join(datos,'mensajes.json'),JSON.stringify([
@@ -30,6 +34,7 @@ try {
   app=await _electron.launch({executablePath:process.argv[2],args:process.argv[3]?[process.argv[3]]:[],env:{...process.env,BB_DATOS:datos,BB_CAPTURA_SIN_RED:'1',BB_SIN_NAVEGADOR:'1',BB_CARPETA_TAREAS:path.join(datos,'tareas')}});
   const widget=await app.firstWindow();
   await widget.locator('.item').first().waitFor();
+  assert.match(await widget.locator('[data-tarea="_t1"] .meta').textContent(),/Entrega por confirmar/);
   assert.equal(await widget.locator('#mantenimiento').count(),0);
   // La ventana cabe al contenido, incluso con avisos largos y sus márgenes.
   const contenidoCompleto=()=>{
@@ -67,6 +72,7 @@ try {
   await widget.locator('.item[data-tarea="_t1"] .titulo').click();
   let vista;for(let i=0;i<100&&!vista;i++){vista=app.windows().find(p=>p.url().includes('vista-previa.html'));if(!vista)await new Promise(r=>setTimeout(r,50));}
   assert.ok(vista);await vista.locator('[data-entrega-propia]').waitFor();assert.equal(await vista.locator('[data-resolver]').count(),0);
+  assert.match(await vista.locator('#contenido').textContent(),/Entrega por confirmar/);
   await vista.locator('[data-entrega-propia]').click();
   let pagina;for(let i=0;i<100&&!pagina;i++){pagina=app.windows().find(p=>p.url().includes('app.html'));if(!pagina)await new Promise(r=>setTimeout(r,50));}
   assert.ok(pagina);pagina.setDefaultTimeout(15000);

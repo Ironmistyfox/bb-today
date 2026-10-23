@@ -215,7 +215,7 @@ async function cargarVersion() {
     if (ultima) document.querySelector('#version').textContent = `Versión ${ultima.tag_name.replace(/^v/, '')} · Gratis`;
     // Mantener la descripción del hub y no sustituirlo por una versión antigua.
     const version = ultima?.tag_name.replace(/^v/, '').split('.').map(Number);
-    const disponible = version?.length === 3 && (version[0] > 1 || (version[0] === 1 && (version[1] > 2 || (version[1] === 2 && version[2] >= 7))));
+    const disponible = version?.length === 3 && (version[0] > 1 || (version[0] === 1 && (version[1] > 2 || (version[1] === 2 && version[2] >= 8))));
     const nombre = archivoPropio;
     const instalador = ultima?.assets?.find((a) => a.name === nombre);
     if (disponible && instalador?.browser_download_url) {

@@ -101,7 +101,9 @@ jobs:
         run: node tools/probar-mantenimiento.mjs "dist/win-unpacked/BB Today.exe"
 
       - name: Prueba de aislamiento de avisos
-        run: node tools/probar-avisos.mjs
+        run: |
+          node tools/probar-avisos.mjs
+          node tools/probar-agenda-fiable.mjs
 
       - name: Prueba de estados de actualización
         run: |
@@ -206,7 +208,9 @@ jobs:
         run: node tools/probar-mantenimiento.mjs "dist/mac-arm64/BB Today.app/Contents/MacOS/BB Today"
 
       - name: Prueba de aislamiento de avisos
-        run: node tools/probar-avisos.mjs
+        run: |
+          node tools/probar-avisos.mjs
+          node tools/probar-agenda-fiable.mjs
 
       - name: Prueba de estados de actualización
         run: |

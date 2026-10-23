@@ -1706,6 +1706,7 @@ ipcMain.handle('respuesta:borrar', (_e, tareaId) => {
 
 const ARCHIVO_AVISOS = path.join(DIR_DATOS, 'avisados.json');
 let avisados = new Set(leerJson(ARCHIVO_AVISOS) || []);
+const avisosEnCurso = new Map();
 
 function revisarAvisos() {
   const p = estado.prefs;
@@ -1717,16 +1718,28 @@ function revisarAvisos() {
       if (t.estado !== 'pendiente' || !t.entrega) continue;
       const cuando = Date.parse(t.entrega);
       const clave = `${t.id}@${t.entrega}`;
-      if (cuando <= ahora || cuando > limite || avisados.has(clave)) continue;
-      avisados.add(clave);
+      if (!Number.isFinite(cuando) || cuando <= ahora || cuando > limite || avisados.has(clave) || (avisosEnCurso.get(clave) || 0) > ahora - 60_000) continue;
+      avisosEnCurso.set(clave, ahora);
       const horas = Math.max(1, Math.round((cuando - ahora) / 3_600_000));
       const aviso = new Notification({
-        title: `Vence en ${horas} h: ${t.titulo}`,
+        title: `${t.entregaPorConfirmar ? 'Revisa tu entrega' : `Vence en ${horas} h`}: ${t.titulo}`,
         body: `${curso.nombre} · ${new Date(cuando).toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' })}`,
         icon: ICONO_PNG,
       });
       aviso.on('click', () => abrirExterno(t.enlace));
-      aviso.show();
+      aviso.on('show', () => {
+        avisosEnCurso.delete(clave);
+        avisados.add(clave);
+        escribirJson(ARCHIVO_AVISOS, [...avisados]);
+      });
+      aviso.on('failed', (_e, error) => {
+        avisosEnCurso.delete(clave);
+        registrar('aviso de tarea', error || 'Windows no pudo mostrar el aviso');
+      });
+      try { aviso.show(); } catch (e) {
+        avisosEnCurso.delete(clave);
+        registrar('aviso de tarea', e);
+      }
     }
   }
   // Sólo se guardan los de las últimas dos semanas.

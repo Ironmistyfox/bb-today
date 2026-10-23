@@ -22,7 +22,7 @@ async function intentar(promesa, porDefecto) {
   try {
     return await promesa;
   } catch (e) {
-    if (e.estado === 401) throw e;
+    if (![403, 404].includes(e.estado)) throw e;
     return porDefecto;
   }
 }
@@ -101,12 +101,13 @@ function tipoDe(nombre, handler) {
 async function agendaCurso(m, usuarioId) {
   const id = m.courseId;
   const base = urlBase();
-  const [contenido, columnas, notas] = await Promise.all([
-    intentar(recorrer(id), null),
-    intentar(paginar(`${API}/v2/courses/${id}/gradebook/columns`), []),
-    intentar(paginar(`${API}/v2/courses/${id}/gradebook/users/${usuarioId}`), []),
-  ]);
+  const contenido = await intentar(recorrer(id), null);
   if (!contenido) return null;
+  // Una lectura incompleta no debe sobrescribir la última agenda buena.
+  const [columnas, notas] = await Promise.all([
+    paginar(`${API}/v2/courses/${id}/gradebook/columns`),
+    paginar(`${API}/v2/courses/${id}/gradebook/users/${usuarioId}`),
+  ]);
 
   const fin = m.course.availability?.duration?.end || null;
   const columna = new Map(columnas.map((c) => [c.id, c]));
@@ -168,6 +169,34 @@ async function agendaCurso(m, usuarioId) {
       enlace: m.course.externalAccessUrl,
     });
   }
+
+  // Una nota puesta a mano no prueba una entrega. Confirmar intentos propios
+  // de actividades en línea recientes/futuras, sin reabrir todo el semestre.
+  await Promise.all(tareas.filter(t => {
+    const c = contenido.find(c => c.id === t.id);
+    return t.estado === 'entregada' && /asmt-/.test(c?.contentHandler?.id || '')
+      && (!t.entrega || Date.parse(t.entrega) >= Date.now() - 14 * 864e5);
+  }).map(async t => {
+    const c = contenido.find(c => c.id === t.id);
+    const colId = c.contentHandler.gradeColumnId;
+    if (estadoDe.get(colId)?.status === 'NeedsGrading') return;
+    let intentos;
+    try {
+      intentos = await paginar(`${API}/v2/courses/${id}/gradebook/columns/${colId}/attempts?userId=${encodeURIComponent(usuarioId)}`);
+    } catch (e) {
+      if (e.estado === 401) throw e;
+      intentos = null;
+    }
+    const enviada = intentos?.some(a => (!a.userId || a.userId === usuarioId)
+      && ['Completed', 'NeedsGrading'].includes(a.status));
+    if (!enviada) {
+      t.estado = 'pendiente';
+      t.entregaPorConfirmar = true;
+      t.motivoEntrega = intentos === null
+        ? 'No se pudo comprobar el intento de entrega. Revisa la tarea en Blackboard.'
+        : 'Blackboard muestra una calificación, pero no hay un intento enviado confirmado. Revisa la entrega.';
+    }
+  }));
 
   return {
     id,

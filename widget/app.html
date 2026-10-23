@@ -780,6 +780,7 @@ function pintarDetalleTarea(d) {
 
     <section class="paso">
       <div class="paso-titulo"><span class="num">1</span>La tarea</div>
+      ${t.entregaPorConfirmar ? `<p class="sub" role="status"><b>Entrega por confirmar.</b> ${esc(t.motivoEntrega)}</p>` : ''}
       ${instrucciones}
       ${archivosTarea}
     </section>

@@ -161,10 +161,13 @@ export async function leerBytes(ruta, maximo) {
 }
 
 // La API pagina con `paging.nextPage`, una ruta relativa ya preparada.
-export async function paginar(ruta, limite = 500) {
+export async function paginar(ruta, limite = Infinity) {
   const resultados = [];
   let siguiente = ruta;
+  const visitadas = new Set();
   while (siguiente && resultados.length < limite) {
+    if (visitadas.has(siguiente)) throw new ErrorBlackboard('Blackboard repitió una página; la consulta está incompleta.', 0);
+    visitadas.add(siguiente);
     const pagina = await pedir(siguiente);
     resultados.push(...(pagina.results || []));
     siguiente = pagina.paging?.nextPage;

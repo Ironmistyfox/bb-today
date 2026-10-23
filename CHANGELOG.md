@@ -1,5 +1,14 @@
 # Cambios
 
+## 1.2.8 · 2026-10-23
+
+- Una calificación sin intento enviado confirmado ya no oculta una tarea en línea reciente o futura: se muestra como entrega por confirmar. Los borradores no cuentan como envíos.
+- Si falla verificar intentos, la tarea sigue visible para revisión. Los errores de carpetas, fechas o calificaciones no sustituyen la agenda buena por una incompleta.
+- Se recorren todas las páginas, sin cortar a 500 registros; se detecta paginación repetida.
+- Los avisos se guardan como enviados tras la confirmación del sistema. Si falla o no confirma, se pueden reintentar. Se conserva el modo de pruebas sin notificaciones reales.
+- El estado vacío especifica que no hay tareas en el filtro, sin declarar toda la agenda al día.
+
+
 ## 1.2.7 · 2026-10-06
 
 - BB Today se presenta como hub de tareas, mensajes y archivos propios, sin avisos de app limitada o mantenimiento. La IA continúa desactivada.

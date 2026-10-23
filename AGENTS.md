@@ -2,8 +2,35 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión pública vigente es 1.2.7. Todo el código, textos y comentarios se
+MCP. La versión en preparación es 1.2.8. Todo el código, textos y comentarios se
 escriben en español.
+
+## Auditoría vigente de agenda y avisos, 2026-10-23
+
+El dueño pide encontrar la tarea de hoy y corregir que no aparezca/avise.
+La lectura real detectó una actividad con nota Graded sin intentos propios;
+no confundir calificada con enviada. No poner datos de su cuenta en el repo.
+Preparando 1.2.8: para evaluaciones en línea recientes/futuras calificadas se
+consultan intentos propios. Sin intento Completed/NeedsGrading, borrador o error
+se muestra pendiente con entregaPorConfirmar y motivo, no como envío probado.
+Esto puede incluir notas manuales de actividades presenciales: la UI pide revisar,
+no afirma que falte una entrega. NeedsGrading se conserva como enviada.
+La verificación se limita a actividades sin fecha o desde 14 días atrás, para
+no reabrir el semestre entero. No usar una nota para inferir una entrega segura.
+Errores 5xx/red de carpetas/columnas/notas abortan actualización y conservan
+la agenda previa; carpetas 403/404 se saltan. Paginación sin techo silencioso
+500 y con detección de ciclos. No prometer que se puede comprobar contenido
+sin acceso ni que una calificación manual pruebe una entrega en línea.
+Avisos sólo se persisten tras show; failed o falta de confirmación permite
+reintentar. No tocar avisados.json o preferencias reales para simular éxito.
+El dueño mantiene avisoHoras=3: una tarea de 23:59 avisa desde 20:59, si la
+app está funcionando y el sistema permite notificaciones. No adelantarlo sin
+petición. IA continúa desactivada. Nunca emitir avisos de pruebas reales.
+tools/probar-agenda-fiable.mjs usa transporte simulado sin cuentas: nota sin
+intento, borrador, intento propio/ajeno, errores de consulta, >500 y ciclo.
+tools/probar-avisos.mjs cubre aislamiento, aceptación, fallo y silencio.
+
+Lo siguiente es histórico.
 
 ## Linux, 2026-10-08: se suma al release 1.2.7
 
