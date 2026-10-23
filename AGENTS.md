@@ -29,6 +29,10 @@ petición. IA continúa desactivada. Nunca emitir avisos de pruebas reales.
 tools/probar-agenda-fiable.mjs usa transporte simulado sin cuentas: nota sin
 intento, borrador, intento propio/ajeno, errores de consulta, >500 y ciclo.
 tools/probar-avisos.mjs cubre aislamiento, aceptación, fallo y silencio.
+Se integró origin/main hasta 022dad2 (soporte Linux) antes de publicar: no
+perder Wayland/X11, AppImage/.deb, autoinicio ni descargas/contador Linux.
+Las pruebas nuevas también se ejecutan en Linux. La lectura real de fechas
+y estados fue sólo GET; no se emitió ninguna notificación de prueba al dueño.
 
 Lo siguiente es histórico.
 
