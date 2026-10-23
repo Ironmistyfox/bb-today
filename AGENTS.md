@@ -2,8 +2,39 @@
 
 BB Today es una app Electron para estudiantes con Blackboard Learn Ultra:
 widget de escritorio, app completa, asistencia con ChatGPT/Claude y servidor
-MCP. La versión en preparación es 1.2.8. Todo el código, textos y comentarios se
+MCP. La versión pública vigente es 1.2.8. Todo el código, textos y comentarios se
 escriben en español.
+
+## Publicación verificada: 1.2.8, 2026-10-23
+
+Release estable v1.2.8, código 08a6666, 16 assets. Windows, Mac y Linux
+aprobaron el flujo 39999897109. Se conservó origin/main hasta 022dad2 y todo
+el soporte Linux; no sobrescribir esa incorporación con un checkout viejo.
+La app muestra entrega por confirmar en widget, tarjeta flotante y detalle
+cuando hay nota sin intento enviado comprobado. Esto pide revisión, no acusa
+al estudiante de no entregar: puede haber notas manuales/presenciales.
+Validación de agenda y notificaciones usa transporte/emisor simulado; no
+se emitieron notificaciones de prueba a Windows ni se envió una tarea real.
+La consulta de diagnóstico real fue sólo GET, con renovación desactivada.
+No guardar datos ni identificadores personales de ese diagnóstico en el repo.
+
+Descargas: instalador Windows y ZIP Mac arm64/x64 íntegros por tamaño,
+SHA-256 GitHub y SHA-512 manifiestos; DMG accesibles. AppImage, .deb y manifiesto
+Linux accesibles; no se descargaron para verificar su hash ni se probó Wayland
+real en este cambio. Linux sí pasó las pruebas de CI con pantalla virtual.
+Web 8def0ec6, https://bb-today.pages.dev, versión 1.2.8 y contador verificado
+86. API real probada con Windows/Mac y Linux simulados; móvil sin desborde.
+Verificadores externos verificar-publicacion-128.mjs/verificar-web-128.cjs
+quedan en bb-today-revision. No confundir el texto heredado «trece assets»
+del verificador con el total actual, que se comprobó de 16 en GitHub.
+La instalada local seguía en 1.2.7: Cuenta → Buscar ahora → Reiniciar ahora
+cuando termine de descargar. No ejecutar instaladores bloqueados anteriormente.
+Preferencias/agenda/avisados reales sin cambios manuales. avisoHoras=3 se
+conserva: el umbral de una entrega de 23:59 es 20:59, con revisión cada 5 min.
+No prometer alertas con la app apagada, ni confirmar recepción real del OS con
+pruebas simuladas. IA desactivada, personal conservada y su historial sin publicar.
+
+Lo siguiente es histórico.
 
 ## Auditoría vigente de agenda y avisos, 2026-10-23
 
